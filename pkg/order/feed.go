@@ -3,7 +3,7 @@ package order
 import (
 	"sync"
 
-	"github.com/raykavin/backnrun/internal/core"
+	"github.com/raykavin/backnrun/pkg/core"
 )
 
 // FeedConsumer is a function type that processes order events

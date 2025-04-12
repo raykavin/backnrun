@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/StudioSol/set"
-	"github.com/raykavin/backnrun/internal/core"
+	"github.com/raykavin/backnrun/pkg/core"
 )
 
 // OnOrder handles new order events

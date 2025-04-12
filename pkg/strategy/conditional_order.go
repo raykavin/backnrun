@@ -1,7 +1,7 @@
 package strategy
 
 import (
-	"github.com/raykavin/backnrun/internal/core"
+	"github.com/raykavin/backnrun/pkg/core"
 	log "github.com/sirupsen/logrus"
 )
 

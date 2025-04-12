@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/raykavin/backnrun/internal/core"
-	"github.com/raykavin/backnrun/internal/exchange"
-	"github.com/raykavin/backnrun/internal/storage"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/exchange"
+	"github.com/raykavin/backnrun/pkg/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

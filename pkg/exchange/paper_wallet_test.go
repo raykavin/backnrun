@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/raykavin/backnrun/internal/core"
+	"github.com/raykavin/backnrun/pkg/core"
 
 	"github.com/stretchr/testify/require"
 )

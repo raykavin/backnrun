@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 
-	"github.com/raykavin/backnrun/internal/exchange"
-	"github.com/raykavin/backnrun/internal/indicator"
-	"github.com/raykavin/backnrun/internal/plot"
-	"github.com/raykavin/backnrun/internal/storage"
+	"github.com/raykavin/backnrun/pkg/exchange"
+	"github.com/raykavin/backnrun/pkg/indicator"
+	"github.com/raykavin/backnrun/pkg/plot"
+	"github.com/raykavin/backnrun/pkg/storage"
 	"github.com/rodrigo-brito/backnrun/examples/strategy"
 	"github.com/rodrigo-brito/backnrun/tools/log"
 )

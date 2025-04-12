@@ -4,7 +4,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/raykavin/backnrun/internal/core"
+	"github.com/raykavin/backnrun/pkg/core"
 )
 
 // TradeResult contains the outcome of a completed trade

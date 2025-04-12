@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/StudioSol/set"
-	"github.com/raykavin/backnrun/internal/core"
+	"github.com/raykavin/backnrun/pkg/core"
 
 	"github.com/rodrigo-brito/ninjabot/tools/log"
 )

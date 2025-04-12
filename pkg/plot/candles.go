@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/StudioSol/set"
-	"github.com/raykavin/backnrun/internal/core"
+	"github.com/raykavin/backnrun/pkg/core"
 )
 
 // OnCandle handles new candle events

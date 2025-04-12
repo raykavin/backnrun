@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/raykavin/backnrun/internal/core"
+	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/schollz/progressbar/v3"
 	"github.com/xhit/go-str2duration/v2"
 

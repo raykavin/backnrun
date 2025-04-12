@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/raykavin/backnrun/internal/core"
+	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/samber/lo"
 	"gorm.io/gorm"
 )

@@ -10,9 +10,9 @@ import (
 
 	"github.com/StudioSol/set"
 	"github.com/evanw/esbuild/pkg/api"
-	"github.com/raykavin/backnrun/internal/core"
-	"github.com/raykavin/backnrun/internal/exchange"
-	"github.com/raykavin/backnrun/internal/strategy"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/exchange"
+	"github.com/raykavin/backnrun/pkg/strategy"
 )
 
 // Static assets embedded in the binary

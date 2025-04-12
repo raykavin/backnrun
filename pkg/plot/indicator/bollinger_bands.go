@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/markcheno/go-talib"
-	"github.com/raykavin/backnrun/internal/core"
-	"github.com/raykavin/backnrun/internal/plot"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/plot"
 )
 
 func BollingerBands(period int, stdDeviation float64, upDnBandColor, midBandColor string) plot.Indicator {

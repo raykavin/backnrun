@@ -11,9 +11,9 @@ import (
 
 	"slices"
 
-	"github.com/raykavin/backnrun/internal/core"
-	"github.com/raykavin/backnrun/internal/exchange"
-	"github.com/raykavin/backnrun/internal/order"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/exchange"
+	"github.com/raykavin/backnrun/pkg/order"
 	log "github.com/sirupsen/logrus"
 	tb "gopkg.in/tucnak/telebot.v2"
 )

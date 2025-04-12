@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
-	"github.com/raykavin/backnrun/internal/exchange"
+	"github.com/raykavin/backnrun/pkg/exchange"
 )
 
 // TradeSummary collects statistics about trading performance

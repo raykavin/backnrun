@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/raykavin/backnrun/internal/core"
+	"github.com/raykavin/backnrun/pkg/core"
 
 	"github.com/adshao/go-binance/v2/common"
 	"github.com/jpillora/backoff"

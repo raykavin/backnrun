@@ -3,7 +3,7 @@ package plot
 import (
 	"time"
 
-	"github.com/raykavin/backnrun/internal/core"
+	"github.com/raykavin/backnrun/pkg/core"
 )
 
 // Candle represents OHLCV data with associated orders

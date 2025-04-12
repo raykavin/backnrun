@@ -3,7 +3,7 @@ package strategy
 import (
 	"time"
 
-	"github.com/raykavin/backnrun/internal/core"
+	"github.com/raykavin/backnrun/pkg/core"
 )
 
 type MetricStyle string

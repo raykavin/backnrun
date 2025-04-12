@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/raykavin/backnrun/internal/core"
-	"github.com/raykavin/backnrun/internal/exchange"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/exchange"
 	log "github.com/sirupsen/logrus"
 )
 

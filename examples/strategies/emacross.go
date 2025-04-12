@@ -1,5 +1,12 @@
 package strategies
 
+import (
+	"github.com/raykavin/backnrun"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/indicator"
+	"github.com/raykavin/backnrun/pkg/strategy"
+	"github.com/rodrigo-brito/ninjabot/tools/log"
+)
 
 type CrossEMA struct{}
 
@@ -17,7 +24,7 @@ func (e CrossEMA) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
 
 	return []strategy.ChartIndicator{
 		{
-			Overlay:   tcore,
+			Overlay:   true,
 			GroupName: "MA's",
 			Time:      df.Time,
 			Metrics: []strategy.IndicatorMetric{
@@ -38,7 +45,7 @@ func (e CrossEMA) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
 	}
 }
 
-func (e *CrossEMA) OnCandle(df *backnrun.Dataframe, broker core.Broker) {
+func (e *CrossEMA) OnCandle(df *core.Dataframe, broker core.Broker) {
 	closePrice := df.Close.Last(0)
 
 	assetPosition, quotePosition, err := broker.Position(df.Pair)
@@ -51,7 +58,7 @@ func (e *CrossEMA) OnCandle(df *backnrun.Dataframe, broker core.Broker) {
 		df.Metadata["ema9"].Crossover(df.Metadata["sma21"]) { // trade signal (EMA9 > SMA21)
 
 		amount := quotePosition / closePrice // calculate amount of asset to buy
-		_, err := broker.CreateOrderMarket(backnrun.SideTypeBuy, df.Pair, amount)
+		_, err := broker.CreateOrderMarket(core.SideTypeBuy, df.Pair, amount)
 		if err != nil {
 			log.Error(err)
 		}
@@ -62,7 +69,7 @@ func (e *CrossEMA) OnCandle(df *backnrun.Dataframe, broker core.Broker) {
 	if assetPosition > 0 &&
 		df.Metadata["ema9"].Crossunder(df.Metadata["sma21"]) { // trade signal (EMA9 < SMA21)
 
-		_, err = broker.CreateOrderMarket(backnrun.SideTypeSell, df.Pair, assetPosition)
+		_, err = broker.CreateOrderMarket(core.SideTypeSell, df.Pair, assetPosition)
 		if err != nil {
 			log.Error(err)
 		}

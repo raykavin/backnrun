@@ -8,15 +8,15 @@ import (
 	"strconv"
 
 	"github.com/aybabtme/uniplot/histogram"
-	"github.com/raykavin/backnrun/internal/core"
-	"github.com/raykavin/backnrun/internal/exchange"
-	"github.com/raykavin/backnrun/internal/metric"
-	"github.com/raykavin/backnrun/internal/notification"
-	"github.com/raykavin/backnrun/internal/order"
-	"github.com/raykavin/backnrun/internal/storage"
-	"github.com/raykavin/backnrun/internal/strategy"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/exchange"
 	"github.com/raykavin/backnrun/pkg/logger"
 	"github.com/raykavin/backnrun/pkg/logger/zerolog"
+	"github.com/raykavin/backnrun/pkg/metric"
+	"github.com/raykavin/backnrun/pkg/notification"
+	"github.com/raykavin/backnrun/pkg/order"
+	"github.com/raykavin/backnrun/pkg/storage"
+	"github.com/raykavin/backnrun/pkg/strategy"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/schollz/progressbar/v3"
@@ -210,6 +210,10 @@ func (n *Backnrun) SubscribeOrder(subscriptions ...core.OrderSubscriber) {
 
 func (n *Backnrun) Controller() *order.Controller {
 	return n.orderController
+}
+
+func (n *Backnrun) Log() logger.Logger {
+	return n.logger
 }
 
 // Summary function displays all trades, accuracy and some bot metric in stdout

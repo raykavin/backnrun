@@ -1,6 +1,6 @@
 package strategy
 
-import "github.com/raykavin/backnrun/internal/core"
+import "github.com/raykavin/backnrun/pkg/core"
 
 type Strategy interface {
 	// Timeframe is the time interval in which the strategy will be executed. eg: 1h, 1d, 1w

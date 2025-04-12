@@ -1,6 +1,6 @@
 package strategy
 
-import "github.com/raykavin/backnrun/internal/core"
+import "github.com/raykavin/backnrun/pkg/core"
 
 // DataframeManager handles operations related to updating and maintaining the dataframe
 type DataframeManager struct {

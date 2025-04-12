@@ -1,6 +1,6 @@
 package plot
 
-import "github.com/raykavin/backnrun/internal/exchange"
+import "github.com/raykavin/backnrun/pkg/exchange"
 
 // indicatorsByPair returns the indicators for a trading pair
 func (c *Chart) indicatorsByPair(pair string) []plotIndicator {
