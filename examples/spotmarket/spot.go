@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// Initialize your binance
-	binance, err := binance.NewExchange(ctx, backnrun.Log, binance.Config{
+	binance, err := binance.NewExchange(ctx, backnrun.DefaultLog, binance.Config{
 		Type:          binance.MarketTypeSpot,
 		APIKey:        apiKey,
 		APISecret:     secretKey,

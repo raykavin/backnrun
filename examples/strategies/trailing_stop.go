@@ -85,7 +85,7 @@ func (t TrailingStrategy) OnCandle(df *core.Dataframe, broker core.Broker) {
 	// Get current position
 	asset, quote, err := broker.Position(df.Pair)
 	if err != nil {
-		backnrun.Log.Error(err)
+		backnrun.DefaultLog.Error(err)
 		return
 	}
 
@@ -110,7 +110,7 @@ func (t TrailingStrategy) executeEntry(df *core.Dataframe, broker core.Broker, q
 	// Execute market buy using all available quote currency
 	_, err := broker.CreateOrderMarketQuote(core.SideTypeBuy, df.Pair, quoteAmount)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":  df.Pair,
 			"side":  core.SideTypeBuy,
 			"quote": quoteAmount,
@@ -138,7 +138,7 @@ func (t TrailingStrategy) executeExit(df *core.Dataframe, broker core.Broker) {
 	// Get current asset position
 	asset, _, err := broker.Position(df.Pair)
 	if err != nil {
-		backnrun.Log.Error(err)
+		backnrun.DefaultLog.Error(err)
 		return
 	}
 
@@ -146,7 +146,7 @@ func (t TrailingStrategy) executeExit(df *core.Dataframe, broker core.Broker) {
 	if asset > 0 {
 		_, err = broker.CreateOrderMarket(core.SideTypeSell, df.Pair, asset)
 		if err != nil {
-			backnrun.Log.WithFields(map[string]interface{}{
+			backnrun.DefaultLog.WithFields(map[string]interface{}{
 				"pair":  df.Pair,
 				"side":  core.SideTypeSell,
 				"asset": asset,

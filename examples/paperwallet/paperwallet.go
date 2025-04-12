@@ -40,7 +40,7 @@ func main() {
 	}
 
 	// Use binance for realtime data feed
-	binanceEx, err := binance.NewExchange(ctx, backnrun.Log, binance.Config{Type: binance.MarketTypeSpot})
+	binanceEx, err := binance.NewExchange(ctx, backnrun.DefaultLog, binance.Config{Type: binance.MarketTypeSpot})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,7 +56,7 @@ func main() {
 	paperWallet := exchange.NewPaperWallet(
 		ctx,
 		"USDT",
-		backnrun.Log,
+		backnrun.DefaultLog,
 		exchange.WithPaperFee(0.001, 0.001),
 		exchange.WithPaperAsset("USDT", 10000),
 		exchange.WithDataFeed(binanceEx),
@@ -66,7 +66,7 @@ func main() {
 	strategy := &strategies.CrossEMA{}
 
 	chart, err := plot.NewChart(
-		backnrun.Log,
+		backnrun.DefaultLog,
 		plot.WithCustomIndicators(
 			indicator.EMA(8, "red"),
 			indicator.SMA(21, "blue"),

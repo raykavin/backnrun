@@ -100,7 +100,7 @@ func (t *TripleMAStrategy) OnCandle(df *core.Dataframe, broker core.Broker) {
 	// Obter posição atual
 	assetPosition, quotePosition, err := broker.Position(pair)
 	if err != nil {
-		backnrun.Log.Error(err)
+		backnrun.DefaultLog.Error(err)
 		return
 	}
 
@@ -144,7 +144,7 @@ func (t *TripleMAStrategy) executeEntry(df *core.Dataframe, broker core.Broker, 
 	// Executar ordem de compra a mercado
 	_, err := broker.CreateOrderMarketQuote(core.SideTypeBuy, pair, entryAmount)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":  pair,
 			"side":  core.SideTypeBuy,
 			"quote": entryAmount,
@@ -156,7 +156,7 @@ func (t *TripleMAStrategy) executeEntry(df *core.Dataframe, broker core.Broker, 
 	// Obter posição atualizada após a compra
 	assetPosition, _, err := broker.Position(pair)
 	if err != nil {
-		backnrun.Log.Error(err)
+		backnrun.DefaultLog.Error(err)
 		return
 	}
 
@@ -164,7 +164,7 @@ func (t *TripleMAStrategy) executeEntry(df *core.Dataframe, broker core.Broker, 
 	stopPrice := closePrice * (1.0 - t.stopLoss)
 	stopOrder, err := broker.CreateOrderStop(pair, assetPosition, stopPrice)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":      pair,
 			"asset":     assetPosition,
 			"stopPrice": stopPrice,
@@ -185,7 +185,7 @@ func (t *TripleMAStrategy) executeExit(df *core.Dataframe, broker core.Broker, a
 		if err == nil {
 			err = broker.Cancel(order)
 			if err != nil {
-				backnrun.Log.WithFields(map[string]interface{}{
+				backnrun.DefaultLog.WithFields(map[string]interface{}{
 					"pair":    pair,
 					"orderID": orderID,
 				}).Error(err)
@@ -198,7 +198,7 @@ func (t *TripleMAStrategy) executeExit(df *core.Dataframe, broker core.Broker, a
 	// Vender toda a posição
 	_, err := broker.CreateOrderMarket(core.SideTypeSell, pair, assetPosition)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":  pair,
 			"side":  core.SideTypeSell,
 			"asset": assetPosition,

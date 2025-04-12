@@ -44,27 +44,27 @@ func main() {
 		},
 	)
 	if err != nil {
-		backnrun.Log.Fatal(err)
+		backnrun.DefaultLog.Fatal(err)
 	}
 
 	// initialize a database in memory
 	storage, err := storage.FromMemory()
 	if err != nil {
-		backnrun.Log.Fatal(err)
+		backnrun.DefaultLog.Fatal(err)
 	}
 
 	// create a paper wallet for simulation, initializing with 10.000 USDT
 	wallet := exchange.NewPaperWallet(
 		ctx,
 		"USDT",
-		backnrun.Log,
+		backnrun.DefaultLog,
 		exchange.WithPaperAsset("USDT", 10000),
 		exchange.WithDataFeed(csvFeed),
 	)
 
 	// create a chart  with indicators from the strategy and a custom additional RSI indicator
 	chart, err := plot.NewChart(
-		backnrun.Log,
+		backnrun.DefaultLog,
 		plot.WithStrategyIndicators(strategy),
 		plot.WithCustomIndicators(
 			indicator.RSI(14, "purple"),
@@ -72,7 +72,7 @@ func main() {
 		plot.WithPaperWallet(wallet),
 	)
 	if err != nil {
-		backnrun.Log.Fatal(err)
+		backnrun.DefaultLog.Fatal(err)
 		return
 	}
 
@@ -91,13 +91,13 @@ func main() {
 		backnrun.WithLogLevel(logger.WarnLevel),
 	)
 	if err != nil {
-		backnrun.Log.Fatal(err)
+		backnrun.DefaultLog.Fatal(err)
 	}
 
 	// Initializer simulation
 	err = bot.Run(ctx)
 	if err != nil {
-		backnrun.Log.Fatal(err)
+		backnrun.DefaultLog.Fatal(err)
 	}
 
 	// Print bot results
@@ -106,6 +106,6 @@ func main() {
 	// Display candlesticks chart in local browser
 	err = chart.Start()
 	if err != nil {
-		backnrun.Log.Fatal(err)
+		backnrun.DefaultLog.Fatal(err)
 	}
 }

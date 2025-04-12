@@ -97,7 +97,7 @@ func (w *Williams91Strategy) OnCandle(df *core.Dataframe, broker core.Broker) {
 	// Get current position
 	assetPosition, quotePosition, err := broker.Position(pair)
 	if err != nil {
-		backnrun.Log.Error(err)
+		backnrun.DefaultLog.Error(err)
 		return
 	}
 
@@ -148,7 +148,7 @@ func (w *Williams91Strategy) executeEntry(df *core.Dataframe, broker core.Broker
 	// Execute market buy order
 	_, err := broker.CreateOrderMarketQuote(core.SideTypeBuy, pair, entryAmount)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":  pair,
 			"side":  core.SideTypeBuy,
 			"quote": entryAmount,
@@ -164,14 +164,14 @@ func (w *Williams91Strategy) executeEntry(df *core.Dataframe, broker core.Broker
 	stopPrice := closePrice - (atr * w.atrMultiplier)
 	assetPosition, _, err := broker.Position(pair)
 	if err != nil {
-		backnrun.Log.Error(err)
+		backnrun.DefaultLog.Error(err)
 		return
 	}
 
 	// Create a stop loss order
 	stopOrder, err := broker.CreateOrderStop(pair, assetPosition, stopPrice)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":      pair,
 			"asset":     assetPosition,
 			"stopPrice": stopPrice,
@@ -191,7 +191,7 @@ func (w *Williams91Strategy) executeExit(df *core.Dataframe, broker core.Broker,
 		if err == nil {
 			err = broker.Cancel(order)
 			if err != nil {
-				backnrun.Log.WithFields(map[string]interface{}{
+				backnrun.DefaultLog.WithFields(map[string]interface{}{
 					"pair":    pair,
 					"orderID": orderID,
 				}).Error(err)
@@ -203,7 +203,7 @@ func (w *Williams91Strategy) executeExit(df *core.Dataframe, broker core.Broker,
 	// Sell entire position
 	_, err := broker.CreateOrderMarket(core.SideTypeSell, pair, assetPosition)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":  pair,
 			"side":  core.SideTypeSell,
 			"asset": assetPosition,

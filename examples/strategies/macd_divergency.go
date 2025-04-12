@@ -100,7 +100,7 @@ func (m *MACDDivergenceStrategy) OnCandle(df *core.Dataframe, broker core.Broker
 	// Obter posição atual
 	assetPosition, quotePosition, err := broker.Position(pair)
 	if err != nil {
-		backnrun.Log.Error(err)
+		backnrun.DefaultLog.Error(err)
 		return
 	}
 
@@ -227,7 +227,7 @@ func (m *MACDDivergenceStrategy) executeExit(df *core.Dataframe, broker core.Bro
 		if err == nil {
 			err = broker.Cancel(order)
 			if err != nil {
-				backnrun.Log.WithFields(map[string]interface{}{
+				backnrun.DefaultLog.WithFields(map[string]interface{}{
 					"pair":    pair,
 					"orderID": orderID,
 				}).Error(err)
@@ -240,7 +240,7 @@ func (m *MACDDivergenceStrategy) executeExit(df *core.Dataframe, broker core.Bro
 	// Vender toda a posição
 	_, err := broker.CreateOrderMarket(core.SideTypeSell, pair, assetPosition)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":  pair,
 			"side":  core.SideTypeSell,
 			"asset": assetPosition,
@@ -259,7 +259,7 @@ func (m *MACDDivergenceStrategy) executeBuy(df *core.Dataframe, broker core.Brok
 	// Executar ordem de compra a mercado
 	_, err := broker.CreateOrderMarketQuote(core.SideTypeBuy, pair, entryAmount)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":  pair,
 			"side":  core.SideTypeBuy,
 			"quote": entryAmount,
@@ -271,7 +271,7 @@ func (m *MACDDivergenceStrategy) executeBuy(df *core.Dataframe, broker core.Brok
 	// Obter posição atualizada após a compra
 	assetPosition, _, err := broker.Position(pair)
 	if err != nil {
-		backnrun.Log.Error(err)
+		backnrun.DefaultLog.Error(err)
 		return
 	}
 
@@ -289,7 +289,7 @@ func (m *MACDDivergenceStrategy) executeBuy(df *core.Dataframe, broker core.Brok
 	)
 
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":       pair,
 			"side":       core.SideTypeSell,
 			"asset":      assetPosition,

@@ -84,7 +84,7 @@ func runDownload(cmd *cobra.Command, args []string) error {
 	}
 
 	// Run the download
-	return backtesting.NewDownloader(exc, backnrun.Log).Download(
+	return backtesting.NewDownloader(exc, backnrun.DefaultLog).Download(
 		cmd.Context(),
 		pair,
 		timeframe,
@@ -99,7 +99,7 @@ func initializeExchange(cmd *cobra.Command) (core.Feeder, error) {
 		exchangeType = binance.MarketTypeFutures
 	}
 
-	return binance.NewExchange(cmd.Context(), backnrun.Log, binance.Config{
+	return binance.NewExchange(cmd.Context(), backnrun.DefaultLog, binance.Config{
 		Type: exchangeType,
 	})
 

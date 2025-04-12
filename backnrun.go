@@ -22,7 +22,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-var Log logger.Logger
+var DefaultLog logger.Logger
 
 func init() {
 	log, err := zerolog.New("debug", "2006-01-02 15:04:05", true, false)
@@ -30,7 +30,7 @@ func init() {
 		panic(err)
 	}
 
-	Log = zerolog.NewAdapter(log.Logger)
+	DefaultLog = zerolog.NewAdapter(log.Logger)
 }
 
 const defaultDatabase = "backnrun.db"

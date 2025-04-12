@@ -72,7 +72,7 @@ func (s *CrossEMA) OnCandle(df *core.Dataframe, broker core.Broker) {
 	// Get current position
 	assetPosition, quotePosition, err := broker.Position(df.Pair)
 	if err != nil {
-		backnrun.Log.Error(err)
+		backnrun.DefaultLog.Error(err)
 		return
 	}
 
@@ -105,7 +105,7 @@ func (s *CrossEMA) executeBuy(df *core.Dataframe, broker core.Broker, closePrice
 	amount := quotePosition / closePrice // calculate amount of asset to buy
 	_, err := broker.CreateOrderMarket(core.SideTypeBuy, df.Pair, amount)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":  df.Pair,
 			"side":  core.SideTypeBuy,
 			"price": closePrice,
@@ -118,7 +118,7 @@ func (s *CrossEMA) executeBuy(df *core.Dataframe, broker core.Broker, closePrice
 func (s *CrossEMA) executeSell(df *core.Dataframe, broker core.Broker, assetPosition float64) {
 	_, err := broker.CreateOrderMarket(core.SideTypeSell, df.Pair, assetPosition)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair": df.Pair,
 			"side": core.SideTypeSell,
 			"size": assetPosition,

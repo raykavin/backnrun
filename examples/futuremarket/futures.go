@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// Initialize your exchange with futures
-	binanceEx, err := binance.NewExchange(ctx, backnrun.Log, binance.Config{
+	binanceEx, err := binance.NewExchange(ctx, backnrun.DefaultLog, binance.Config{
 		Type:          binance.MarketTypeFutures,
 		APIKey:        apiKey,
 		APISecret:     secretKey,

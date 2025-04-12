@@ -83,12 +83,12 @@ func (s OCOSell) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
 // OnCandle is called for each new candle and implements the trading logic
 func (s *OCOSell) OnCandle(df *core.Dataframe, broker core.Broker) {
 	closePrice := df.Close.Last(0)
-	backnrun.Log.Info("New Candle = ", df.Pair, df.LastUpdate, closePrice)
+	backnrun.DefaultLog.Info("New Candle = ", df.Pair, df.LastUpdate, closePrice)
 
 	// Get current position
 	assetPosition, quotePosition, err := broker.Position(df.Pair)
 	if err != nil {
-		backnrun.Log.Error(err)
+		backnrun.DefaultLog.Error(err)
 		return
 	}
 
@@ -143,7 +143,7 @@ func (s *OCOSell) logOrderError(
 	quotePosition float64,
 	size float64,
 ) {
-	backnrun.Log.WithFields(map[string]interface{}{
+	backnrun.DefaultLog.WithFields(map[string]interface{}{
 		"pair":  pair,
 		"side":  side,
 		"close": closePrice,

@@ -74,7 +74,7 @@ func (t *TurtleStrategy) OnCandle(df *core.Dataframe, broker core.Broker) {
 	// Get current position
 	assetPosition, quotePosition, err := broker.Position(df.Pair)
 	if err != nil {
-		backnrun.Log.Error(err)
+		backnrun.DefaultLog.Error(err)
 		return
 	}
 
@@ -110,7 +110,7 @@ func (t *TurtleStrategy) executeEntry(df *core.Dataframe, broker core.Broker, qu
 	// Execute market buy order
 	_, err := broker.CreateOrderMarketQuote(core.SideTypeBuy, df.Pair, entryAmount)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":  df.Pair,
 			"side":  core.SideTypeBuy,
 			"quote": entryAmount,
@@ -124,7 +124,7 @@ func (t *TurtleStrategy) executeExit(df *core.Dataframe, broker core.Broker, ass
 	// Sell entire position
 	_, err := broker.CreateOrderMarket(core.SideTypeSell, df.Pair, assetPosition)
 	if err != nil {
-		backnrun.Log.WithFields(map[string]interface{}{
+		backnrun.DefaultLog.WithFields(map[string]interface{}{
 			"pair":  df.Pair,
 			"side":  core.SideTypeSell,
 			"asset": assetPosition,
