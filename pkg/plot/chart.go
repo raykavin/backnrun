@@ -13,7 +13,6 @@ import (
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/exchange"
 	"github.com/raykavin/backnrun/pkg/logger"
-	"github.com/raykavin/backnrun/pkg/strategy"
 )
 
 // Static assets embedded in the binary
@@ -35,7 +34,7 @@ type Chart struct {
 	paperWallet     *exchange.PaperWallet
 	scriptContent   string
 	indexHTML       *template.Template
-	strategy        strategy.Strategy
+	strategy        core.Strategy
 	lastUpdate      time.Time
 	log             logger.Logger
 }
@@ -51,7 +50,7 @@ func WithPort(port int) Option {
 }
 
 // WithStrategyIndicators sets the strategy for indicators
-func WithStrategyIndicators(strategy strategy.Strategy) Option {
+func WithStrategyIndicators(strategy core.Strategy) Option {
 	return func(chart *Chart) {
 		chart.strategy = strategy
 	}
