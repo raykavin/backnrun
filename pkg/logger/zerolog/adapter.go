@@ -11,6 +11,10 @@ type ZerologAdapter struct {
 	*zerolog.Logger
 }
 
+func NewAdapter(logger *zerolog.Logger) *ZerologAdapter {
+	return &ZerologAdapter{logger}
+}
+
 // GetLevel implements logger.Logger.
 func (z *ZerologAdapter) GetLevel() logger.Level {
 	return toLevel(z.Logger.GetLevel())

@@ -22,17 +22,27 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
+var Log logger.Logger
+
+func init() {
+	log, err := zerolog.New("debug", "2006-01-02 15:04:05", true, false)
+	if err != nil {
+		panic(err)
+	}
+
+	Log = zerolog.NewAdapter(log.Logger)
+}
+
 const defaultDatabase = "backnrun.db"
 
 type Backnrun struct {
 	storage  core.OrderStorage
-	settings core.Settings
 	exchange core.Exchange
 	strategy strategy.Strategy
 	notifier core.Notifier
 	telegram core.NotifierWithStart
-	logger   logger.Logger
 
+	settings            *core.Settings
 	orderController     *order.Controller
 	priorityQueueCandle *core.PriorityQueue
 	orderFeed           *order.Feed
@@ -47,7 +57,7 @@ type Backnrun struct {
 type Option func(*Backnrun)
 
 // NewBot creates a new Backnrun bot instance with the provided settings and dependencies
-func NewBot(ctx context.Context, settings core.Settings, exch core.Exchange, str strategy.Strategy,
+func NewBot(ctx context.Context, settings *core.Settings, exch core.Exchange, str strategy.Strategy,
 	options ...Option) (*Backnrun, error) {
 
 	// Initialize bot with required core components
@@ -56,13 +66,13 @@ func NewBot(ctx context.Context, settings core.Settings, exch core.Exchange, str
 		exchange:              exch,
 		strategy:              str,
 		orderFeed:             order.NewOrderFeed(),
-		dataFeed:              exchange.NewDataFeed(exch),
+		dataFeed:              exchange.NewDataFeed(exch, Log),
 		strategiesControllers: make(map[string]*strategy.Controller),
 		priorityQueueCandle:   core.NewPriorityQueue(nil),
 	}
 
 	// Validate trading pairs
-	if err := validatePairs(settings.GetPairs()); err != nil {
+	if err := validatePairs(settings.Pairs); err != nil {
 		return nil, err
 	}
 
@@ -81,11 +91,6 @@ func NewBot(ctx context.Context, settings core.Settings, exch core.Exchange, str
 
 	// Initialize notification systems
 	if err := initializeNotifications(ctx, bot, settings); err != nil {
-		return nil, err
-	}
-
-	// Initialize logger
-	if err := initializeLogger(bot); err != nil {
 		return nil, err
 	}
 
@@ -116,9 +121,9 @@ func initializeStorage(bot *Backnrun) error {
 }
 
 // initializeNotifications sets up notification systems like Telegram
-func initializeNotifications(ctx context.Context, bot *Backnrun, settings core.Settings) error {
+func initializeNotifications(ctx context.Context, bot *Backnrun, settings *core.Settings) error {
 	var err error
-	if settings.GetTelegram().IsEnabled() {
+	if settings.Telegram.Enabled {
 		bot.telegram, err = notification.NewTelegram(bot.orderController, settings)
 		if err != nil {
 			return err
@@ -126,16 +131,6 @@ func initializeNotifications(ctx context.Context, bot *Backnrun, settings core.S
 		// Register telegram as notifier
 		WithNotifier(bot.telegram)(bot)
 	}
-	return nil
-}
-
-// initializeLogger sets up the logging system
-func initializeLogger(bot *Backnrun) error {
-	log, err := zerolog.NewZerolog("debug", "2006-01-02 15:04:05", true, false)
-	if err != nil {
-		return err
-	}
-	bot.logger = &zerolog.ZerologAdapter{Logger: log.Logger}
 	return nil
 }
 
@@ -149,7 +144,7 @@ func WithBacktest(wallet *exchange.PaperWallet) Option {
 	}
 }
 
-// WithStorage sets the storage for the bot, by default it uses a local file called ninjabot.db
+// WithStorage sets the storage for the bot, by default it uses a local file called backnrun.db
 func WithStorage(storage core.OrderStorage) Option {
 	return func(bot *Backnrun) {
 		bot.storage = storage
@@ -159,7 +154,7 @@ func WithStorage(storage core.OrderStorage) Option {
 // WithLogLevel sets the log level. eg: n.logger.DebugLevel, n.logger.InfoLevel, n.logger.WarnLevel, n.logger.ErrorLevel, n.logger.FatalLevel
 func WithLogLevel(level logger.Level) Option {
 	return func(n *Backnrun) {
-		n.logger.SetLevel(level)
+		Log.SetLevel(level)
 	}
 }
 
@@ -187,7 +182,7 @@ func WithPaperWallet(wallet *exchange.PaperWallet) Option {
 }
 
 func (n *Backnrun) SubscribeCandle(subscriptions ...core.CandleSubscriber) {
-	for _, pair := range n.settings.GetPairs() {
+	for _, pair := range n.settings.Pairs {
 		for _, subscription := range subscriptions {
 			n.dataFeed.Subscribe(pair, n.strategy.Timeframe(), subscription.OnCandle, false)
 		}
@@ -201,7 +196,7 @@ func WithOrderSubscription(subscriber core.OrderSubscriber) Option {
 }
 
 func (n *Backnrun) SubscribeOrder(subscriptions ...core.OrderSubscriber) {
-	for _, pair := range n.settings.GetPairs() {
+	for _, pair := range n.settings.Pairs {
 		for _, subscription := range subscriptions {
 			n.orderFeed.Subscribe(pair, subscription.OnOrder, false)
 		}
@@ -210,10 +205,6 @@ func (n *Backnrun) SubscribeOrder(subscriptions ...core.OrderSubscriber) {
 
 func (n *Backnrun) Controller() *order.Controller {
 	return n.orderController
-}
-
-func (n *Backnrun) Log() logger.Logger {
-	return n.logger
 }
 
 // Summary function displays all trades, accuracy and some bot metric in stdout
@@ -346,7 +337,7 @@ func (n *Backnrun) processCandles() {
 // Start the backtest process and create a progress bar
 // backtestCandles will process candles from a prirority queue in chronological order
 func (n *Backnrun) backtestCandles() {
-	n.logger.Info("[SETUP] Starting backtesting")
+	Log.Info("[SETUP] Starting backtesting")
 
 	progressBar := progressbar.Default(int64(n.priorityQueueCandle.Len()))
 	for n.priorityQueueCandle.Len() > 0 {
@@ -363,12 +354,12 @@ func (n *Backnrun) backtestCandles() {
 		}
 
 		if err := progressBar.Add(1); err != nil {
-			n.logger.Warnf("update progressbar fail: %v", err)
+			Log.Warnf("update progressbar fail: %v", err)
 		}
 	}
 }
 
-// Before Ninjabot start, we need to load the necessary data to fill strategy indicators
+// Before BackNRun start, we need to load the necessary data to fill strategy indicators
 // Then, we need to get the time frame and warmup period to fetch the necessary candles
 func (n *Backnrun) preload(ctx context.Context, pair string) error {
 	if n.backtest {
@@ -391,9 +382,9 @@ func (n *Backnrun) preload(ctx context.Context, pair string) error {
 
 // Run will initialize the strategy controller, order controller, preload data and start the bot
 func (n *Backnrun) Run(ctx context.Context) error {
-	for _, pair := range n.settings.GetPairs() {
+	for _, pair := range n.settings.Pairs {
 		// setup and subscribe strategy to data feed (candles)
-		n.strategiesControllers[pair] = strategy.NewStrategyController(pair, n.strategy, n.orderController)
+		n.strategiesControllers[pair] = strategy.NewStrategyController(pair, n.strategy, n.orderController, Log)
 
 		// preload candles for warmup period
 		err := n.preload(ctx, pair)

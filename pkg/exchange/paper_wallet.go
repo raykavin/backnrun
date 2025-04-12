@@ -10,10 +10,9 @@ import (
 	"time"
 
 	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/logger"
 
 	"github.com/adshao/go-binance/v2/common"
-
-	"github.com/rodrigo-brito/ninjabot/tools/log"
 )
 
 // AssetValue representa o valor de um ativo em um momento específico
@@ -55,6 +54,8 @@ type PaperWallet struct {
 	// Histórico de valores
 	assetValues  map[string][]AssetValue
 	equityValues []AssetValue
+
+	log logger.Logger
 }
 
 // PaperWalletOption define uma função de opção para configurar PaperWallet
@@ -86,10 +87,11 @@ func WithDataFeed(feeder core.Feeder) PaperWalletOption {
 }
 
 // NewPaperWallet cria uma nova carteira simulada
-func NewPaperWallet(ctx context.Context, baseCoin string, options ...PaperWalletOption) *PaperWallet {
+func NewPaperWallet(ctx context.Context, baseCoin string, logger logger.Logger, options ...PaperWalletOption) *PaperWallet {
 	wallet := PaperWallet{
 		ctx:           ctx,
 		baseCoin:      baseCoin,
+		log:           logger,
 		orders:        make([]core.Order, 0),
 		assets:        make(map[string]*assetInfo),
 		fistCandle:    make(map[string]core.Candle),
@@ -109,8 +111,8 @@ func NewPaperWallet(ctx context.Context, baseCoin string, options ...PaperWallet
 	// Inicializa o valor inicial da carteira
 	wallet.initialValue = wallet.getAssetFreeAmount(wallet.baseCoin)
 
-	log.Info("[SETUP] Using paper wallet")
-	log.Infof("[SETUP] Initial Portfolio = %f %s", wallet.initialValue, wallet.baseCoin)
+	logger.Info("[SETUP] Using paper wallet")
+	logger.Infof("[SETUP] Initial Portfolio = %f %s", wallet.initialValue, wallet.baseCoin)
 
 	return &wallet
 }
@@ -389,7 +391,7 @@ func (p *PaperWallet) validateSellFunds(pair, asset, quote string, amount, value
 		p.assets[quote].Lock += lockedQuote
 	}
 
-	log.Debugf("%s -> LOCK = %f / FREE %f", asset, p.assets[asset].Lock, p.assets[asset].Free)
+	p.log.Debugf("%s -> LOCK = %f / FREE %f", asset, p.assets[asset].Lock, p.assets[asset].Free)
 	return nil
 }
 
@@ -436,7 +438,7 @@ func (p *PaperWallet) validateBuyFunds(pair, asset, quote string, amount, value 
 			p.assets[quote].Lock += lockedQuote
 		}
 
-		log.Debugf("%s -> LOCK = %f / FREE %f", asset, p.assets[asset].Lock, p.assets[asset].Free)
+		p.log.Debugf("%s -> LOCK = %f / FREE %f", asset, p.assets[asset].Lock, p.assets[asset].Free)
 	} else {
 		// Caso simples: compra com saldo em quote
 		if p.assets[quote].Free < amount*value {
@@ -493,7 +495,7 @@ func (p *PaperWallet) updateAveragePrice(side core.SideType, pair string, amount
 		// Calcula o lucro
 		profitValue := amount*value - math.Min(amount, actualQty)*p.avgLongPrice[pair]
 		percentage := profitValue / (amount * p.avgLongPrice[pair])
-		log.Infof("PROFIT = %.4f %s (%.2f %%)", profitValue, quote, percentage*100.0)
+		p.log.Infof("PROFIT = %.4f %s (%.2f %%)", profitValue, quote, percentage*100.0)
 
 		// Se a quantidade vendida não fecha a posição
 		if amount <= actualQty {
@@ -517,7 +519,7 @@ func (p *PaperWallet) updateAveragePrice(side core.SideType, pair string, amount
 		// Calcula o lucro
 		profitValue := math.Min(amount, -actualQty)*p.avgShortPrice[pair] - amount*value
 		percentage := profitValue / (amount * p.avgShortPrice[pair])
-		log.Infof("PROFIT = %.4f %s (%.2f %%)", profitValue, quote, percentage*100.0)
+		p.log.Infof("PROFIT = %.4f %s (%.2f %%)", profitValue, quote, percentage*100.0)
 
 		// Se a quantidade comprada não fecha a posição
 		if amount <= -actualQty {

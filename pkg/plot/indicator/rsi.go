@@ -3,10 +3,9 @@ package indicator
 import (
 	"fmt"
 
-	"github.com/rodrigo-brito/ninjabot/model"
-	"github.com/rodrigo-brito/ninjabot/plot"
-
 	"github.com/markcheno/go-talib"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/plot"
 )
 
 // RSI creates a new Relative Strength Index indicator
@@ -23,7 +22,7 @@ func RSI(period int, color string) plot.Indicator {
 
 type rsi struct {
 	BaseIndicator
-	Values model.Series[float64]
+	Values core.Series[float64]
 }
 
 // Warmup returns the number of candles needed to calculate the indicator
@@ -42,7 +41,7 @@ func (r rsi) Overlay() bool {
 }
 
 // Load calculates the indicator values from the provided dataframe
-func (r *rsi) Load(dataframe *model.Dataframe) {
+func (r *rsi) Load(dataframe *core.Dataframe) {
 	if !ValidateDataframe(dataframe, r.Period) {
 		return
 	}

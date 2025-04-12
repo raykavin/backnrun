@@ -3,10 +3,9 @@ package indicator
 import (
 	"fmt"
 
-	"github.com/rodrigo-brito/ninjabot/model"
-	"github.com/rodrigo-brito/ninjabot/plot"
-
 	"github.com/markcheno/go-talib"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/plot"
 )
 
 // CCI creates a new Commodity Channel Index indicator
@@ -23,7 +22,7 @@ func CCI(period int, color string) plot.Indicator {
 
 type cci struct {
 	BaseIndicator
-	Values model.Series[float64]
+	Values core.Series[float64]
 }
 
 // Warmup returns the number of candles needed to calculate the indicator
@@ -42,7 +41,7 @@ func (c cci) Overlay() bool {
 }
 
 // Load calculates the indicator values from the provided dataframe
-func (c *cci) Load(dataframe *model.Dataframe) {
+func (c *cci) Load(dataframe *core.Dataframe) {
 	if !ValidateDataframe(dataframe, c.Period) {
 		return
 	}

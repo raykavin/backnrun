@@ -26,7 +26,7 @@ var (
 
 // Telegram implements the core.NotifierWithStart interface
 type telegram struct {
-	settings        core.Settings
+	settings        *core.Settings
 	orderController *order.Controller
 	defaultMenu     *tb.ReplyMarkup
 	client          *tb.Bot
@@ -36,7 +36,7 @@ type telegram struct {
 type Option func(telegram *telegram)
 
 // NewTelegram creates and initializes a new Telegram service
-func NewTelegram(controller *order.Controller, settings core.Settings, options ...Option) (core.NotifierWithStart, error) {
+func NewTelegram(controller *order.Controller, settings *core.Settings, options ...Option) (core.NotifierWithStart, error) {
 	// Initialize menu and poller
 	menu := &tb.ReplyMarkup{ResizeReplyKeyboard: true}
 	poller := &tb.LongPoller{Timeout: 10 * time.Second}
@@ -47,7 +47,7 @@ func NewTelegram(controller *order.Controller, settings core.Settings, options .
 	// Initialize bot client
 	client, err := tb.NewBot(tb.Settings{
 		ParseMode: tb.ModeMarkdown,
-		Token:     settings.GetTelegram().GetToken(),
+		Token:     settings.Telegram.Token,
 		Poller:    userMiddleware,
 	})
 	if err != nil {
@@ -80,14 +80,14 @@ func NewTelegram(controller *order.Controller, settings core.Settings, options .
 }
 
 // createAuthMiddleware creates a middleware to validate authorized users
-func createAuthMiddleware(poller *tb.LongPoller, settings core.Settings) *tb.MiddlewarePoller {
+func createAuthMiddleware(poller *tb.LongPoller, settings *core.Settings) *tb.MiddlewarePoller {
 	return tb.NewMiddlewarePoller(poller, func(u *tb.Update) bool {
 		if u.Message == nil || u.Message.Sender == nil {
 			log.Error("message or sender is nil ", u)
 			return false
 		}
 
-		if slices.Contains(settings.GetTelegram().GetUsers(), int(u.Message.Sender.ID)) {
+		if slices.Contains(settings.Telegram.Users, int(u.Message.Sender.ID)) {
 			return true
 		}
 
@@ -150,7 +150,7 @@ func (t *telegram) Start() {
 
 // Notify sends a message to all authorized users
 func (t *telegram) Notify(text string) {
-	for _, user := range t.settings.GetTelegram().GetUsers() {
+	for _, user := range t.settings.Telegram.Users {
 		_, err := t.client.Send(&tb.User{ID: int64(user)}, text)
 		if err != nil {
 			log.WithError(err).Error("failed to send notification")
@@ -160,7 +160,7 @@ func (t *telegram) Notify(text string) {
 
 // sendMessageWithOptions sends a message to all authorized users with additional options
 func (t *telegram) sendMessageWithOptions(text string, options ...interface{}) {
-	for _, user := range t.settings.GetTelegram().GetUsers() {
+	for _, user := range t.settings.Telegram.Users {
 		_, err := t.client.Send(&tb.User{ID: int64(user)}, text, options...)
 		if err != nil {
 			log.WithError(err).Error("failed to send notification with options")
@@ -201,7 +201,7 @@ func (t *telegram) formatBalanceMessage(account core.Account) (string, error) {
 	total := 0.0
 
 	// Calculate balance for each pair
-	for _, pair := range t.settings.GetPairs() {
+	for _, pair := range t.settings.Pairs {
 		assetPair, quotePair := exchange.SplitAssetQuote(pair)
 		assetBalance, quoteBalance := account.GetBalance(assetPair, quotePair)
 

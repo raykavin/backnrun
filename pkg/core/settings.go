@@ -1,4 +1,4 @@
-package config
+package core
 
 // Settings represents the main configuration for the application
 type Settings struct {

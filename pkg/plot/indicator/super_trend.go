@@ -3,8 +3,8 @@ package indicator
 import (
 	"fmt"
 
-	"github.com/rodrigo-brito/ninjabot/model"
-	"github.com/rodrigo-brito/ninjabot/plot"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/plot"
 
 	"github.com/markcheno/go-talib"
 )
@@ -25,8 +25,8 @@ func SuperTrend(period int, factor float64, color string) plot.Indicator {
 
 type supertrend struct {
 	BaseIndicator
-	Factor         float64
-	SuperTrend     model.Series[float64]
+	Factor     float64
+	SuperTrend core.Series[float64]
 }
 
 // Warmup returns the number of candles needed to calculate the indicator
@@ -88,7 +88,7 @@ func determineTrend(
 		}
 		return finalUpper // Trend remains down
 	}
-	
+
 	// Previous trend was up
 	if currentClose < finalLower {
 		return finalUpper // Trend changed to down
@@ -97,14 +97,14 @@ func determineTrend(
 }
 
 // Load calculates the indicator values from the provided dataframe
-func (s *supertrend) Load(dataframe *model.Dataframe) {
+func (s *supertrend) Load(dataframe *core.Dataframe) {
 	if !ValidateDataframe(dataframe, s.Period) {
 		return
 	}
 
 	atr := talib.Atr(dataframe.High, dataframe.Low, dataframe.Close, s.Period)
 	dataLength := len(atr)
-	
+
 	// Initialize arrays
 	basicUpperBand := make([]float64, dataLength)
 	basicLowerBand := make([]float64, dataLength)
@@ -118,7 +118,7 @@ func (s *supertrend) Load(dataframe *model.Dataframe) {
 	)
 	finalUpperBand[0] = basicUpperBand[0]
 	finalLowerBand[0] = basicLowerBand[0]
-	
+
 	// Initial trend is assumed to be down (upper band is the SuperTrend)
 	superTrend[0] = finalUpperBand[0]
 
@@ -128,14 +128,14 @@ func (s *supertrend) Load(dataframe *model.Dataframe) {
 		basicUpperBand[i], basicLowerBand[i] = calculateBands(
 			dataframe.High[i], dataframe.Low[i], atr[i], s.Factor,
 		)
-		
+
 		// Update final bands
 		finalUpperBand[i], finalLowerBand[i] = updateFinalBands(
 			basicUpperBand[i], basicLowerBand[i],
 			finalUpperBand[i-1], finalLowerBand[i-1],
 			dataframe.Close[i-1],
 		)
-		
+
 		// Determine trend
 		superTrend[i] = determineTrend(
 			finalUpperBand[i], finalLowerBand[i],

@@ -3,8 +3,8 @@ package indicator
 import (
 	"fmt"
 
-	"github.com/rodrigo-brito/ninjabot/model"
-	"github.com/rodrigo-brito/ninjabot/plot"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/plot"
 
 	"github.com/markcheno/go-talib"
 )
@@ -23,7 +23,7 @@ func EMA(period int, color string) plot.Indicator {
 
 type ema struct {
 	BaseIndicator
-	Values model.Series[float64]
+	Values core.Series[float64]
 }
 
 // Warmup returns the number of candles needed to calculate the indicator
@@ -42,7 +42,7 @@ func (e ema) Overlay() bool {
 }
 
 // Load calculates the indicator values from the provided dataframe
-func (e *ema) Load(dataframe *model.Dataframe) {
+func (e *ema) Load(dataframe *core.Dataframe) {
 	if !ValidateDataframe(dataframe, e.Period) {
 		return
 	}

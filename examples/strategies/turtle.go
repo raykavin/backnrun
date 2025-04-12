@@ -1,55 +1,134 @@
 package strategies
 
 import (
-	"github.com/rodrigo-brito/ninjabot"
-	"github.com/rodrigo-brito/ninjabot/indicator"
-	"github.com/rodrigo-brito/ninjabot/service"
-	"github.com/rodrigo-brito/ninjabot/strategy"
-	"github.com/rodrigo-brito/ninjabot/tools/log"
+	"github.com/raykavin/backnrun"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/indicator"
+	"github.com/raykavin/backnrun/pkg/strategy"
 )
 
-// https://www.investopedia.com/articles/trading/08/turtle-trading.asp
-type Turtle struct{}
+// TurtleStrategy implements the classic Turtle Trading system
+// Based on: https://www.investopedia.com/articles/trading/08/turtle-trading.asp
+type TurtleStrategy struct {
+	// Configuration parameters
+	entryPeriod  int
+	exitPeriod   int
+	positionSize float64 // Percentage of account to risk per trade
+}
 
-func (e Turtle) Timeframe() string {
+// NewTurtleStrategy creates a new instance of the TurtleStrategy with default parameters
+func NewTurtleStrategy() *TurtleStrategy {
+	return &TurtleStrategy{
+		entryPeriod:  40,
+		exitPeriod:   20,
+		positionSize: 0.5, // 50% of available funds
+	}
+}
+
+// Timeframe returns the required timeframe for this strategy
+func (t TurtleStrategy) Timeframe() string {
 	return "4h"
 }
 
-func (e Turtle) WarmupPeriod() int {
-	return 40
+// WarmupPeriod returns the number of candles needed before the strategy is ready
+func (t TurtleStrategy) WarmupPeriod() int {
+	return t.entryPeriod // Use the longer of the two periods
 }
 
-func (e Turtle) Indicators(df *ninjabot.Dataframe) []strategy.ChartIndicator {
-	df.Metadata["max40"] = indicator.Max(df.Close, 40)
-	df.Metadata["low20"] = indicator.Min(df.Close, 20)
+// Indicators calculates and returns the indicators used by this strategy
+func (t TurtleStrategy) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
+	// Calculate indicators
+	df.Metadata["max40"] = indicator.Max(df.Close, t.entryPeriod)
+	df.Metadata["low20"] = indicator.Min(df.Close, t.exitPeriod)
 
-	return nil
+	// Return chart indicators for visualization
+	return []strategy.ChartIndicator{
+		{
+			Overlay:   true,
+			GroupName: "Turtle System",
+			Time:      df.Time,
+			Metrics: []strategy.IndicatorMetric{
+				{
+					Values: df.Metadata["max40"],
+					Name:   "Entry (Max " + string(rune(t.entryPeriod+'0')) + ")",
+					Color:  "green",
+					Style:  strategy.StyleLine,
+				},
+				{
+					Values: df.Metadata["low20"],
+					Name:   "Exit (Min " + string(rune(t.exitPeriod+'0')) + ")",
+					Color:  "red",
+					Style:  strategy.StyleLine,
+				},
+			},
+		},
+	}
 }
 
-func (e *Turtle) OnCandle(df *ninjabot.Dataframe, broker service.Broker) {
+// OnCandle is called for each new candle and implements the trading logic
+func (t *TurtleStrategy) OnCandle(df *core.Dataframe, broker core.Broker) {
 	closePrice := df.Close.Last(0)
 	highest := df.Metadata["max40"].Last(0)
 	lowest := df.Metadata["low20"].Last(0)
 
+	// Get current position
 	assetPosition, quotePosition, err := broker.Position(df.Pair)
 	if err != nil {
-		log.Error(err)
+		backnrun.Log.Error(err)
 		return
 	}
 
-	// If position already open wait till it will be closed
-	if assetPosition == 0 && closePrice >= highest {
-		_, err := broker.CreateOrderMarketQuote(ninjabot.SideTypeBuy, df.Pair, quotePosition/2)
-		if err != nil {
-			log.Error(err)
-		}
+	// Check for entry signal: breakout to new 40-period high
+	if t.shouldEnter(assetPosition, closePrice, highest) {
+		t.executeEntry(df, broker, quotePosition)
 		return
 	}
 
-	if assetPosition > 0 && closePrice <= lowest {
-		_, err := broker.CreateOrderMarket(ninjabot.SideTypeSell, df.Pair, assetPosition)
-		if err != nil {
-			log.Error(err)
-		}
+	// Check for exit signal: breakdown to new 20-period low
+	if t.shouldExit(assetPosition, closePrice, lowest) {
+		t.executeExit(df, broker, assetPosition)
+	}
+}
+
+// shouldEnter checks if entry conditions are met
+func (t *TurtleStrategy) shouldEnter(assetPosition float64, closePrice, highest float64) bool {
+	// No position and price breaks above the highest high of the last N periods
+	return assetPosition == 0 && closePrice >= highest
+}
+
+// shouldExit checks if exit conditions are met
+func (t *TurtleStrategy) shouldExit(assetPosition float64, closePrice, lowest float64) bool {
+	// Has position and price breaks below the lowest low of the last N periods
+	return assetPosition > 0 && closePrice <= lowest
+}
+
+// executeEntry performs the entry operation
+func (t *TurtleStrategy) executeEntry(df *core.Dataframe, broker core.Broker, quotePosition float64) {
+	// Calculate position size (half of available quote currency)
+	entryAmount := quotePosition * t.positionSize
+
+	// Execute market buy order
+	_, err := broker.CreateOrderMarketQuote(core.SideTypeBuy, df.Pair, entryAmount)
+	if err != nil {
+		backnrun.Log.WithFields(map[string]interface{}{
+			"pair":  df.Pair,
+			"side":  core.SideTypeBuy,
+			"quote": entryAmount,
+			"price": df.Close.Last(0),
+		}).Error(err)
+	}
+}
+
+// executeExit performs the exit operation
+func (t *TurtleStrategy) executeExit(df *core.Dataframe, broker core.Broker, assetPosition float64) {
+	// Sell entire position
+	_, err := broker.CreateOrderMarket(core.SideTypeSell, df.Pair, assetPosition)
+	if err != nil {
+		backnrun.Log.WithFields(map[string]interface{}{
+			"pair":  df.Pair,
+			"side":  core.SideTypeSell,
+			"asset": assetPosition,
+			"price": df.Close.Last(0),
+		}).Error(err)
 	}
 }

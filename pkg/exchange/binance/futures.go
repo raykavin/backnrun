@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/logger"
+	"github.com/rs/zerolog/log"
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/adshao/go-binance/v2/common"
 	"github.com/adshao/go-binance/v2/futures"
-
-	"github.com/rodrigo-brito/ninjabot/tools/log"
 )
 
 // MarginType represents the margin type for futures
@@ -45,6 +45,7 @@ type Futures struct {
 	heikinAshi       bool
 	metadataFetchers []MetadataFetcher
 	pairOptions      []PairOption
+	log              logger.Logger
 }
 
 // FuturesOption is a function that configures a Futures client
@@ -83,13 +84,14 @@ func WithFuturesMetadataFetcher(fetcher MetadataFetcher) FuturesOption {
 }
 
 // NewFutures creates a new Binance futures exchange client
-func NewFutures(ctx context.Context, options ...FuturesOption) (*Futures, error) {
+func NewFutures(ctx context.Context, logger logger.Logger, options ...FuturesOption) (*Futures, error) {
 	futures := &Futures{
 		ctx:              ctx,
 		client:           futures.NewClient("", ""),
 		assetsInfo:       make(map[string]core.AssetInfo),
 		metadataFetchers: make([]MetadataFetcher, 0),
 		pairOptions:      make([]PairOption, 0),
+		log:              logger,
 	}
 
 	// Apply options
@@ -159,7 +161,7 @@ func NewFutures(ctx context.Context, options ...FuturesOption) (*Futures, error)
 		futures.assetsInfo[info.Symbol] = assetInfo
 	}
 
-	log.Info("[SETUP] Using Binance Futures exchange")
+	logger.Info("[SETUP] Using Binance Futures exchange")
 	return futures, nil
 }
 

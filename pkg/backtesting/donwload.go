@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/logger"
 	"github.com/schollz/progressbar/v3"
 	"github.com/xhit/go-str2duration/v2"
-
-	"github.com/rodrigo-brito/ninjabot/tools/log"
 )
 
 const (
@@ -23,12 +22,14 @@ var csvHeaders = []string{"time", "open", "close", "low", "high", "volume"}
 // Downloader facilitates downloading historical candle data from exchanges
 type Downloader struct {
 	exchange core.Feeder
+	log      logger.Logger
 }
 
 // NewDownloader creates a new downloader instance with the provided exchange
-func NewDownloader(exchange core.Feeder) Downloader {
+func NewDownloader(exchange core.Feeder, logger logger.Logger) Downloader {
 	return Downloader{
 		exchange: exchange,
+		log:      logger,
 	}
 }
 
@@ -89,7 +90,7 @@ func (d Downloader) Download(ctx context.Context, pair, timeframe, outputPath st
 	}
 	candleCount++
 
-	log.Infof("Downloading %d candles of %s for %s", candleCount, timeframe, pair)
+	d.log.Infof("Downloading %d candles of %s for %s", candleCount, timeframe, pair)
 
 	// Setup CSV writer
 	writer := csv.NewWriter(recordFile)
@@ -120,15 +121,15 @@ func (d Downloader) Download(ctx context.Context, pair, timeframe, outputPath st
 	}
 
 	if err = progressBar.Close(); err != nil {
-		log.Warnf("Failed to close progress bar: %s", err.Error())
+		d.log.Warnf("Failed to close progress bar: %s", err.Error())
 	}
 
 	if missingCandles > 0 {
-		log.Warnf("%d missing candles", missingCandles)
+		d.log.Warnf("%d missing candles", missingCandles)
 	}
 
 	writer.Flush()
-	log.Info("Done!")
+	d.log.Info("Done!")
 	return writer.Error()
 }
 
@@ -199,7 +200,7 @@ func (d Downloader) downloadCandleBatches(
 
 		// Update progress bar
 		if err := progressBar.Add(len(candles)); err != nil {
-			log.Warnf("Failed to update progress bar: %s", err.Error())
+			d.log.Warnf("Failed to update progress bar: %s", err.Error())
 		}
 	}
 

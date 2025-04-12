@@ -3,6 +3,8 @@ package binance
 import (
 	"context"
 	"fmt"
+
+	"github.com/raykavin/backnrun/pkg/logger"
 )
 
 // MarketType represents the type of market (spot or futures)
@@ -50,39 +52,39 @@ type CustomEndpoint struct {
 }
 
 // NewExchange creates a new exchange client based on the provided configuration
-func NewExchange(ctx context.Context, config Config) (BinanceExchangeType, error) {
+func NewExchange(ctx context.Context, logger logger.Logger, config Config) (BinanceExchangeType, error) {
 	switch config.Type {
 	case MarketTypeSpot:
-		return newSpotExchange(ctx, config)
+		return newSpotExchange(ctx, logger, config)
 	case MarketTypeFutures:
-		return newFuturesExchange(ctx, config)
+		return newFuturesExchange(ctx, logger, config)
 	default:
 		return nil, fmt.Errorf("unknown market type: %s", config.Type)
 	}
 }
 
 // newSpotExchange creates a new spot exchange client
-func newSpotExchange(ctx context.Context, config Config) (BinanceExchangeType, error) {
+func newSpotExchange(ctx context.Context, logger logger.Logger, config Config) (BinanceExchangeType, error) {
 	options := []SpotOption{}
 
 	// Add credentials if provided
 	if config.APIKey != "" && config.APISecret != "" {
-		options = append(options, WithCredentials(config.APIKey, config.APISecret))
+		options = append(options, WithSpotCredentials(config.APIKey, config.APISecret))
 	}
 
 	// Configure Heikin Ashi if requested
 	if config.UseHeikinAshi {
-		options = append(options, WithHeikinAshiCandles())
+		options = append(options, WithSpotHeikinAshiCandles())
 	}
 
 	// Configure testnet if requested
 	if config.UseTestnet {
-		options = append(options, WithTestNet())
+		options = append(options, WithSpotTestNet())
 	}
 
 	// Configure custom endpoints if provided
 	if config.CustomMainAPI.API != "" {
-		options = append(options, WithCustomMainAPIEndpoint(
+		options = append(options, WithSpotCustomMainAPIEndpoint(
 			config.CustomMainAPI.API,
 			config.CustomMainAPI.WebSocket,
 			config.CustomMainAPI.Combined,
@@ -90,7 +92,7 @@ func newSpotExchange(ctx context.Context, config Config) (BinanceExchangeType, e
 	}
 
 	if config.CustomTestnetAPI.API != "" {
-		options = append(options, WithCustomTestnetAPIEndpoint(
+		options = append(options, WithSpotCustomTestnetAPIEndpoint(
 			config.CustomTestnetAPI.API,
 			config.CustomTestnetAPI.WebSocket,
 			config.CustomTestnetAPI.Combined,
@@ -99,15 +101,15 @@ func newSpotExchange(ctx context.Context, config Config) (BinanceExchangeType, e
 
 	// Add metadata fetchers
 	for _, fetcher := range config.MetadataFetchers {
-		options = append(options, WithMetadataFetcher(fetcher))
+		options = append(options, WithSpotMetadataFetcher(fetcher))
 	}
 
 	// Create and return the spot client
-	return NewSpot(ctx, options...)
+	return NewSpot(ctx, logger, options...)
 }
 
 // newFuturesExchange creates a new futures exchange client
-func newFuturesExchange(ctx context.Context, config Config) (BinanceExchangeType, error) {
+func newFuturesExchange(ctx context.Context, logger logger.Logger, config Config) (BinanceExchangeType, error) {
 	options := []FuturesOption{}
 
 	// Add credentials if provided
@@ -135,5 +137,5 @@ func newFuturesExchange(ctx context.Context, config Config) (BinanceExchangeType
 	}
 
 	// Create and return the futures client
-	return NewFutures(ctx, options...)
+	return NewFutures(ctx, logger, options...)
 }

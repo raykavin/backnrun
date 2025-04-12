@@ -9,8 +9,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/rodrigo-brito/ninjabot/exchange"
-	log "github.com/sirupsen/logrus"
+	"github.com/raykavin/backnrun/pkg/exchange"
 )
 
 // handleHealth handles health check requests
@@ -20,7 +19,7 @@ func (c *Chart) handleHealth(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		_, err := w.Write([]byte(c.lastUpdate.String()))
 		if err != nil {
-			log.Error("Failed to write health status: ", err)
+			c.log.Error("Failed to write health status: ", err)
 		}
 		return
 	}
@@ -54,7 +53,7 @@ func (c *Chart) handleIndex(w http.ResponseWriter, r *http.Request) {
 		"pairs": pairs,
 	})
 	if err != nil {
-		log.Error("Template execution failed: ", err)
+		c.log.Error("Template execution failed: ", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
@@ -101,7 +100,7 @@ func (c *Chart) handleData(w http.ResponseWriter, r *http.Request) {
 	c.Unlock()
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Error("JSON encoding failed: ", err)
+		c.log.Error("JSON encoding failed: ", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
 }
@@ -133,14 +132,14 @@ func (c *Chart) handleTradingHistoryData(w http.ResponseWriter, r *http.Request)
 		"created_at", "status", "side", "id", "type",
 		"quantity", "price", "total", "profit",
 	}); err != nil {
-		log.Error("Failed writing CSV header: ", err)
+		c.log.Error("Failed writing CSV header: ", err)
 		http.Error(w, "Failed to generate CSV", http.StatusInternalServerError)
 		return
 	}
 
 	// Write data rows
 	if err := csvWriter.WriteAll(orders); err != nil {
-		log.Error("Failed writing CSV data: ", err)
+		c.log.Error("Failed writing CSV data: ", err)
 		http.Error(w, "Failed to generate CSV", http.StatusInternalServerError)
 		return
 	}
@@ -149,6 +148,6 @@ func (c *Chart) handleTradingHistoryData(w http.ResponseWriter, r *http.Request)
 	// Send the CSV
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(buffer.Bytes()); err != nil {
-		log.Error("Failed writing CSV response: ", err)
+		c.log.Error("Failed writing CSV response: ", err)
 	}
 }

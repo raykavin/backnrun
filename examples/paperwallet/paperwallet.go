@@ -2,20 +2,21 @@ package main
 
 import (
 	"context"
+	"log"
 	"os"
 	"strconv"
 
-	"github.com/rodrigo-brito/ninjabot/plot"
-	"github.com/rodrigo-brito/ninjabot/plot/indicator"
-
-	"github.com/rodrigo-brito/ninjabot"
-	"github.com/rodrigo-brito/ninjabot/examples/strategies"
-	"github.com/rodrigo-brito/ninjabot/exchange"
-	"github.com/rodrigo-brito/ninjabot/storage"
-	"github.com/rodrigo-brito/ninjabot/tools/log"
+	"github.com/raykavin/backnrun"
+	"github.com/raykavin/backnrun/examples/strategies"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/exchange"
+	"github.com/raykavin/backnrun/pkg/exchange/binance"
+	"github.com/raykavin/backnrun/pkg/plot"
+	"github.com/raykavin/backnrun/pkg/plot/indicator"
+	"github.com/raykavin/backnrun/pkg/storage"
 )
 
-// This example shows how to use NinjaBot with a simulation with a fake exchange
+// This example shows how to use BackNRun with a simulation with a fake exchange
 // A peperwallet is a wallet that is not connected to any exchange, it is a simulation with live data (realtime)
 func main() {
 	var (
@@ -24,14 +25,14 @@ func main() {
 		telegramUser, _ = strconv.Atoi(os.Getenv("TELEGRAM_USER"))
 	)
 
-	settings := ninjabot.Settings{
+	settings := &core.Settings{
 		Pairs: []string{
 			"BTCUSDT",
 			// "ETHUSDT",
 			// "BNBUSDT",
 			// "LTCUSDT",
 		},
-		Telegram: ninjabot.TelegramSettings{
+		Telegram: core.TelegramSettings{
 			Enabled: telegramToken != "" && telegramUser != 0,
 			Token:   telegramToken,
 			Users:   []int{telegramUser},
@@ -39,7 +40,7 @@ func main() {
 	}
 
 	// Use binance for realtime data feed
-	binance, err := exchange.NewBinance(ctx)
+	binanceEx, err := binance.NewExchange(ctx, backnrun.Log, binance.Config{Type: binance.MarketTypeSpot})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,15 +56,17 @@ func main() {
 	paperWallet := exchange.NewPaperWallet(
 		ctx,
 		"USDT",
+		backnrun.Log,
 		exchange.WithPaperFee(0.001, 0.001),
 		exchange.WithPaperAsset("USDT", 10000),
-		exchange.WithDataFeed(binance),
+		exchange.WithDataFeed(binanceEx),
 	)
 
 	// initializing my strategy
 	strategy := &strategies.CrossEMA{}
 
 	chart, err := plot.NewChart(
+		backnrun.Log,
 		plot.WithCustomIndicators(
 			indicator.EMA(8, "red"),
 			indicator.SMA(21, "blue"),
@@ -74,16 +77,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// initializer ninjabot
-	bot, err := ninjabot.NewBot(
+	// initializer core
+	bot, err := backnrun.NewBot(
 		ctx,
 		settings,
 		paperWallet,
 		strategy,
-		ninjabot.WithStorage(storage),
-		ninjabot.WithPaperWallet(paperWallet),
-		ninjabot.WithCandleSubscription(chart),
-		ninjabot.WithOrderSubscription(chart),
+		backnrun.WithStorage(storage),
+		backnrun.WithPaperWallet(paperWallet),
+		backnrun.WithCandleSubscription(chart),
+		backnrun.WithOrderSubscription(chart),
 	)
 	if err != nil {
 		log.Fatal(err)

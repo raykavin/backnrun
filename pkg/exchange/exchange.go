@@ -9,8 +9,7 @@ import (
 
 	"github.com/StudioSol/set"
 	"github.com/raykavin/backnrun/pkg/core"
-
-	"github.com/rodrigo-brito/ninjabot/tools/log"
+	"github.com/raykavin/backnrun/pkg/logger"
 )
 
 // Erros comuns
@@ -32,7 +31,8 @@ type DataFeedSubscription struct {
 	Feeds                   *set.LinkedHashSetString
 	DataFeeds               map[string]*DataFeed
 	SubscriptionsByDataFeed map[string][]Subscription
-	mu                      sync.RWMutex // Protege o acesso concorrente aos maps
+	log                     logger.Logger
+	mu                      sync.RWMutex
 }
 
 // Subscription representa uma assinatura para um feed de dados
@@ -57,10 +57,11 @@ func (o *OrderError) Error() string {
 type DataFeedConsumer func(core.Candle)
 
 // NewDataFeed cria uma nova instância de DataFeedSubscription
-func NewDataFeed(exchange core.Exchange) *DataFeedSubscription {
+func NewDataFeed(exchange core.Exchange, logger logger.Logger) *DataFeedSubscription {
 	return &DataFeedSubscription{
 		exchange:                exchange,
 		Feeds:                   set.NewLinkedHashSetString(),
+		log:                     logger,
 		DataFeeds:               make(map[string]*DataFeed),
 		SubscriptionsByDataFeed: make(map[string][]Subscription),
 	}
@@ -98,7 +99,7 @@ func (d *DataFeedSubscription) Preload(pair, timeframe string, candles []core.Ca
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	log.Infof("[SETUP] preloading %d candles for %s-%s", len(candles), pair, timeframe)
+	d.log.Infof("[SETUP] preloading %d candles for %s-%s", len(candles), pair, timeframe)
 	key := d.feedKey(pair, timeframe)
 
 	// Envia apenas candles completos
@@ -118,7 +119,7 @@ func (d *DataFeedSubscription) Connect() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
-	log.Infof("Connecting to the exchange.")
+	d.log.Infof("Connecting to the exchange.")
 
 	// Cria um canal para cada feed
 	for feed := range d.Feeds.Iter() {
@@ -145,7 +146,7 @@ func (d *DataFeedSubscription) Start(loadSync bool) {
 	}
 	d.mu.RUnlock()
 
-	log.Infof("Data feed connected.")
+	d.log.Infof("Data feed connected.")
 
 	// Espera a conclusão se loadSync for true
 	if loadSync {
@@ -182,7 +183,7 @@ func (d *DataFeedSubscription) processFeed(key string, feed *DataFeed, wg *sync.
 			}
 
 			if err != nil {
-				log.Error("dataFeedSubscription/processFeed: ", err)
+				d.log.Error("dataFeedSubscription/processFeed: ", err)
 			}
 		}
 	}

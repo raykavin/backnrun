@@ -1,8 +1,8 @@
 package indicator
 
 import (
-	"github.com/rodrigo-brito/ninjabot/model"
-	"github.com/rodrigo-brito/ninjabot/plot"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/plot"
 
 	"github.com/markcheno/go-talib"
 )
@@ -20,7 +20,7 @@ func OBV(color string) plot.Indicator {
 
 type obv struct {
 	BaseIndicator
-	Values model.Series[float64]
+	Values core.Series[float64]
 }
 
 // Warmup returns the number of candles needed to calculate the indicator
@@ -39,7 +39,7 @@ func (o obv) Overlay() bool {
 }
 
 // Load calculates the indicator values from the provided dataframe
-func (o *obv) Load(dataframe *model.Dataframe) {
+func (o *obv) Load(dataframe *core.Dataframe) {
 	o.Values = talib.Obv(dataframe.Close, dataframe.Volume)
 	o.Time = dataframe.Time
 }

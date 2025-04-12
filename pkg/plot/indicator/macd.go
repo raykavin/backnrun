@@ -3,8 +3,8 @@ package indicator
 import (
 	"fmt"
 
-	"github.com/rodrigo-brito/ninjabot/model"
-	"github.com/rodrigo-brito/ninjabot/plot"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/plot"
 
 	"github.com/markcheno/go-talib"
 )
@@ -35,9 +35,9 @@ type macd struct {
 	ColorMACD        string
 	ColorMACDSignal  string
 	ColorMACDHist    string
-	ValuesMACD       model.Series[float64]
-	ValuesMACDSignal model.Series[float64]
-	ValuesMACDHist   model.Series[float64]
+	ValuesMACD       core.Series[float64]
+	ValuesMACDSignal core.Series[float64]
+	ValuesMACDHist   core.Series[float64]
 }
 
 // Warmup returns the number of candles needed to calculate the indicator
@@ -56,7 +56,7 @@ func (m macd) Overlay() bool {
 }
 
 // Load calculates the indicator values from the provided dataframe
-func (m *macd) Load(dataframe *model.Dataframe) {
+func (m *macd) Load(dataframe *core.Dataframe) {
 	warmup := m.Warmup()
 	if !ValidateDataframe(dataframe, warmup) {
 		return

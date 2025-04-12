@@ -3,8 +3,8 @@ package indicator
 import (
 	"fmt"
 
-	"github.com/rodrigo-brito/ninjabot/model"
-	"github.com/rodrigo-brito/ninjabot/plot"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/plot"
 
 	"github.com/markcheno/go-talib"
 )
@@ -32,8 +32,8 @@ type stoch struct {
 	SlowD   int
 	ColorK  string
 	ColorD  string
-	ValuesK model.Series[float64]
-	ValuesD model.Series[float64]
+	ValuesK core.Series[float64]
+	ValuesD core.Series[float64]
 }
 
 // Warmup returns the number of candles needed to calculate the indicator
@@ -52,7 +52,7 @@ func (s stoch) Overlay() bool {
 }
 
 // Load calculates the indicator values from the provided dataframe
-func (s *stoch) Load(dataframe *model.Dataframe) {
+func (s *stoch) Load(dataframe *core.Dataframe) {
 	warmup := s.Warmup()
 	if !ValidateDataframe(dataframe, warmup) {
 		return
@@ -61,7 +61,7 @@ func (s *stoch) Load(dataframe *model.Dataframe) {
 	k, d := talib.Stoch(
 		dataframe.High, dataframe.Low, dataframe.Close, s.FastK, s.SlowK, talib.SMA, s.SlowD, talib.SMA,
 	)
-	
+
 	s.ValuesK, s.Time = TrimData(k, dataframe.Time, warmup)
 	s.ValuesD, _ = TrimData(d, dataframe.Time, warmup)
 }

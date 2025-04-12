@@ -6,13 +6,25 @@ import (
 	"time"
 
 	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/logger"
+	"github.com/raykavin/backnrun/pkg/logger/zerolog"
 
 	"github.com/stretchr/testify/require"
 )
 
+func getLog() logger.Logger {
+	l, err := zerolog.New("debug", "2006-01-02 15:04:05", true, false)
+	if err != nil {
+		panic(err)
+	}
+
+	return zerolog.NewAdapter(l.Logger)
+
+}
+
 func TestPaperWallet_ValidateFunds(t *testing.T) {
 	t.Run("simple lock limit", func(t *testing.T) {
-		wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("USDT", 100))
+		wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("USDT", 100))
 		err := wallet.validateFunds(core.SideTypeBuy, "BTCUSDT", 1, 100, false)
 		require.NoError(t, err)
 		require.Equal(t, 0.0, wallet.assets["USDT"].Free)
@@ -22,7 +34,7 @@ func TestPaperWallet_ValidateFunds(t *testing.T) {
 	})
 
 	t.Run("simple buy market", func(t *testing.T) {
-		wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("USDT", 100))
+		wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("USDT", 100))
 		wallet.lastCandle["BTCUSDT"] = core.Candle{Pair: "BTCUSDT", Close: 100}
 		err := wallet.validateFunds(core.SideTypeBuy, "BTCUSDT", 1, 100, true)
 		require.NoError(t, err)
@@ -33,7 +45,7 @@ func TestPaperWallet_ValidateFunds(t *testing.T) {
 	})
 
 	t.Run("simple short market", func(t *testing.T) {
-		wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("USDT", 100))
+		wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("USDT", 100))
 		wallet.lastCandle["BTCUSDT"] = core.Candle{Pair: "BTCUSDT", Close: 100}
 		err := wallet.validateFunds(core.SideTypeSell, "BTCUSDT", 1, 100, true)
 		require.NoError(t, err)
@@ -44,7 +56,7 @@ func TestPaperWallet_ValidateFunds(t *testing.T) {
 	})
 
 	t.Run("simple short limit", func(t *testing.T) {
-		wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("USDT", 100))
+		wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("USDT", 100))
 		err := wallet.validateFunds(core.SideTypeSell, "BTCUSDT", 1, 100, false)
 		require.NoError(t, err)
 		require.Equal(t, 0.0, wallet.assets["USDT"].Free)
@@ -54,7 +66,7 @@ func TestPaperWallet_ValidateFunds(t *testing.T) {
 	})
 
 	t.Run("invert position long to short", func(t *testing.T) {
-		wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("BTC", 1), WithPaperAsset("USDT", 100))
+		wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("BTC", 1), WithPaperAsset("USDT", 100))
 		wallet.avgLongPrice["BTCUSDT"] = 100
 
 		err := wallet.validateFunds(core.SideTypeSell, "BTCUSDT", 2, 100, true)
@@ -66,7 +78,7 @@ func TestPaperWallet_ValidateFunds(t *testing.T) {
 	})
 
 	t.Run("invert position short to long", func(t *testing.T) {
-		wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("BTC", -1), WithPaperAsset("USDT", 100))
+		wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("BTC", -1), WithPaperAsset("USDT", 100))
 		wallet.avgShortPrice["BTCUSDT"] = 100
 
 		err := wallet.validateFunds(core.SideTypeBuy, "BTCUSDT", 2, 150, true)
@@ -80,7 +92,7 @@ func TestPaperWallet_ValidateFunds(t *testing.T) {
 
 func TestPaperWallet_OrderLimit(t *testing.T) {
 	t.Run("normal order", func(t *testing.T) {
-		wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("USDT", 100))
+		wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("USDT", 100))
 		order, err := wallet.CreateOrderLimit(core.SideTypeBuy, "BTCUSDT", 1, 100)
 		require.NoError(t, err)
 
@@ -130,7 +142,7 @@ func TestPaperWallet_OrderLimit(t *testing.T) {
 	})
 
 	t.Run("multiple pending orders", func(t *testing.T) {
-		wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("USDT", 100))
+		wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("USDT", 100))
 		wallet.lastCandle["BTCUSDT"] = core.Candle{Close: 10}
 
 		order, err := wallet.CreateOrderLimit(core.SideTypeBuy, "BTCUSDT", 1, 10)
@@ -191,7 +203,7 @@ func TestPaperWallet_OrderLimit(t *testing.T) {
 	})
 
 	t.Run("cancel buy order before executing", func(t *testing.T) {
-		wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("USDT", 100))
+		wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("USDT", 100))
 		order, err := wallet.CreateOrderLimit(core.SideTypeBuy, "BTCUSDT", 1, 100)
 		require.NoError(t, err)
 
@@ -214,7 +226,7 @@ func TestPaperWallet_OrderLimit(t *testing.T) {
 	})
 
 	t.Run("cancel sell order before executing", func(t *testing.T) {
-		wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("USDT", 100))
+		wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("USDT", 100))
 		order, err := wallet.CreateOrderLimit(core.SideTypeSell, "BTCUSDT", 1, 100)
 		require.NoError(t, err)
 
@@ -238,7 +250,7 @@ func TestPaperWallet_OrderLimit(t *testing.T) {
 }
 
 func TestPaperWallet_OrderMarket(t *testing.T) {
-	wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("USDT", 100))
+	wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("USDT", 100))
 	wallet.OnCandle(core.Candle{Pair: "BTCUSDT", Close: 50})
 	order, err := wallet.CreateOrderMarket(core.SideTypeBuy, "BTCUSDT", 1)
 	require.NoError(t, err)
@@ -276,7 +288,7 @@ func TestPaperWallet_OrderMarket(t *testing.T) {
 }
 
 func TestPaperWallet_OrderOCO(t *testing.T) {
-	wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("USDT", 50))
+	wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("USDT", 50))
 	wallet.OnCandle(core.Candle{Pair: "BTCUSDT", Close: 50})
 	_, err := wallet.CreateOrderMarket(core.SideTypeBuy, "BTCUSDT", 1)
 	require.NoError(t, err)
@@ -315,7 +327,7 @@ func TestPaperWallet_OrderOCO(t *testing.T) {
 }
 
 func TestPaperWallet_Order(t *testing.T) {
-	wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("USDT", 100))
+	wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("USDT", 100))
 	expectOrder, err := wallet.CreateOrderMarket(core.SideTypeBuy, "BTCUSDT", 1)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), expectOrder.ExchangeID)
@@ -414,7 +426,7 @@ func TestPaperWallet_AssetsInfo(t *testing.T) {
 
 func TestPaperWallet_CreateOrderStop(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		wallet := NewPaperWallet(context.Background(), "USDT", WithPaperAsset("USDT", 100))
+		wallet := NewPaperWallet(context.Background(), "USDT", getLog(), WithPaperAsset("USDT", 100))
 		wallet.OnCandle(core.Candle{Pair: "BTCUSDT", Close: 100})
 		_, err := wallet.CreateOrderMarket(core.SideTypeBuy, "BTCUSDT", 1)
 		require.NoError(t, err)
@@ -446,6 +458,7 @@ func TestUpdateAveragePrice(t *testing.T) {
 		wallet := NewPaperWallet(
 			context.Background(),
 			"USDT",
+			getLog(),
 			WithPaperAsset("BTC", 0),
 			WithPaperAsset("USDT", 100),
 		)
@@ -489,6 +502,7 @@ func TestUpdateAveragePrice(t *testing.T) {
 		wallet := NewPaperWallet(
 			context.Background(),
 			"USDT",
+			getLog(),
 			WithPaperAsset("BTC", 0),
 			WithPaperAsset("USDT", 100),
 		)
@@ -532,6 +546,7 @@ func TestUpdateAveragePrice(t *testing.T) {
 		wallet := NewPaperWallet(
 			context.Background(),
 			"USDT",
+			getLog(),
 			WithPaperAsset("BTC", 0),
 			WithPaperAsset("USDT", 100),
 		)

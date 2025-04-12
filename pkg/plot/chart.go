@@ -12,6 +12,7 @@ import (
 	"github.com/evanw/esbuild/pkg/api"
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/exchange"
+	"github.com/raykavin/backnrun/pkg/logger"
 	"github.com/raykavin/backnrun/pkg/strategy"
 )
 
@@ -36,6 +37,7 @@ type Chart struct {
 	indexHTML       *template.Template
 	strategy        strategy.Strategy
 	lastUpdate      time.Time
+	log             logger.Logger
 }
 
 // Option defines a function type for configuring a Chart instance
@@ -77,9 +79,10 @@ func WithCustomIndicators(indicators ...Indicator) Option {
 }
 
 // NewChart creates a new chart instance with the provided options
-func NewChart(options ...Option) (*Chart, error) {
+func NewChart(logger logger.Logger, options ...Option) (*Chart, error) {
 	chart := &Chart{
 		port:            8080,
+		log:             logger,
 		candles:         make(map[string][]Candle),
 		dataframe:       make(map[string]*core.Dataframe),
 		ordersIDsByPair: make(map[string]*set.LinkedHashSetINT64),

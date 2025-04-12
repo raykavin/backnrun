@@ -7,17 +7,29 @@ import (
 
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/exchange"
+	"github.com/raykavin/backnrun/pkg/logger"
+	"github.com/raykavin/backnrun/pkg/logger/zerolog"
 	"github.com/raykavin/backnrun/pkg/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func getLog() logger.Logger {
+	l, err := zerolog.New("debug", "2006-01-02 15:04:05", true, false)
+	if err != nil {
+		panic(err)
+	}
+
+	return zerolog.NewAdapter(l.Logger)
+
+}
 
 func TestController_updatePosition(t *testing.T) {
 	t.Run("market orders", func(t *testing.T) {
 		storage, err := storage.FromMemory()
 		require.NoError(t, err)
 		ctx := context.Background()
-		wallet := exchange.NewPaperWallet(ctx, "USDT", exchange.WithPaperAsset("USDT", 3000))
+		wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 3000))
 		controller := NewController(ctx, wallet, storage, NewOrderFeed())
 
 		wallet.OnCandle(core.Candle{Pair: "BTCUSDT", Close: 1000})
@@ -60,7 +72,7 @@ func TestController_updatePosition(t *testing.T) {
 		storage, err := storage.FromMemory()
 		require.NoError(t, err)
 		ctx := context.Background()
-		wallet := exchange.NewPaperWallet(ctx, "USDT", exchange.WithPaperAsset("USDT", 3000))
+		wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 3000))
 		controller := NewController(ctx, wallet, storage, NewOrderFeed())
 		wallet.OnCandle(core.Candle{Time: time.Now(), Pair: "BTCUSDT", High: 1500, Close: 1500})
 
@@ -92,7 +104,7 @@ func TestController_updatePosition(t *testing.T) {
 		storage, err := storage.FromMemory()
 		require.NoError(t, err)
 		ctx := context.Background()
-		wallet := exchange.NewPaperWallet(ctx, "USDT", exchange.WithPaperAsset("USDT", 3000))
+		wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 3000))
 		controller := NewController(ctx, wallet, storage, NewOrderFeed())
 		wallet.OnCandle(core.Candle{Time: time.Now(), Pair: "BTCUSDT", High: 1500, Close: 1500})
 
@@ -121,7 +133,7 @@ func TestController_updatePosition(t *testing.T) {
 		storage, err := storage.FromMemory()
 		require.NoError(t, err)
 		ctx := context.Background()
-		wallet := exchange.NewPaperWallet(ctx, "USDT", exchange.WithPaperAsset("USDT", 3000))
+		wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 3000))
 		controller := NewController(ctx, wallet, storage, NewOrderFeed())
 		wallet.OnCandle(core.Candle{Time: time.Now(), Pair: "BTCUSDT", Close: 1500, Low: 1500})
 
@@ -165,7 +177,7 @@ func TestController_updatePosition(t *testing.T) {
 		require.NoError(t, err)
 		ctx := context.Background()
 
-		wallet := exchange.NewPaperWallet(ctx, "USDT", exchange.WithPaperAsset("USDT", 0),
+		wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 0),
 			exchange.WithPaperAsset("BTC", 2))
 		controller := NewController(ctx, wallet, storage, NewOrderFeed())
 		wallet.OnCandle(core.Candle{Time: time.Now(), Pair: "BTCUSDT", Close: 1500, Low: 1500})
@@ -183,7 +195,7 @@ func TestController_PositionValue(t *testing.T) {
 	storage, err := storage.FromMemory()
 	require.NoError(t, err)
 	ctx := context.Background()
-	wallet := exchange.NewPaperWallet(ctx, "USDT", exchange.WithPaperAsset("USDT", 3000))
+	wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 3000))
 	controller := NewController(ctx, wallet, storage, NewOrderFeed())
 
 	lastCandle := core.Candle{Time: time.Now(), Pair: "BTCUSDT", Close: 1500, Low: 1500}
@@ -204,7 +216,7 @@ func TestController_Position(t *testing.T) {
 	storage, err := storage.FromMemory()
 	require.NoError(t, err)
 	ctx := context.Background()
-	wallet := exchange.NewPaperWallet(ctx, "USDT", exchange.WithPaperAsset("USDT", 3000))
+	wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 3000))
 	controller := NewController(ctx, wallet, storage, NewOrderFeed())
 
 	lastCandle := core.Candle{Time: time.Now(), Pair: "BTCUSDT", Close: 1500, Low: 1500}

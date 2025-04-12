@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 
+	"github.com/raykavin/backnrun"
+	"github.com/raykavin/backnrun/examples/strategies"
+	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/exchange"
-	"github.com/raykavin/backnrun/pkg/indicator"
+	"github.com/raykavin/backnrun/pkg/logger"
 	"github.com/raykavin/backnrun/pkg/plot"
+	"github.com/raykavin/backnrun/pkg/plot/indicator"
 	"github.com/raykavin/backnrun/pkg/storage"
-	"github.com/rodrigo-brito/backnrun/examples/strategy"
-	"github.com/rodrigo-brito/backnrun/tools/log"
 )
 
 // This example shows how to use backtesting with NinjaBot
@@ -17,7 +19,7 @@ func main() {
 	ctx := context.Background()
 
 	// bot settings (eg: pairs, telegram, etc)
-	settings := backnrun.Settings{
+	settings := &core.Settings{
 		Pairs: []string{
 			"BTCUSDT",
 			"ETHUSDT",
@@ -25,7 +27,7 @@ func main() {
 	}
 
 	// initialize your strategy
-	strategy := new(strategy.CrossEMA)
+	strategy := new(strategies.CrossEMA)
 
 	// load historical data from CSV files
 	csvFeed, err := exchange.NewCSVFeed(
@@ -42,25 +44,27 @@ func main() {
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
+		backnrun.Log.Fatal(err)
 	}
 
 	// initialize a database in memory
 	storage, err := storage.FromMemory()
 	if err != nil {
-		log.Fatal(err)
+		backnrun.Log.Fatal(err)
 	}
 
 	// create a paper wallet for simulation, initializing with 10.000 USDT
 	wallet := exchange.NewPaperWallet(
 		ctx,
 		"USDT",
+		backnrun.Log,
 		exchange.WithPaperAsset("USDT", 10000),
 		exchange.WithDataFeed(csvFeed),
 	)
 
 	// create a chart  with indicators from the strategy and a custom additional RSI indicator
 	chart, err := plot.NewChart(
+		backnrun.Log,
 		plot.WithStrategyIndicators(strategy),
 		plot.WithCustomIndicators(
 			indicator.RSI(14, "purple"),
@@ -68,7 +72,8 @@ func main() {
 		plot.WithPaperWallet(wallet),
 	)
 	if err != nil {
-		log.Fatal(err)
+		backnrun.Log.Fatal(err)
+		return
 	}
 
 	// initializer Ninjabot with the objects created before
@@ -83,16 +88,16 @@ func main() {
 		// connect bot feed (candle and orders) to the chart
 		backnrun.WithCandleSubscription(chart),
 		backnrun.WithOrderSubscription(chart),
-		backnrun.WithLogLevel(log.WarnLevel),
+		backnrun.WithLogLevel(logger.WarnLevel),
 	)
 	if err != nil {
-		log.Fatal(err)
+		backnrun.Log.Fatal(err)
 	}
 
 	// Initializer simulation
 	err = bot.Run(ctx)
 	if err != nil {
-		log.Fatal(err)
+		backnrun.Log.Fatal(err)
 	}
 
 	// Print bot results
@@ -101,6 +106,6 @@ func main() {
 	// Display candlesticks chart in local browser
 	err = chart.Start()
 	if err != nil {
-		log.Fatal(err)
+		backnrun.Log.Fatal(err)
 	}
 }

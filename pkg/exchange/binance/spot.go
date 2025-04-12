@@ -7,56 +7,56 @@ import (
 	"time"
 
 	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/logger"
 
 	"github.com/adshao/go-binance/v2"
-
-	"github.com/rodrigo-brito/ninjabot/tools/log"
 )
 
 // Spot represents the Binance spot market client
 type Spot struct {
 	ctx              context.Context
-	client           *binance.Client
 	assetsInfo       map[string]core.AssetInfo
 	heikinAshi       bool
 	metadataFetchers []MetadataFetcher
+	client           *binance.Client
+	log              logger.Logger
 }
 
 // SpotOption is a function that configures a Spot client
 type SpotOption func(*Spot)
 
-// WithCredentials sets the API credentials for the Spot client
-func WithCredentials(key, secret string) SpotOption {
+// WithSpotCredentials sets the API credentials for the Spot client
+func WithSpotCredentials(key, secret string) SpotOption {
 	return func(s *Spot) {
 		s.client = binance.NewClient(key, secret)
 	}
 }
 
-// WithHeikinAshiCandles enables Heikin Ashi candle conversion
-func WithHeikinAshiCandles() SpotOption {
+// WithSpotHeikinAshiCandles enables Heikin Ashi candle conversion
+func WithSpotHeikinAshiCandles() SpotOption {
 	return func(s *Spot) {
 		s.heikinAshi = true
 	}
 }
 
-// WithMetadataFetcher adds a function for fetching additional candle metadata
-func WithMetadataFetcher(fetcher MetadataFetcher) SpotOption {
+// WithSpotMetadataFetcher adds a function for fetching additional candle metadata
+func WithSpotMetadataFetcher(fetcher MetadataFetcher) SpotOption {
 	return func(s *Spot) {
 		s.metadataFetchers = append(s.metadataFetchers, fetcher)
 	}
 }
 
-// WithTestNet enables the Binance testnet
-func WithTestNet() SpotOption {
+// WithSpotTestNet enables the Binance testnet
+func WithSpotTestNet() SpotOption {
 	return func(_ *Spot) {
 		binance.UseTestnet = true
 	}
 }
 
-// WithCustomMainAPIEndpoint sets custom endpoints for the Binance Main API
-func WithCustomMainAPIEndpoint(apiURL, wsURL, combinedURL string) SpotOption {
+// WithSpotCustomMainAPIEndpoint sets custom endpoints for the Binance Main API
+func WithSpotCustomMainAPIEndpoint(apiURL, wsURL, combinedURL string) SpotOption {
 	if apiURL == "" || wsURL == "" || combinedURL == "" {
-		log.Fatal("missing url parameters for custom endpoint configuration")
+		panic("missing url parameters for custom endpoint configuration")
 	}
 
 	return func(_ *Spot) {
@@ -66,10 +66,10 @@ func WithCustomMainAPIEndpoint(apiURL, wsURL, combinedURL string) SpotOption {
 	}
 }
 
-// WithCustomTestnetAPIEndpoint sets custom endpoints for the Binance Testnet API
-func WithCustomTestnetAPIEndpoint(apiURL, wsURL, combinedURL string) SpotOption {
+// WithSpotCustomTestnetAPIEndpoint sets custom endpoints for the Binance Testnet API
+func WithSpotCustomTestnetAPIEndpoint(apiURL, wsURL, combinedURL string) SpotOption {
 	if apiURL == "" || wsURL == "" || combinedURL == "" {
-		log.Fatal("missing url parameters for custom endpoint configuration")
+		panic("missing url parameters for custom endpoint configuration")
 	}
 
 	return func(_ *Spot) {
@@ -80,7 +80,7 @@ func WithCustomTestnetAPIEndpoint(apiURL, wsURL, combinedURL string) SpotOption 
 }
 
 // NewSpot creates a new Binance spot exchange client
-func NewSpot(ctx context.Context, options ...SpotOption) (*Spot, error) {
+func NewSpot(ctx context.Context, logger logger.Logger, options ...SpotOption) (*Spot, error) {
 	binance.WebsocketKeepalive = true
 
 	spot := &Spot{
@@ -88,6 +88,7 @@ func NewSpot(ctx context.Context, options ...SpotOption) (*Spot, error) {
 		client:           binance.NewClient("", ""),
 		assetsInfo:       make(map[string]core.AssetInfo),
 		metadataFetchers: make([]MetadataFetcher, 0),
+		log:              logger,
 	}
 
 	// Apply options
@@ -135,7 +136,7 @@ func NewSpot(ctx context.Context, options ...SpotOption) (*Spot, error) {
 		spot.assetsInfo[info.Symbol] = assetInfo
 	}
 
-	log.Info("[SETUP] Using Binance Spot exchange")
+	logger.Info("[SETUP] Using Binance Spot exchange")
 	return spot, nil
 }
 

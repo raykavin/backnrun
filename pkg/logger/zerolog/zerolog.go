@@ -13,11 +13,11 @@ import (
 	"github.com/rs/zerolog/pkgerrors"
 )
 
-type ZerologLogger struct {
+type Logger struct {
 	*zerolog.Logger
 }
 
-func NewZerolog(level, dateTimeLayout string, colored, jsonFormat bool) (*ZerologLogger, error) {
+func New(level, dateTimeLayout string, colored, jsonFormat bool) (*Logger, error) {
 	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 
 	logMode, err := zerolog.ParseLevel(level)
@@ -48,7 +48,7 @@ func NewZerolog(level, dateTimeLayout string, colored, jsonFormat bool) (*Zerolo
 		CallerWithSkipFrameCount(3).
 		Logger()
 
-	return &ZerologLogger{&logger}, nil
+	return &Logger{&logger}, nil
 }
 
 func formatLevel(i interface{}) string {

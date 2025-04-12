@@ -2,7 +2,7 @@ package strategy
 
 import (
 	"github.com/raykavin/backnrun/pkg/core"
-	"github.com/rodrigo-brito/ninjabot/tools/log"
+	"github.com/raykavin/backnrun/pkg/logger"
 )
 
 // Controller manages the execution of trading strategies
@@ -10,15 +10,17 @@ type Controller struct {
 	strategy         Strategy
 	dataframeManager *DataframeManager
 	broker           core.Broker
+	log              logger.Logger
 	started          bool
 }
 
 // NewStrategyController creates a new strategy controller
-func NewStrategyController(pair string, strategy Strategy, broker core.Broker) *Controller {
+func NewStrategyController(pair string, strategy Strategy, broker core.Broker, logger logger.Logger) *Controller {
 	return &Controller{
 		dataframeManager: NewDataframeManager(pair),
 		strategy:         strategy,
 		broker:           broker,
+		log:              logger,
 	}
 }
 
@@ -43,7 +45,7 @@ func (c *Controller) OnPartialCandle(candle core.Candle) {
 // OnCandle processes completed candles for all strategy types
 func (c *Controller) OnCandle(candle core.Candle) {
 	if c.dataframeManager.IsLateCandle(candle) {
-		log.Errorf("late candle received: %#v", candle)
+		c.log.Errorf("late candle received: %#v", candle)
 		return
 	}
 

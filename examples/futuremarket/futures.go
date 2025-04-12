@@ -6,12 +6,13 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/rodrigo-brito/ninjabot"
-	"github.com/rodrigo-brito/ninjabot/examples/strategies"
-	"github.com/rodrigo-brito/ninjabot/exchange"
+	"github.com/raykavin/backnrun"
+	"github.com/raykavin/backnrun/examples/strategies"
+	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/exchange/binance"
 )
 
-// This example shows how to use futures market with NinjaBot.
+// This example shows how to use futures market with BackNRun.
 func main() {
 	var (
 		ctx             = context.Background()
@@ -21,12 +22,12 @@ func main() {
 		telegramUser, _ = strconv.Atoi(os.Getenv("TELEGRAM_USER"))
 	)
 
-	settings := ninjabot.Settings{
+	settings := &core.Settings{
 		Pairs: []string{
 			"BTCUSDT",
 			"ETHUSDT",
 		},
-		Telegram: ninjabot.TelegramSettings{
+		Telegram: core.TelegramSettings{
 			Enabled: true,
 			Token:   telegramToken,
 			Users:   []int{telegramUser},
@@ -34,18 +35,24 @@ func main() {
 	}
 
 	// Initialize your exchange with futures
-	binance, err := exchange.NewBinanceFuture(ctx,
-		exchange.WithBinanceFutureCredentials(apiKey, secretKey),
-		exchange.WithBinanceFutureLeverage("BTCUSDT", 1, exchange.MarginTypeIsolated),
-		exchange.WithBinanceFutureLeverage("ETHUSDT", 1, exchange.MarginTypeIsolated),
-	)
+	binanceEx, err := binance.NewExchange(ctx, backnrun.Log, binance.Config{
+		Type:          binance.MarketTypeFutures,
+		APIKey:        apiKey,
+		APISecret:     secretKey,
+		UseTestnet:    true,
+		UseHeikinAshi: false,
+	})
+
+	binance.WithFuturesLeverage("BTCUSDT", 1, binance.MarginTypeIsolated)(binanceEx.(*binance.Futures))
+	binance.WithFuturesLeverage("ETHUSDT", 1, binance.MarginTypeIsolated)(binanceEx.(*binance.Futures))
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Initialize your strategy and bot
 	strategy := new(strategies.CrossEMA)
-	bot, err := ninjabot.NewBot(ctx, settings, binance, strategy)
+	bot, err := backnrun.NewBot(ctx, settings, binanceEx, strategy)
 	if err != nil {
 		log.Fatalln(err)
 	}

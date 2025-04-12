@@ -8,9 +8,21 @@ import (
 
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/exchange"
+	"github.com/raykavin/backnrun/pkg/logger"
+	"github.com/raykavin/backnrun/pkg/logger/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func getLog() logger.Logger {
+	l, err := zerolog.New("debug", "2006-01-02 15:04:05", true, false)
+	if err != nil {
+		panic(err)
+	}
+
+	return zerolog.NewAdapter(l.Logger)
+
+}
 
 func TestDownloader_candlesCount(t *testing.T) {
 	tt := []struct {
@@ -80,7 +92,7 @@ func TestDownloader_download(t *testing.T) {
 		Feeder: csvFeed,
 	}
 
-	downloader := Downloader{fakeExchange}
+	downloader := Downloader{fakeExchange, getLog()}
 
 	t.Run("success", func(t *testing.T) {
 		err = downloader.Download(ctx, "BTCUSDT", "1d", tmpFile.Name(), WithInterval(param.Start, param.End))
