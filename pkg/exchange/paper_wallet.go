@@ -111,8 +111,8 @@ func NewPaperWallet(ctx context.Context, baseCoin string, logger logger.Logger, 
 	// Inicializa o valor inicial da carteira
 	wallet.initialValue = wallet.getAssetFreeAmount(wallet.baseCoin)
 
-	logger.Info("[SETUP] Using paper wallet")
-	logger.Infof("[SETUP] Initial Portfolio = %f %s", wallet.initialValue, wallet.baseCoin)
+	logger.Info("Using paper wallet")
+	logger.Infof("Initial Portfolio = %f %s", wallet.initialValue, wallet.baseCoin)
 
 	return &wallet
 }

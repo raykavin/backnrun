@@ -136,7 +136,7 @@ func NewSpot(ctx context.Context, logger logger.Logger, options ...SpotOption) (
 		spot.assetsInfo[info.Symbol] = assetInfo
 	}
 
-	logger.Info("[SETUP] Using Binance Spot exchange")
+	logger.Info("Using Binance Spot exchange")
 	return spot, nil
 }
 

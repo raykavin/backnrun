@@ -1,4 +1,3 @@
-// Package indicator provides financial technical analysis functions wrapping github.com/markcheno/go-talib
 package indicator
 
 import "github.com/markcheno/go-talib"

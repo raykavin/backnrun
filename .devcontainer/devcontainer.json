@@ -1,0 +1,46 @@
+{
+    "name": "Go",
+    "dockerComposeFile": [
+        "../docker-compose.dev.yaml"
+    ],
+    "service": "golang",
+    "workspaceFolder": "/go/src/backnrun",
+    // Features to add to the dev container. More info: https://containers.dev/features.
+    // "features": {},
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    // "forwardPorts": [],
+    // Use 'postCreateCommand' to run commands after the container is created.
+    "postCreateCommand": "git config --global --add safe.directory /go/src/backnrun",
+    // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+    "remoteUser": "vscode",
+    // Configure tool-specific properties.
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "golang.Go",
+                "ms-ceintl.vscode-language-pack-pt-br",
+                "streetsidesoftware.code-spell-checker-portuguese-brazilian",
+                "streetsidesoftware.code-spell-checker",
+                "golang.go-nightly",
+                "liuchao.go-struct-tag",
+                "yokoe.vscode-postfix-go",
+                "visualstudioexptteam.vscodeintellicode",
+                "redhat.vscode-yaml",
+                "golang.go"
+            ],
+            "settings": {
+                "terminal.integrated.profiles.linux": {
+                    "bash": {
+                        "path": "bash",
+                        "icon": "terminal-bash"
+                    }
+                },
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "go.toolsManagement.checkForUpdates": "local",
+                "go.useLanguageServer": true,
+                "go.gopath": "/go",
+                "go.goroot": "/usr/local/go"
+            }
+        }
+    }
+}
