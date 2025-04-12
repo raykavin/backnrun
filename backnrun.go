@@ -66,7 +66,7 @@ func NewBot(ctx context.Context, settings *core.Settings, exch core.Exchange, st
 		exchange:              exch,
 		strategy:              str,
 		orderFeed:             order.NewOrderFeed(),
-		dataFeed:              exchange.NewDataFeed(exch, Log),
+		dataFeed:              exchange.NewDataFeed(exch, DefaultLog),
 		strategiesControllers: make(map[string]*strategy.Controller),
 		priorityQueueCandle:   core.NewPriorityQueue(nil),
 	}
