@@ -134,7 +134,7 @@ func (c *Controller) CreateOrderOCO(side core.SideType, pair string, size, price
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	log.Infof("[ORDER] Creating OCO order for %s", pair)
+	log.Infof("Creating OCO order for %s", pair)
 	orders, err := c.exchange.CreateOrderOCO(side, pair, size, price, stop, stopLimit)
 	if err != nil {
 		c.notifyError(err)
@@ -158,7 +158,7 @@ func (c *Controller) CreateOrderLimit(side core.SideType, pair string, size, lim
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	log.Infof("[ORDER] Creating LIMIT %s order for %s", side, pair)
+	log.Infof("Creating LIMIT %s order for %s", side, pair)
 	order, err := c.exchange.CreateOrderLimit(side, pair, size, limit)
 	if err != nil {
 		c.notifyError(err)
@@ -180,7 +180,7 @@ func (c *Controller) CreateOrderMarketQuote(side core.SideType, pair string, amo
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	log.Infof("[ORDER] Creating MARKET %s order for %s", side, pair)
+	log.Infof("Creating MARKET %s order for %s", side, pair)
 	order, err := c.exchange.CreateOrderMarketQuote(side, pair, amount)
 	if err != nil {
 		c.notifyError(err)
@@ -205,7 +205,7 @@ func (c *Controller) CreateOrderMarket(side core.SideType, pair string, size flo
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	log.Infof("[ORDER] Creating MARKET %s order for %s", side, pair)
+	log.Infof("Creating MARKET %s order for %s", side, pair)
 	order, err := c.exchange.CreateOrderMarket(side, pair, size)
 	if err != nil {
 		c.notifyError(err)
@@ -230,7 +230,7 @@ func (c *Controller) CreateOrderStop(pair string, size float64, limit float64) (
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	log.Infof("[ORDER] Creating STOP order for %s", pair)
+	log.Infof("Creating STOP order for %s", pair)
 	order, err := c.exchange.CreateOrderStop(pair, size, limit)
 	if err != nil {
 		c.notifyError(err)
@@ -252,7 +252,7 @@ func (c *Controller) Cancel(order core.Order) error {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 
-	log.Infof("[ORDER] Cancelling order for %s", order.Pair)
+	log.Infof("Cancelling order for %s", order.Pair)
 	err := c.exchange.Cancel(order)
 	if err != nil {
 		return err

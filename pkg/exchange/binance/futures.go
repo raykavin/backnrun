@@ -160,7 +160,7 @@ func NewFutures(ctx context.Context, logger logger.Logger, options ...FuturesOpt
 		futures.assetsInfo[info.Symbol] = assetInfo
 	}
 
-	logger.Info("[SETUP] Using Binance Futures exchange")
+	logger.Info("Using Binance Futures exchange")
 	return futures, nil
 }
 

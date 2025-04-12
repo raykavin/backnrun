@@ -48,7 +48,7 @@ func (m Mail) Notify(text string) {
 
 	message := fmt.Sprintf(
 		`To: "User" <%s>
-From: "NinjaBot" <%s>
+From: "BackNRun" <%s>
 %s`,
 		m.to,
 		m.from,

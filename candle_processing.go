@@ -2,6 +2,7 @@ package backnrun
 
 import (
 	"context"
+	"time"
 
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/schollz/progressbar/v3"
@@ -34,7 +35,7 @@ func (n *Backnrun) processCandles() {
 
 // backtestCandles processes candles for backtesting with a progress bar
 func (n *Backnrun) backtestCandles() {
-	DefaultLog.Info("[SETUP] Starting backtesting")
+	DefaultLog.Info("Starting backtesting")
 
 	progressBar := progressbar.Default(int64(n.priorityQueueCandle.Len()))
 	for n.priorityQueueCandle.Len() > 0 {
@@ -53,6 +54,8 @@ func (n *Backnrun) backtestCandles() {
 		if err := progressBar.Add(1); err != nil {
 			DefaultLog.Warnf("update progressbar fail: %v", err)
 		}
+
+		time.Sleep(5 * time.Millisecond) // prevent CPU overload
 	}
 }
 
@@ -62,7 +65,13 @@ func (n *Backnrun) preload(ctx context.Context, pair string) error {
 		return nil
 	}
 
-	candles, err := n.exchange.CandlesByLimit(ctx, pair, n.strategy.Timeframe(), n.strategy.WarmupPeriod())
+	candles, err := n.exchange.CandlesByLimit(
+		ctx,
+		pair,
+		n.strategy.Timeframe(),
+		n.strategy.WarmupPeriod(),
+	)
+
 	if err != nil {
 		return err
 	}

@@ -99,7 +99,7 @@ func (d *DataFeedSubscription) Preload(pair, timeframe string, candles []core.Ca
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 
-	d.log.Infof("[SETUP] preloading %d candles for %s-%s", len(candles), pair, timeframe)
+	d.log.Infof("preloading %d candles for %s-%s", len(candles), pair, timeframe)
 	key := d.feedKey(pair, timeframe)
 
 	// Envia apenas candles completos
