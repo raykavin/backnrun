@@ -13,7 +13,7 @@ import (
 	"github.com/raykavin/backnrun/pkg/storage"
 )
 
-// This example shows how to use backtesting with NinjaBot
+// This example shows how to use backtesting with BackNRun
 // Backtesting is a simulation of the strategy in historical data (from CSV)
 func main() {
 	ctx := context.Background()
@@ -22,26 +22,26 @@ func main() {
 	settings := &core.Settings{
 		Pairs: []string{
 			"BTCUSDT",
-			"ETHUSDT",
+			// "ETHUSDT",
 		},
 	}
 
 	// initialize your strategy
-	strategy := new(strategies.CrossEMA)
+	strategy := strategies.NewCrossEMA(9, 21, 10.0)
 
 	// load historical data from CSV files
 	csvFeed, err := exchange.NewCSVFeed(
 		strategy.Timeframe(),
 		exchange.PairFeed{
 			Pair:      "BTCUSDT",
-			File:      "testdata/btc-1h.csv",
-			Timeframe: "1h",
+			File:      "btc-5m.csv",
+			Timeframe: "5m",
 		},
-		exchange.PairFeed{
-			Pair:      "ETHUSDT",
-			File:      "testdata/eth-1h.csv",
-			Timeframe: "1h",
-		},
+		// exchange.PairFeed{
+		// 	Pair:      "ETHUSDT",
+		// 	File:      "testdata/eth-1h.csv",
+		// 	Timeframe: "1h",
+		// },
 	)
 	if err != nil {
 		backnrun.DefaultLog.Fatal(err)
@@ -53,12 +53,12 @@ func main() {
 		backnrun.DefaultLog.Fatal(err)
 	}
 
-	// create a paper wallet for simulation, initializing with 10.000 USDT
+	// create a paper wallet for simulation, initializing with 1000 USDT
 	wallet := exchange.NewPaperWallet(
 		ctx,
 		"USDT",
 		backnrun.DefaultLog,
-		exchange.WithPaperAsset("USDT", 10000),
+		exchange.WithPaperAsset("USDT", 1000),
 		exchange.WithDataFeed(csvFeed),
 	)
 
@@ -76,7 +76,7 @@ func main() {
 		return
 	}
 
-	// initializer Ninjabot with the objects created before
+	// initializer BackNRun with the objects created before
 	bot, err := backnrun.NewBot(
 		ctx,
 		settings,
