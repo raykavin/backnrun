@@ -9,7 +9,6 @@ import (
 
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/logger"
-	"github.com/rs/zerolog/log"
 
 	"github.com/adshao/go-binance/v2"
 	"github.com/adshao/go-binance/v2/common"
