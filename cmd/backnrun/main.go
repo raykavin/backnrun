@@ -31,8 +31,8 @@ var (
 func main() {
 	// Create root command
 	rootCmd := &cobra.Command{
-		Use:     "ninjabot",
-		Short:   "Utilities for bot creation",
+		Use:     "backnrun",
+		Short:   "Utilities for bot automation",
 		Version: "1.0.0",
 	}
 

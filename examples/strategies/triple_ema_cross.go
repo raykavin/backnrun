@@ -4,7 +4,6 @@ import (
 	"github.com/raykavin/backnrun"
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/indicator"
-	"github.com/raykavin/backnrun/pkg/strategy"
 )
 
 // TripleMAStrategy implementa uma estratégia de cruzamento de três médias móveis
@@ -47,36 +46,36 @@ func (t TripleMAStrategy) WarmupPeriod() int {
 }
 
 // Indicators calcula e retorna os indicadores usados por esta estratégia
-func (t TripleMAStrategy) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
+func (t TripleMAStrategy) Indicators(df *core.Dataframe) []core.ChartIndicator {
 	// Calcular as três médias móveis
 	df.Metadata["short_ma"] = indicator.EMA(df.Close, t.shortPeriod)
 	df.Metadata["medium_ma"] = indicator.EMA(df.Close, t.mediumPeriod)
 	df.Metadata["long_ma"] = indicator.EMA(df.Close, t.longPeriod)
 
 	// Retornar indicadores para visualização
-	return []strategy.ChartIndicator{
+	return []core.ChartIndicator{
 		{
 			Overlay:   true,
 			GroupName: "Moving Averages",
 			Time:      df.Time,
-			Metrics: []strategy.IndicatorMetric{
+			Metrics: []core.IndicatorMetric{
 				{
 					Values: df.Metadata["short_ma"],
 					Name:   "Short EMA",
 					Color:  "blue",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 				{
 					Values: df.Metadata["medium_ma"],
 					Name:   "Medium EMA",
 					Color:  "green",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 				{
 					Values: df.Metadata["long_ma"],
 					Name:   "Long EMA",
 					Color:  "red",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 			},
 		},

@@ -4,7 +4,6 @@ import (
 	"github.com/raykavin/backnrun"
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/indicator"
-	"github.com/raykavin/backnrun/pkg/strategy"
 )
 
 // TurtleStrategy implements the classic Turtle Trading system
@@ -36,29 +35,29 @@ func (t TurtleStrategy) WarmupPeriod() int {
 }
 
 // Indicators calculates and returns the indicators used by this strategy
-func (t TurtleStrategy) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
+func (t TurtleStrategy) Indicators(df *core.Dataframe) []core.ChartIndicator {
 	// Calculate indicators
 	df.Metadata["max40"] = indicator.Max(df.Close, t.entryPeriod)
 	df.Metadata["low20"] = indicator.Min(df.Close, t.exitPeriod)
 
 	// Return chart indicators for visualization
-	return []strategy.ChartIndicator{
+	return []core.ChartIndicator{
 		{
 			Overlay:   true,
 			GroupName: "Turtle System",
 			Time:      df.Time,
-			Metrics: []strategy.IndicatorMetric{
+			Metrics: []core.IndicatorMetric{
 				{
 					Values: df.Metadata["max40"],
 					Name:   "Entry (Max " + string(rune(t.entryPeriod+'0')) + ")",
 					Color:  "green",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 				{
 					Values: df.Metadata["low20"],
 					Name:   "Exit (Min " + string(rune(t.exitPeriod+'0')) + ")",
 					Color:  "red",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 			},
 		},

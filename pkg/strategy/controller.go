@@ -7,7 +7,7 @@ import (
 
 // Controller manages the execution of trading strategies
 type Controller struct {
-	strategy         Strategy
+	strategy         core.Strategy
 	dataframeManager *DataframeManager
 	broker           core.Broker
 	log              logger.Logger
@@ -15,7 +15,7 @@ type Controller struct {
 }
 
 // NewStrategyController creates a new strategy controller
-func NewStrategyController(pair string, strategy Strategy, broker core.Broker, logger logger.Logger) *Controller {
+func NewStrategyController(pair string, strategy core.Strategy, broker core.Broker, logger logger.Logger) *Controller {
 	return &Controller{
 		dataframeManager: NewDataframeManager(pair),
 		strategy:         strategy,
@@ -32,7 +32,7 @@ func (c *Controller) Start() {
 // OnPartialCandle processes partial candle updates for high-frequency strategies
 func (c *Controller) OnPartialCandle(candle core.Candle) {
 	if !candle.Complete && c.dataframeManager.HasSufficientData(c.strategy.WarmupPeriod()) {
-		if highFreqStrategy, ok := c.strategy.(HighFrequencyStrategy); ok {
+		if highFreqStrategy, ok := c.strategy.(core.HighFrequencyStrategy); ok {
 			c.dataframeManager.UpdateDataFrame(candle)
 
 			dataframe := c.dataframeManager.GetDataframe()

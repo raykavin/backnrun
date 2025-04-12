@@ -51,29 +51,29 @@ func (t TrailingStrategy) WarmupPeriod() int {
 }
 
 // Indicators calculates and returns the indicators used by this strategy
-func (t TrailingStrategy) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
+func (t TrailingStrategy) Indicators(df *core.Dataframe) []core.ChartIndicator {
 	// Calculate indicators
 	df.Metadata["ema_fast"] = indicator.EMA(df.Close, t.emaLength)
 	df.Metadata["sma_slow"] = indicator.SMA(df.Close, t.smaLength)
 
 	// Return chart indicators for visualization
-	return []strategy.ChartIndicator{
+	return []core.ChartIndicator{
 		{
 			Overlay:   true,
 			GroupName: "Moving Averages",
 			Time:      df.Time,
-			Metrics: []strategy.IndicatorMetric{
+			Metrics: []core.IndicatorMetric{
 				{
 					Values: df.Metadata["ema_fast"],
 					Name:   "EMA " + string(rune(t.emaLength+'0')),
 					Color:  "red",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 				{
 					Values: df.Metadata["sma_slow"],
 					Name:   "SMA " + string(rune(t.smaLength+'0')),
 					Color:  "blue",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 			},
 		},

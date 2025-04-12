@@ -4,7 +4,6 @@ import (
 	"github.com/raykavin/backnrun"
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/indicator"
-	"github.com/raykavin/backnrun/pkg/strategy"
 )
 
 // MACDDivergenceStrategy implementa uma estratégia baseada em divergências
@@ -53,7 +52,7 @@ func (m MACDDivergenceStrategy) WarmupPeriod() int {
 }
 
 // Indicators calcula e retorna os indicadores usados por esta estratégia
-func (m MACDDivergenceStrategy) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
+func (m MACDDivergenceStrategy) Indicators(df *core.Dataframe) []core.ChartIndicator {
 	// Calcular MACD
 	df.Metadata["macd"], df.Metadata["macd_signal"], df.Metadata["macd_hist"] = indicator.MACD(
 		df.Close,
@@ -63,29 +62,29 @@ func (m MACDDivergenceStrategy) Indicators(df *core.Dataframe) []strategy.ChartI
 	)
 
 	// Retornar indicadores para visualização
-	return []strategy.ChartIndicator{
+	return []core.ChartIndicator{
 		{
 			Overlay:   false,
 			GroupName: "MACD",
 			Time:      df.Time,
-			Metrics: []strategy.IndicatorMetric{
+			Metrics: []core.IndicatorMetric{
 				{
 					Values: df.Metadata["macd"],
 					Name:   "MACD Line",
 					Color:  "blue",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 				{
 					Values: df.Metadata["macd_signal"],
 					Name:   "Signal Line",
 					Color:  "red",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 				{
 					Values: df.Metadata["macd_hist"],
 					Name:   "Histogram",
 					Color:  "green",
-					Style:  strategy.StyleHistogram,
+					Style:  core.StyleHistogram,
 				},
 			},
 		},

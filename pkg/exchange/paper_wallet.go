@@ -7,6 +7,7 @@ import (
 	"math"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/raykavin/backnrun/pkg/core"
@@ -15,53 +16,53 @@ import (
 	"github.com/adshao/go-binance/v2/common"
 )
 
-// AssetValue representa o valor de um ativo em um momento específico
+// AssetValue represents the value of an asset at a specific time
 type AssetValue struct {
 	Time  time.Time
 	Value float64
 }
 
-// assetInfo representa a informação de saldo de um ativo
+// assetInfo represents balance information of an asset
 type assetInfo struct {
 	Free float64
 	Lock float64
 }
 
-// PaperWallet implementa uma carteira simulada para backtesting
+// PaperWallet implements a simulated wallet for backtesting
 type PaperWallet struct {
 	mu sync.RWMutex
 
-	// Contexto e configurações
+	// Context and configuration
 	ctx          context.Context
 	baseCoin     string
-	counter      int64
 	takerFee     float64
 	makerFee     float64
 	initialValue float64
+	counter      atomic.Int64
 	feeder       core.Feeder
 
-	// Dados da carteira
+	// Wallet data
 	orders        []core.Order
 	assets        map[string]*assetInfo
 	avgShortPrice map[string]float64
 	avgLongPrice  map[string]float64
 	volume        map[string]float64
 
-	// Dados de candles
+	// Candle data
 	lastCandle map[string]core.Candle
 	fistCandle map[string]core.Candle
 
-	// Histórico de valores
+	// Value history
 	assetValues  map[string][]AssetValue
 	equityValues []AssetValue
 
 	log logger.Logger
 }
 
-// PaperWalletOption define uma função de opção para configurar PaperWallet
+// PaperWalletOption defines an option function to configure PaperWallet
 type PaperWalletOption func(*PaperWallet)
 
-// WithPaperAsset adiciona um ativo inicial à carteira
+// WithPaperAsset adds an initial asset to the wallet
 func WithPaperAsset(pair string, amount float64) PaperWalletOption {
 	return func(wallet *PaperWallet) {
 		wallet.assets[pair] = &assetInfo{
@@ -71,7 +72,7 @@ func WithPaperAsset(pair string, amount float64) PaperWalletOption {
 	}
 }
 
-// WithPaperFee configura as taxas da carteira
+// WithPaperFee configures the wallet fees
 func WithPaperFee(maker, taker float64) PaperWalletOption {
 	return func(wallet *PaperWallet) {
 		wallet.makerFee = maker
@@ -79,14 +80,14 @@ func WithPaperFee(maker, taker float64) PaperWalletOption {
 	}
 }
 
-// WithDataFeed configura o provedor de dados
+// WithDataFeed configures the data provider
 func WithDataFeed(feeder core.Feeder) PaperWalletOption {
 	return func(wallet *PaperWallet) {
 		wallet.feeder = feeder
 	}
 }
 
-// NewPaperWallet cria uma nova carteira simulada
+// NewPaperWallet creates a new simulated wallet
 func NewPaperWallet(ctx context.Context, baseCoin string, logger logger.Logger, options ...PaperWalletOption) *PaperWallet {
 	wallet := PaperWallet{
 		ctx:           ctx,
@@ -103,12 +104,12 @@ func NewPaperWallet(ctx context.Context, baseCoin string, logger logger.Logger, 
 		equityValues:  make([]AssetValue, 0),
 	}
 
-	// Aplica as opções
+	// Apply options
 	for _, option := range options {
 		option(&wallet)
 	}
 
-	// Inicializa o valor inicial da carteira
+	// Initialize initial wallet value
 	wallet.initialValue = wallet.getAssetFreeAmount(wallet.baseCoin)
 
 	logger.Info("Using paper wallet")
@@ -117,15 +118,12 @@ func NewPaperWallet(ctx context.Context, baseCoin string, logger logger.Logger, 
 	return &wallet
 }
 
-// ID gera um ID único para ordens
+// ID generates a unique ID for orders
 func (p *PaperWallet) ID() int64 {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.counter++
-	return p.counter
+	return p.counter.Add(1)
 }
 
-// AssetsInfo retorna informações sobre os ativos de um par
+// AssetsInfo returns information about the assets of a pair
 func (p *PaperWallet) AssetsInfo(pair string) core.AssetInfo {
 	asset, quote := SplitAssetQuote(pair)
 	return core.AssetInfo{
@@ -140,7 +138,7 @@ func (p *PaperWallet) AssetsInfo(pair string) core.AssetInfo {
 	}
 }
 
-// Pairs retorna a lista de pares disponíveis na carteira
+// Pairs returns the list of available pairs in the wallet
 func (p *PaperWallet) Pairs() []string {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -152,26 +150,26 @@ func (p *PaperWallet) Pairs() []string {
 	return pairs
 }
 
-// LastQuote retorna a última cotação de um par
+// LastQuote returns the last quote of a pair
 func (p *PaperWallet) LastQuote(ctx context.Context, pair string) (float64, error) {
 	return p.feeder.LastQuote(ctx, pair)
 }
 
-// AssetValues retorna o histórico de valores de um ativo
+// AssetValues returns the value history of an asset
 func (p *PaperWallet) AssetValues(pair string) []AssetValue {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.assetValues[pair]
 }
 
-// EquityValues retorna o histórico de valores da carteira
+// EquityValues returns the wallet's value history
 func (p *PaperWallet) EquityValues() []AssetValue {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	return p.equityValues
 }
 
-// MaxDrawdown calcula o drawdown máximo da carteira
+// MaxDrawdown calculates the maximum drawdown of the wallet
 func (p *PaperWallet) MaxDrawdown() (float64, time.Time, time.Time) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -214,7 +212,7 @@ func (p *PaperWallet) MaxDrawdown() (float64, time.Time, time.Time) {
 	return globalMin / globalMinBase, globalMinStart, globalMinEnd
 }
 
-// Summary imprime um resumo da carteira
+// Summary prints a summary of the wallet
 func (p *PaperWallet) Summary() {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -227,7 +225,7 @@ func (p *PaperWallet) Summary() {
 
 	fmt.Println("----- FINAL WALLET -----")
 
-	// Calcula o valor total dos ativos
+	// Calculate total asset value
 	for pair := range p.lastCandle {
 		asset, quote := SplitAssetQuote(pair)
 		assetInfo, ok := p.assets[asset]
@@ -237,33 +235,33 @@ func (p *PaperWallet) Summary() {
 
 		quantity := assetInfo.Free + assetInfo.Lock
 
-		// Calcula o valor do ativo
+		// Calculate asset value
 		value := p.calculateAssetValue(pair, asset, quantity)
 		total += value
 
-		// Calcula a variação do mercado
+		// Calculate market change
 		marketChange += p.calculateMarketChange(pair)
 
 		fmt.Printf("%.4f %s = %.4f %s\n", quantity, asset, value, quote)
 	}
 
-	// Calcula a variação média do mercado
+	// Calculate average market change
 	avgMarketChange := marketChange / float64(len(p.lastCandle))
 
-	// Calcula o saldo na moeda base
+	// Calculate base currency balance
 	baseCoinValue := p.getAssetTotalAmount(p.baseCoin)
 
-	// Calcula o lucro
+	// Calculate profit
 	profit := total + baseCoinValue - p.initialValue
 
-	// Imprime informações da moeda base
+	// Print base currency information
 	fmt.Printf("%.4f %s\n", baseCoinValue, p.baseCoin)
 	fmt.Println()
 
-	// Calcula o drawdown máximo
+	// Calculate maximum drawdown
 	maxDrawDown, _, _ := p.MaxDrawdown()
 
-	// Imprime o resumo de retornos
+	// Print returns summary
 	fmt.Println("----- RETURNS -----")
 	fmt.Printf("START PORTFOLIO     = %.2f %s\n", p.initialValue, p.baseCoin)
 	fmt.Printf("FINAL PORTFOLIO     = %.2f %s\n", total+baseCoinValue, p.baseCoin)
@@ -271,12 +269,12 @@ func (p *PaperWallet) Summary() {
 	fmt.Printf("MARKET CHANGE (B&H) =  %.2f%%\n", avgMarketChange*100)
 	fmt.Println()
 
-	// Imprime informações de risco
+	// Print risk information
 	fmt.Println("------ RISK -------")
 	fmt.Printf("MAX DRAWDOWN = %.2f %%\n", maxDrawDown*100)
 	fmt.Println()
 
-	// Imprime informações de volume
+	// Print volume information
 	fmt.Println("------ VOLUME -----")
 	for pair, vol := range p.volume {
 		volume += vol
@@ -286,31 +284,31 @@ func (p *PaperWallet) Summary() {
 	fmt.Println("-------------------")
 }
 
-// calculateAssetValue calcula o valor de um ativo
+// calculateAssetValue calculates the value of an asset
 func (p *PaperWallet) calculateAssetValue(pair, asset string, quantity float64) float64 {
 	if quantity == 0 {
 		return 0
 	}
 
-	// Se a quantidade for positiva, é uma posição longa
+	// If the quantity is positive, it's a long position
 	if quantity > 0 {
 		return quantity * p.lastCandle[pair].Close
 	}
 
-	// Se a quantidade for negativa, é uma posição curta
-	// Calcula o valor total da posição curta
+	// If the quantity is negative, it's a short position
+	// Calculate the total value of the short position
 	totalShort := 2.0*p.avgShortPrice[pair]*quantity - p.lastCandle[pair].Close*quantity
 	return math.Abs(totalShort)
 }
 
-// calculateMarketChange calcula a variação do preço de um par
+// calculateMarketChange calculates the price change of a pair
 func (p *PaperWallet) calculateMarketChange(pair string) float64 {
 	firstPrice := p.fistCandle[pair].Close
 	lastPrice := p.lastCandle[pair].Close
 	return (lastPrice - firstPrice) / firstPrice
 }
 
-// getAssetFreeAmount retorna o saldo livre de um ativo
+// getAssetFreeAmount returns the free balance of an asset
 func (p *PaperWallet) getAssetFreeAmount(asset string) float64 {
 	assetInfo, ok := p.assets[asset]
 	if !ok {
@@ -319,7 +317,7 @@ func (p *PaperWallet) getAssetFreeAmount(asset string) float64 {
 	return assetInfo.Free
 }
 
-// getAssetTotalAmount retorna o saldo total (livre + bloqueado) de um ativo
+// getAssetTotalAmount returns the total balance (free + locked) of an asset
 func (p *PaperWallet) getAssetTotalAmount(asset string) float64 {
 	assetInfo, ok := p.assets[asset]
 	if !ok {
@@ -328,22 +326,23 @@ func (p *PaperWallet) getAssetTotalAmount(asset string) float64 {
 	return assetInfo.Free + assetInfo.Lock
 }
 
-// ensureAssetExists garante que um ativo existe na carteira
+// ensureAssetExists ensures that an asset exists in the wallet
 func (p *PaperWallet) ensureAssetExists(asset string) {
 	if _, ok := p.assets[asset]; !ok {
 		p.assets[asset] = &assetInfo{}
 	}
 }
 
-// validateFunds verifica se há fundos suficientes para uma operação
+// validateFunds verifies if there are sufficient funds for an operation
+// Note: This function assumes the mutex is already locked by the caller
 func (p *PaperWallet) validateFunds(side core.SideType, pair string, amount, value float64, fill bool) error {
 	asset, quote := SplitAssetQuote(pair)
 
-	// Garante que os ativos existem
+	// Ensure assets exist
 	p.ensureAssetExists(asset)
 	p.ensureAssetExists(quote)
 
-	// Verifica se há fundos suficientes para a operação
+	// Check if there are sufficient funds for the operation
 	if side == core.SideTypeSell {
 		return p.validateSellFunds(pair, asset, quote, amount, value, fill)
 	} else { // SideTypeBuy
@@ -351,15 +350,16 @@ func (p *PaperWallet) validateFunds(side core.SideType, pair string, amount, val
 	}
 }
 
-// validateSellFunds verifica e processa fundos para venda
+// validateSellFunds verifies and processes funds for selling
+// Note: This function assumes the mutex is already locked by the caller
 func (p *PaperWallet) validateSellFunds(pair, asset, quote string, amount, value float64, fill bool) error {
-	// Calcula os fundos disponíveis
+	// Calculate available funds
 	funds := p.assets[quote].Free
 	if p.assets[asset].Free > 0 {
 		funds += p.assets[asset].Free * value
 	}
 
-	// Verifica se há fundos suficientes
+	// Check if there are sufficient funds
 	if funds < amount*value {
 		return &OrderError{
 			Err:      ErrInsufficientFunds,
@@ -368,25 +368,25 @@ func (p *PaperWallet) validateSellFunds(pair, asset, quote string, amount, value
 		}
 	}
 
-	// Calcula os valores a serem bloqueados
-	lockedAsset := math.Min(math.Max(p.assets[asset].Free, 0), amount) // ignora valores negativos
+	// Calculate values to be locked
+	lockedAsset := math.Min(math.Max(p.assets[asset].Free, 0), amount) // ignore negative values
 	lockedQuote := (amount - lockedAsset) * value
 
-	// Atualiza os saldos
+	// Update balances
 	p.assets[asset].Free -= lockedAsset
 	p.assets[quote].Free -= lockedQuote
 
 	if fill {
-		// Atualiza o preço médio
+		// Update average price
 		p.updateAveragePrice(core.SideTypeSell, pair, amount, value)
 
-		if lockedQuote > 0 { // entrando em posição curta
+		if lockedQuote > 0 { // entering short position
 			p.assets[asset].Free -= amount
-		} else { // liquidando posição longa
+		} else { // liquidating long position
 			p.assets[quote].Free += amount * value
 		}
 	} else {
-		// Bloqueia os valores
+		// Lock values
 		p.assets[asset].Lock += lockedAsset
 		p.assets[quote].Lock += lockedQuote
 	}
@@ -395,23 +395,24 @@ func (p *PaperWallet) validateSellFunds(pair, asset, quote string, amount, value
 	return nil
 }
 
-// validateBuyFunds verifica e processa fundos para compra
+// validateBuyFunds verifies and processes funds for buying
+// Note: This function assumes the mutex is already locked by the caller
 func (p *PaperWallet) validateBuyFunds(pair, asset, quote string, amount, value float64, fill bool) error {
 	var liquidShortValue float64
 
-	// Se há posição curta, calcula o valor de liquidação
+	// If there's a short position, calculate liquidation value
 	if p.assets[asset].Free < 0 {
 		v := math.Abs(p.assets[asset].Free)
 		liquidShortValue = 2*v*p.avgShortPrice[pair] - v*value
 		funds := p.assets[quote].Free + liquidShortValue
 
-		// Calcula a quantidade efetiva a comprar
+		// Calculate effective amount to buy
 		amountToBuy := amount
 		if p.assets[asset].Free < 0 {
 			amountToBuy = amount + p.assets[asset].Free
 		}
 
-		// Verifica se há fundos suficientes
+		// Check if there are sufficient funds
 		if funds < amountToBuy*value {
 			return &OrderError{
 				Err:      ErrInsufficientFunds,
@@ -420,27 +421,27 @@ func (p *PaperWallet) validateBuyFunds(pair, asset, quote string, amount, value 
 			}
 		}
 
-		// Calcula os valores a serem bloqueados
+		// Calculate values to be locked
 		lockedAsset := math.Min(-math.Min(p.assets[asset].Free, 0), amount)
 		lockedQuote := (amount-lockedAsset)*value - liquidShortValue
 
-		// Atualiza os saldos
+		// Update balances
 		p.assets[asset].Free += lockedAsset
 		p.assets[quote].Free -= lockedQuote
 
 		if fill {
-			// Atualiza o preço médio
+			// Update average price
 			p.updateAveragePrice(core.SideTypeBuy, pair, amount, value)
 			p.assets[asset].Free += amount - lockedAsset
 		} else {
-			// Bloqueia os valores
+			// Lock values
 			p.assets[asset].Lock += lockedAsset
 			p.assets[quote].Lock += lockedQuote
 		}
 
 		p.log.Debugf("%s -> LOCK = %f / FREE %f", asset, p.assets[asset].Lock, p.assets[asset].Free)
 	} else {
-		// Caso simples: compra com saldo em quote
+		// Simple case: buy with quote balance
 		if p.assets[quote].Free < amount*value {
 			return &OrderError{
 				Err:      ErrInsufficientFunds,
@@ -450,12 +451,12 @@ func (p *PaperWallet) validateBuyFunds(pair, asset, quote string, amount, value 
 		}
 
 		if fill {
-			// Atualiza o preço médio e saldos diretamente
+			// Update average price and balances directly
 			p.updateAveragePrice(core.SideTypeBuy, pair, amount, value)
 			p.assets[quote].Free -= amount * value
 			p.assets[asset].Free += amount
 		} else {
-			// Bloqueia os valores
+			// Lock values
 			p.assets[quote].Lock += amount * value
 			p.assets[quote].Free -= amount * value
 		}
@@ -464,7 +465,8 @@ func (p *PaperWallet) validateBuyFunds(pair, asset, quote string, amount, value 
 	return nil
 }
 
-// updateAveragePrice atualiza o preço médio de compra/venda
+// updateAveragePrice updates the average buy/sell price
+// Note: This function assumes the mutex is already locked by the caller
 func (p *PaperWallet) updateAveragePrice(side core.SideType, pair string, amount, value float64) {
 	actualQty := 0.0
 	asset, quote := SplitAssetQuote(pair)
@@ -473,7 +475,7 @@ func (p *PaperWallet) updateAveragePrice(side core.SideType, pair string, amount
 		actualQty = p.assets[asset].Free
 	}
 
-	// Sem posição prévia
+	// No previous position
 	if actualQty == 0 {
 		if side == core.SideTypeBuy {
 			p.avgLongPrice[pair] = value
@@ -483,158 +485,187 @@ func (p *PaperWallet) updateAveragePrice(side core.SideType, pair string, amount
 		return
 	}
 
-	// Posição longa + ordem de compra
+	// Long position + buy order
 	if actualQty > 0 && side == core.SideTypeBuy {
 		positionValue := p.avgLongPrice[pair] * actualQty
 		p.avgLongPrice[pair] = (positionValue + amount*value) / (actualQty + amount)
 		return
 	}
 
-	// Posição longa + ordem de venda
+	// Long position + sell order
 	if actualQty > 0 && side == core.SideTypeSell {
-		// Calcula o lucro
+		// Calculate profit
 		profitValue := amount*value - math.Min(amount, actualQty)*p.avgLongPrice[pair]
 		percentage := profitValue / (amount * p.avgLongPrice[pair])
 		p.log.Infof("PROFIT = %.4f %s (%.2f %%)", profitValue, quote, percentage*100.0)
 
-		// Se a quantidade vendida não fecha a posição
+		// If the sold quantity doesn't close the position
 		if amount <= actualQty {
 			return
 		}
 
-		// Se a venda excede a posição, inicia posição curta
+		// If the sale exceeds the position, starts a short position
 		p.avgShortPrice[pair] = value
 		return
 	}
 
-	// Posição curta + ordem de venda
+	// Short position + sell order
 	if actualQty < 0 && side == core.SideTypeSell {
 		positionValue := p.avgShortPrice[pair] * -actualQty
 		p.avgShortPrice[pair] = (positionValue + amount*value) / (-actualQty + amount)
 		return
 	}
 
-	// Posição curta + ordem de compra
+	// Short position + buy order
 	if actualQty < 0 && side == core.SideTypeBuy {
-		// Calcula o lucro
+		// Calculate profit
 		profitValue := math.Min(amount, -actualQty)*p.avgShortPrice[pair] - amount*value
 		percentage := profitValue / (amount * p.avgShortPrice[pair])
 		p.log.Infof("PROFIT = %.4f %s (%.2f %%)", profitValue, quote, percentage*100.0)
 
-		// Se a quantidade comprada não fecha a posição
+		// If the bought quantity doesn't close the position
 		if amount <= -actualQty {
 			return
 		}
 
-		// Se a compra excede a posição curta, inicia posição longa
+		// If the purchase exceeds the short position, starts a long position
 		p.avgLongPrice[pair] = value
 	}
 }
 
-// OnCandle processa um novo candle
+// OnCandle processes a new candle
 func (p *PaperWallet) OnCandle(candle core.Candle) {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
-	// Atualiza o candle mais recente
+	// Update the most recent candle
 	p.lastCandle[candle.Pair] = candle
 
-	// Registra o primeiro candle, se ainda não existir
+	// Register the first candle, if it doesn't exist yet
 	if _, ok := p.fistCandle[candle.Pair]; !ok {
 		p.fistCandle[candle.Pair] = candle
 	}
 
-	// Processa ordens pendentes
-	p.processOrders(candle)
+	// Create a local copy of orders to process to avoid holding the lock during processing
+	ordersToProcess := make([]core.Order, len(p.orders))
+	copy(ordersToProcess, p.orders)
 
-	// Atualiza valores da carteira se o candle estiver completo
+	// Mutex can be unlocked now for order processing
+	p.mu.Unlock()
+
+	// Process pending orders
+	updatedOrders := p.processOrders(candle, ordersToProcess)
+
+	// Re-acquire lock to update order status
+	p.mu.Lock()
+	p.orders = updatedOrders
+
+	// Update portfolio values if the candle is complete
 	if candle.Complete {
 		p.updatePortfolioValues(candle)
 	}
+	p.mu.Unlock()
 }
 
-// processOrders processa as ordens pendentes com base no novo candle
-func (p *PaperWallet) processOrders(candle core.Candle) {
-	for i, order := range p.orders {
-		// Ignora ordens que não são para este par ou que não estão pendentes
+// processOrders processes pending orders based on the new candle
+// This function doesn't hold the mutex lock
+func (p *PaperWallet) processOrders(candle core.Candle, orders []core.Order) []core.Order {
+	result := make([]core.Order, len(orders))
+	copy(result, orders)
+
+	// Acquire lock briefly to initialize volume if needed
+	p.mu.Lock()
+	if _, ok := p.volume[candle.Pair]; !ok {
+		p.volume[candle.Pair] = 0
+	}
+	p.mu.Unlock()
+
+	for i, order := range result {
+		// Ignore orders that are not for this pair or that are not pending
 		if order.Pair != candle.Pair || order.Status != core.OrderStatusTypeNew {
 			continue
 		}
 
-		// Inicializa o volume para o par, se necessário
-		if _, ok := p.volume[candle.Pair]; !ok {
-			p.volume[candle.Pair] = 0
-		}
-
-		// Processa a ordem com base no lado (compra/venda)
+		// Process the order based on side (buy/sell)
 		if order.Side == core.SideTypeBuy {
-			p.processBuyOrder(i, order, candle)
+			p.processBuyOrder(&result[i], candle)
 		} else {
-			p.processSellOrder(i, order, candle)
+			p.processSellOrder(&result[i], &result, candle)
 		}
 	}
+
+	return result
 }
 
-// processBuyOrder processa uma ordem de compra
-func (p *PaperWallet) processBuyOrder(orderIndex int, order core.Order, candle core.Candle) {
-	// Verifica se o preço de compra foi atingido
+// processBuyOrder processes a buy order
+// This function acquires the mutex when needed
+func (p *PaperWallet) processBuyOrder(order *core.Order, candle core.Candle) {
+	// Check if the buy price was reached
 	if order.Price < candle.Close {
 		return
 	}
 
 	asset, quote := SplitAssetQuote(order.Pair)
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	p.ensureAssetExists(asset)
 
-	// Registra o volume
+	// Register volume
 	p.volume[candle.Pair] += order.Price * order.Quantity
 
-	// Atualiza a ordem
-	p.orders[orderIndex].UpdatedAt = candle.Time
-	p.orders[orderIndex].Status = core.OrderStatusTypeFilled
+	// Update the order
+	order.UpdatedAt = candle.Time
+	order.Status = core.OrderStatusTypeFilled
 
-	// Atualiza o preço médio e os saldos
+	// Update average price and balances
 	p.updateAveragePrice(order.Side, order.Pair, order.Quantity, order.Price)
 	p.assets[asset].Free = p.assets[asset].Free + order.Quantity
 	p.assets[quote].Lock = p.assets[quote].Lock - order.Price*order.Quantity
 }
 
-// processSellOrder processa uma ordem de venda
-func (p *PaperWallet) processSellOrder(orderIndex int, order core.Order, candle core.Candle) {
-	// Determina o preço de execução da ordem
+// processSellOrder processes a sell order
+// This function acquires the mutex when needed
+func (p *PaperWallet) processSellOrder(order *core.Order, orders *[]core.Order, candle core.Candle) {
+	// Determine the execution price of the order
 	var orderPrice float64
 
-	// Verifica o tipo de ordem e se o preço foi atingido
+	// Check order type and if the price was reached
 	if isLimitOrder(order.Type) && candle.High >= order.Price {
 		orderPrice = order.Price
 	} else if isStopOrder(order.Type) && order.Stop != nil && candle.Low <= *order.Stop {
 		orderPrice = *order.Stop
 	} else {
-		return // Preço não atingido
-	}
-
-	// Cancela outras ordens do mesmo grupo
-	if order.GroupID != nil {
-		p.cancelRelatedOrders(order, candle.Time)
+		return // Price not reached
 	}
 
 	asset, quote := SplitAssetQuote(order.Pair)
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	p.ensureAssetExists(quote)
 
-	// Registra o volume
+	// Cancel other orders from the same group
+	if order.GroupID != nil {
+		p.cancelRelatedOrdersLocked(order, *orders, candle.Time)
+	}
+
+	// Register volume
 	orderVolume := order.Quantity * orderPrice
 	p.volume[candle.Pair] += orderVolume
 
-	// Atualiza a ordem
-	p.orders[orderIndex].UpdatedAt = candle.Time
-	p.orders[orderIndex].Status = core.OrderStatusTypeFilled
+	// Update the order
+	order.UpdatedAt = candle.Time
+	order.Status = core.OrderStatusTypeFilled
 
-	// Atualiza o preço médio e os saldos
+	// Update average price and balances
 	p.updateAveragePrice(order.Side, order.Pair, order.Quantity, orderPrice)
 	p.assets[asset].Lock = p.assets[asset].Lock - order.Quantity
 	p.assets[quote].Free = p.assets[quote].Free + order.Quantity*orderPrice
 }
 
-// isLimitOrder verifica se é uma ordem do tipo limite
+// isLimitOrder checks if it's a limit order type
 func isLimitOrder(orderType core.OrderType) bool {
 	return orderType == core.OrderTypeLimit ||
 		orderType == core.OrderTypeLimitMaker ||
@@ -642,34 +673,36 @@ func isLimitOrder(orderType core.OrderType) bool {
 		orderType == core.OrderTypeTakeProfitLimit
 }
 
-// isStopOrder verifica se é uma ordem do tipo stop
+// isStopOrder checks if it's a stop order type
 func isStopOrder(orderType core.OrderType) bool {
 	return orderType == core.OrderTypeStopLossLimit ||
 		orderType == core.OrderTypeStopLoss
 }
 
-// cancelRelatedOrders cancela outras ordens do mesmo grupo
-func (p *PaperWallet) cancelRelatedOrders(order core.Order, timestamp time.Time) {
-	for j, groupOrder := range p.orders {
+// cancelRelatedOrdersLocked cancels other orders from the same group
+// This function assumes the mutex is already locked
+func (p *PaperWallet) cancelRelatedOrdersLocked(order *core.Order, orders []core.Order, timestamp time.Time) {
+	for j, groupOrder := range orders {
 		if groupOrder.GroupID != nil && *groupOrder.GroupID == *order.GroupID &&
 			groupOrder.ExchangeID != order.ExchangeID {
-			p.orders[j].Status = core.OrderStatusTypeCanceled
-			p.orders[j].UpdatedAt = timestamp
+			orders[j].Status = core.OrderStatusTypeCanceled
+			orders[j].UpdatedAt = timestamp
 			break
 		}
 	}
 }
 
-// updatePortfolioValues atualiza os valores da carteira
+// updatePortfolioValues updates the wallet values
+// This function assumes the mutex is already locked
 func (p *PaperWallet) updatePortfolioValues(candle core.Candle) {
 	var total float64
 
-	// Calcula o valor total de cada ativo
+	// Calculate the total value of each asset
 	for asset, info := range p.assets {
 		amount := info.Free + info.Lock
 		pair := strings.ToUpper(asset + p.baseCoin)
 
-		// Calcula o valor do ativo
+		// Calculate asset value
 		var assetValue float64
 		if amount < 0 {
 			v := math.Abs(amount)
@@ -681,14 +714,14 @@ func (p *PaperWallet) updatePortfolioValues(candle core.Candle) {
 			total += assetValue
 		}
 
-		// Registra o valor do ativo
+		// Register asset value
 		p.assetValues[asset] = append(p.assetValues[asset], AssetValue{
 			Time:  candle.Time,
 			Value: assetValue,
 		})
 	}
 
-	// Registra o valor total da carteira
+	// Register total wallet value
 	baseCoinInfo := p.assets[p.baseCoin]
 	p.equityValues = append(p.equityValues, AssetValue{
 		Time:  candle.Time,
@@ -696,7 +729,7 @@ func (p *PaperWallet) updatePortfolioValues(candle core.Candle) {
 	})
 }
 
-// Account retorna informações da conta
+// Account returns account information
 func (p *PaperWallet) Account() (core.Account, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -715,7 +748,7 @@ func (p *PaperWallet) Account() (core.Account, error) {
 	}, nil
 }
 
-// Position retorna a posição de um par
+// Position returns the position of a pair
 func (p *PaperWallet) Position(pair string) (asset, quote float64, err error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -730,26 +763,26 @@ func (p *PaperWallet) Position(pair string) (asset, quote float64, err error) {
 	return assetBalance.Free + assetBalance.Lock, quoteBalance.Free + quoteBalance.Lock, nil
 }
 
-// CreateOrderOCO cria uma ordem OCO (One-Cancels-the-Other)
+// CreateOrderOCO creates an OCO (One-Cancels-the-Other) order
 func (p *PaperWallet) CreateOrderOCO(side core.SideType, pair string,
 	size, price, stop, stopLimit float64) ([]core.Order, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	if size == 0 {
 		return nil, ErrInvalidQuantity
 	}
 
-	// Verifica fundos disponíveis
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	// Check available funds
 	err := p.validateFunds(side, pair, size, price, false)
 	if err != nil {
 		return nil, err
 	}
 
-	// Cria ID de grupo para as ordens
+	// Create group ID for orders
 	groupID := p.ID()
 
-	// Cria a ordem de limite
+	// Create limit order
 	limitMaker := core.Order{
 		ExchangeID: p.ID(),
 		CreatedAt:  p.lastCandle[pair].Time,
@@ -764,7 +797,7 @@ func (p *PaperWallet) CreateOrderOCO(side core.SideType, pair string,
 		RefPrice:   p.lastCandle[pair].Close,
 	}
 
-	// Cria a ordem de stop
+	// Create stop order
 	stopOrder := core.Order{
 		ExchangeID: p.ID(),
 		CreatedAt:  p.lastCandle[pair].Time,
@@ -780,29 +813,29 @@ func (p *PaperWallet) CreateOrderOCO(side core.SideType, pair string,
 		RefPrice:   p.lastCandle[pair].Close,
 	}
 
-	// Adiciona as ordens à lista
+	// Add orders to the list
 	p.orders = append(p.orders, limitMaker, stopOrder)
 
 	return []core.Order{limitMaker, stopOrder}, nil
 }
 
-// CreateOrderLimit cria uma ordem de limite
+// CreateOrderLimit creates a limit order
 func (p *PaperWallet) CreateOrderLimit(side core.SideType, pair string,
 	size float64, limit float64) (core.Order, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	if size == 0 {
 		return core.Order{}, ErrInvalidQuantity
 	}
 
-	// Verifica fundos disponíveis
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	// Check available funds
 	err := p.validateFunds(side, pair, size, limit, false)
 	if err != nil {
 		return core.Order{}, err
 	}
 
-	// Cria a ordem
+	// Create order
 	order := core.Order{
 		ExchangeID: p.ID(),
 		CreatedAt:  p.lastCandle[pair].Time,
@@ -815,36 +848,70 @@ func (p *PaperWallet) CreateOrderLimit(side core.SideType, pair string,
 		Quantity:   size,
 	}
 
-	// Adiciona a ordem à lista
+	// Add order to the list
 	p.orders = append(p.orders, order)
 
 	return order, nil
 }
 
-// CreateOrderMarket cria uma ordem de mercado
+// CreateOrderMarket creates a market order
 func (p *PaperWallet) CreateOrderMarket(side core.SideType, pair string, size float64) (core.Order, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	return p.createOrderMarket(side, pair, size)
-}
-
-// CreateOrderStop cria uma ordem de stop
-func (p *PaperWallet) CreateOrderStop(pair string, size float64, limit float64) (core.Order, error) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	if size == 0 {
 		return core.Order{}, ErrInvalidQuantity
 	}
 
-	// Verifica fundos disponíveis
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	// Check and apply funds (with immediate fill)
+	err := p.validateFunds(side, pair, size, p.lastCandle[pair].Close, true)
+	if err != nil {
+		return core.Order{}, err
+	}
+
+	// Initialize volume if needed
+	if _, ok := p.volume[pair]; !ok {
+		p.volume[pair] = 0
+	}
+
+	// Register volume
+	p.volume[pair] += p.lastCandle[pair].Close * size
+
+	// Create order (already filled)
+	order := core.Order{
+		ExchangeID: p.ID(),
+		CreatedAt:  p.lastCandle[pair].Time,
+		UpdatedAt:  p.lastCandle[pair].Time,
+		Pair:       pair,
+		Side:       side,
+		Type:       core.OrderTypeMarket,
+		Status:     core.OrderStatusTypeFilled,
+		Price:      p.lastCandle[pair].Close,
+		Quantity:   size,
+	}
+
+	// Add order to the list
+	p.orders = append(p.orders, order)
+
+	return order, nil
+}
+
+// CreateOrderStop creates a stop order
+func (p *PaperWallet) CreateOrderStop(pair string, size float64, limit float64) (core.Order, error) {
+	if size == 0 {
+		return core.Order{}, ErrInvalidQuantity
+	}
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	// Check available funds
 	err := p.validateFunds(core.SideTypeSell, pair, size, limit, false)
 	if err != nil {
 		return core.Order{}, err
 	}
 
-	// Cria a ordem
+	// Create order
 	order := core.Order{
 		ExchangeID: p.ID(),
 		CreatedAt:  p.lastCandle[pair].Time,
@@ -858,83 +925,47 @@ func (p *PaperWallet) CreateOrderStop(pair string, size float64, limit float64) 
 		Quantity:   size,
 	}
 
-	// Adiciona a ordem à lista
+	// Add order to the list
 	p.orders = append(p.orders, order)
 
 	return order, nil
 }
 
-// createOrderMarket é um método interno para criar ordens de mercado
-func (p *PaperWallet) createOrderMarket(side core.SideType, pair string, size float64) (core.Order, error) {
-	if size == 0 {
-		return core.Order{}, ErrInvalidQuantity
-	}
-
-	// Verifica e aplica os fundos (com preenchimento imediato)
-	err := p.validateFunds(side, pair, size, p.lastCandle[pair].Close, true)
-	if err != nil {
-		return core.Order{}, err
-	}
-
-	// Inicializa o volume, se necessário
-	if _, ok := p.volume[pair]; !ok {
-		p.volume[pair] = 0
-	}
-
-	// Registra o volume
-	p.volume[pair] += p.lastCandle[pair].Close * size
-
-	// Cria a ordem (já preenchida)
-	order := core.Order{
-		ExchangeID: p.ID(),
-		CreatedAt:  p.lastCandle[pair].Time,
-		UpdatedAt:  p.lastCandle[pair].Time,
-		Pair:       pair,
-		Side:       side,
-		Type:       core.OrderTypeMarket,
-		Status:     core.OrderStatusTypeFilled,
-		Price:      p.lastCandle[pair].Close,
-		Quantity:   size,
-	}
-
-	// Adiciona a ordem à lista
-	p.orders = append(p.orders, order)
-
-	return order, nil
-}
-
-// CreateOrderMarketQuote cria uma ordem de mercado com quantidade em moeda de cotação
+// CreateOrderMarketQuote creates a market order with a quantity in quote currency
 func (p *PaperWallet) CreateOrderMarketQuote(side core.SideType, pair string,
 	quoteQuantity float64) (core.Order, error) {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
-	// Converte a quantidade em moeda de cotação para quantidade de ativo
+	// Convert the quantity in quote currency to asset quantity
 	info := p.AssetsInfo(pair)
-	quantity := common.AmountToLotSize(info.StepSize, info.BaseAssetPrecision, quoteQuantity/p.lastCandle[pair].Close)
+	price := p.lastCandle[pair].Close
+	quantity := common.AmountToLotSize(info.StepSize, info.BaseAssetPrecision, quoteQuantity/price)
 
-	return p.createOrderMarket(side, pair, quantity)
+	// Unlock before calling CreateOrderMarket to avoid deadlock
+	p.mu.Unlock()
+
+	return p.CreateOrderMarket(side, pair, quantity)
 }
 
-// Cancel cancela uma ordem
+// Cancel cancels an order
 func (p *PaperWallet) Cancel(order core.Order) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
 	for i, o := range p.orders {
 		if o.ExchangeID == order.ExchangeID {
-			// Marca a ordem como cancelada
+			// Mark order as canceled
 			p.orders[i].Status = core.OrderStatusTypeCanceled
 
-			// Libera os fundos bloqueados
+			// Release locked funds
 			asset, quote := SplitAssetQuote(o.Pair)
 
-			// Caso 1: Temos posição longa e esta é uma ordem de venda
+			// Case 1: We have a long position and this is a sell order
 			if p.assets[asset].Lock > 0 && o.Side == core.SideTypeSell {
 				p.assets[asset].Free += o.Quantity
 				p.assets[asset].Lock -= o.Quantity
 			} else if p.assets[asset].Lock == 0 {
-				// Caso 2: Não temos posição longa
+				// Case 2: We don't have a long position
 				amount := order.Price * order.Quantity
 				p.assets[quote].Free += amount
 				p.assets[quote].Lock -= amount
@@ -947,7 +978,7 @@ func (p *PaperWallet) Cancel(order core.Order) error {
 	return errors.New("order not found")
 }
 
-// Order retorna uma ordem específica
+// Order returns a specific order
 func (p *PaperWallet) Order(_ string, id int64) (core.Order, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
@@ -961,18 +992,18 @@ func (p *PaperWallet) Order(_ string, id int64) (core.Order, error) {
 	return core.Order{}, errors.New("order not found")
 }
 
-// CandlesByPeriod retorna candles dentro de um período
+// CandlesByPeriod returns candles within a period
 func (p *PaperWallet) CandlesByPeriod(ctx context.Context, pair, period string,
 	start, end time.Time) ([]core.Candle, error) {
 	return p.feeder.CandlesByPeriod(ctx, pair, period, start, end)
 }
 
-// CandlesByLimit retorna um número limitado de candles
+// CandlesByLimit returns a limited number of candles
 func (p *PaperWallet) CandlesByLimit(ctx context.Context, pair, period string, limit int) ([]core.Candle, error) {
 	return p.feeder.CandlesByLimit(ctx, pair, period, limit)
 }
 
-// CandlesSubscription retorna um canal para receber candles
+// CandlesSubscription returns a channel to receive candles
 func (p *PaperWallet) CandlesSubscription(ctx context.Context, pair, timeframe string) (chan core.Candle, chan error) {
 	return p.feeder.CandlesSubscription(ctx, pair, timeframe)
 }

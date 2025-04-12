@@ -63,7 +63,7 @@ func main() {
 	)
 
 	// initializing my strategy
-	strategy := &strategies.CrossEMA{}
+	strategy := strategies.NewCrossEMA(9, 21, 10.0)
 
 	chart, err := plot.NewChart(
 		backnrun.DefaultLog,

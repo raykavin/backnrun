@@ -4,7 +4,6 @@ import (
 	"github.com/raykavin/backnrun"
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/indicator"
-	"github.com/raykavin/backnrun/pkg/strategy"
 )
 
 // Williams91Strategy implements Larry Williams' 9.1 trading setup
@@ -50,23 +49,23 @@ func (w Williams91Strategy) WarmupPeriod() int {
 }
 
 // Indicators calculates and returns the indicators used by this strategy
-func (w Williams91Strategy) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
+func (w Williams91Strategy) Indicators(df *core.Dataframe) []core.ChartIndicator {
 	// Calculate indicators
 	df.Metadata["lowest_low"] = indicator.Min(df.Low, w.lookbackPeriod)
 	df.Metadata["atr"] = indicator.ATR(df.High, df.Low, df.Close, w.atrPeriod)
 
 	// Return chart indicators for visualization
-	return []strategy.ChartIndicator{
+	return []core.ChartIndicator{
 		{
 			Overlay:   true,
 			GroupName: "Williams 9.1",
 			Time:      df.Time,
-			Metrics: []strategy.IndicatorMetric{
+			Metrics: []core.IndicatorMetric{
 				{
 					Values: df.Metadata["lowest_low"],
 					Name:   "9-Day Low",
 					Color:  "red",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 			},
 		},
@@ -74,12 +73,12 @@ func (w Williams91Strategy) Indicators(df *core.Dataframe) []strategy.ChartIndic
 			Overlay:   false,
 			GroupName: "ATR",
 			Time:      df.Time,
-			Metrics: []strategy.IndicatorMetric{
+			Metrics: []core.IndicatorMetric{
 				{
 					Values: df.Metadata["atr"],
 					Name:   "ATR(" + string(rune(w.atrPeriod+'0')) + ")",
 					Color:  "purple",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 			},
 		},

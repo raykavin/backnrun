@@ -4,7 +4,6 @@ import (
 	"github.com/raykavin/backnrun"
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/indicator"
-	"github.com/raykavin/backnrun/pkg/strategy"
 )
 
 // CrossEMA implements a trading strategy using EMA and SMA crossovers
@@ -17,12 +16,24 @@ type CrossEMA struct {
 }
 
 // NewCrossEMA creates a new instance of the CrossEMA strategy with default parameters
-func NewCrossEMA() *CrossEMA {
-	return &CrossEMA{
+func NewCrossEMA(emaLength, smaLength int, minQuoteAmount float64) *CrossEMA {
+	crossMA := &CrossEMA{
 		emaLength:      9,
 		smaLength:      21,
 		minQuoteAmount: 10.0,
 	}
+
+	if emaLength > 0 {
+		crossMA.emaLength = emaLength
+	}
+	if smaLength > 0 {
+		crossMA.smaLength = smaLength
+	}
+	if minQuoteAmount > 0 {
+		crossMA.minQuoteAmount = minQuoteAmount
+	}
+
+	return crossMA
 }
 
 // Timeframe returns the required timeframe for this strategy
@@ -36,29 +47,29 @@ func (s CrossEMA) WarmupPeriod() int {
 }
 
 // Indicators calculates and returns the indicators used by this strategy
-func (s CrossEMA) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
+func (s CrossEMA) Indicators(df *core.Dataframe) []core.ChartIndicator {
 	// Calculate indicators
 	df.Metadata["ema9"] = indicator.EMA(df.Close, s.emaLength)
 	df.Metadata["sma21"] = indicator.SMA(df.Close, s.smaLength)
 
 	// Return chart indicators for visualization
-	return []strategy.ChartIndicator{
+	return []core.ChartIndicator{
 		{
 			Overlay:   true,
 			GroupName: "MA's",
 			Time:      df.Time,
-			Metrics: []strategy.IndicatorMetric{
+			Metrics: []core.IndicatorMetric{
 				{
 					Values: df.Metadata["ema9"],
 					Name:   "EMA " + string(rune(s.emaLength+'0')),
 					Color:  "red",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 				{
 					Values: df.Metadata["sma21"],
 					Name:   "SMA " + string(rune(s.smaLength+'0')),
 					Color:  "blue",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 			},
 		},

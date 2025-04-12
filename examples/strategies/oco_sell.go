@@ -5,7 +5,6 @@ import (
 	"github.com/raykavin/backnrun"
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/indicator"
-	"github.com/raykavin/backnrun/pkg/strategy"
 )
 
 // OCOSell implements a trading strategy using Stochastic oscillator
@@ -43,7 +42,7 @@ func (s OCOSell) WarmupPeriod() int {
 }
 
 // Indicators calculates and returns the indicators used by this strategy
-func (s OCOSell) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
+func (s OCOSell) Indicators(df *core.Dataframe) []core.ChartIndicator {
 	// Calculate Stochastic oscillator
 	df.Metadata["stoch"], df.Metadata["stoch_signal"] = indicator.Stoch(
 		df.High,
@@ -57,23 +56,23 @@ func (s OCOSell) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
 	)
 
 	// Return chart indicators for visualization
-	return []strategy.ChartIndicator{
+	return []core.ChartIndicator{
 		{
 			Overlay:   false,
 			GroupName: "Stochastic",
 			Time:      df.Time,
-			Metrics: []strategy.IndicatorMetric{
+			Metrics: []core.IndicatorMetric{
 				{
 					Values: df.Metadata["stoch"],
 					Name:   "K",
 					Color:  "red",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 				{
 					Values: df.Metadata["stoch_signal"],
 					Name:   "D",
 					Color:  "blue",
-					Style:  strategy.StyleLine,
+					Style:  core.StyleLine,
 				},
 			},
 		},

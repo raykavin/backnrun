@@ -21,14 +21,14 @@ const defaultDatabase = "backnrun.db"
 type Backnrun struct {
 	storage  core.OrderStorage
 	exchange core.Exchange
-	strategy strategy.Strategy
+	strategy core.Strategy
 	notifier core.Notifier
 	telegram core.NotifierWithStart
 
+	orderFeed           *order.Feed
 	settings            *core.Settings
 	orderController     *order.Controller
 	priorityQueueCandle *core.PriorityQueue
-	orderFeed           *order.Feed
 	dataFeed            *exchange.DataFeedSubscription
 	paperWallet         *exchange.PaperWallet
 
@@ -38,14 +38,19 @@ type Backnrun struct {
 }
 
 // NewBot creates a new Backnrun bot instance with the provided settings and dependencies
-func NewBot(ctx context.Context, settings *core.Settings, exch core.Exchange, str strategy.Strategy,
-	options ...Option) (*Backnrun, error) {
+func NewBot(
+	ctx context.Context,
+	settings *core.Settings,
+	exch core.Exchange,
+	strg core.Strategy,
+	options ...Option,
+) (*Backnrun, error) {
 
 	// Initialize bot with required core components
 	bot := &Backnrun{
 		settings:              settings,
 		exchange:              exch,
-		strategy:              str,
+		strategy:              strg,
 		orderFeed:             order.NewOrderFeed(),
 		dataFeed:              exchange.NewDataFeed(exch, DefaultLog),
 		strategiesControllers: make(map[string]*strategy.Controller),

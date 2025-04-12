@@ -56,7 +56,7 @@ package strategies
 // }
 
 // // Indicators calcula e retorna os indicadores usados por esta estratégia
-// func (b BollingerRSIStrategy) Indicators(df *core.Dataframe) []strategy.ChartIndicator {
+// func (b BollingerRSIStrategy) Indicators(df *core.Dataframe) []core.ChartIndicator {
 // 	// Calcular Bollinger Bands
 // 	df.Metadata["bb_middle"] = indicator.SMA(df.Close, b.bollingerPeriod)
 // 	df.Metadata["bb_stddev"] = indicator.StdDev(df.Close, b.bollingerPeriod)
@@ -73,29 +73,29 @@ package strategies
 // 	df.Metadata["rsi"] = indicator.RSI(df.Close, b.rsiPeriod)
 
 // 	// Retornar indicadores para visualização
-// 	return []strategy.ChartIndicator{
+// 	return []core.ChartIndicator{
 // 		{
 // 			Overlay:   true,
 // 			GroupName: "Bollinger Bands",
 // 			Time:      df.Time,
-// 			Metrics: []strategy.IndicatorMetric{
+// 			Metrics: []core.IndicatorMetric{
 // 				{
 // 					Values: df.Metadata["bb_upper"],
 // 					Name:   "BB Upper",
 // 					Color:  "red",
-// 					Style:  strategy.StyleLine,
+// 					Style:  core.StyleLine,
 // 				},
 // 				{
 // 					Values: df.Metadata["bb_middle"],
 // 					Name:   "BB Middle",
 // 					Color:  "blue",
-// 					Style:  strategy.StyleLine,
+// 					Style:  core.StyleLine,
 // 				},
 // 				{
 // 					Values: df.Metadata["bb_lower"],
 // 					Name:   "BB Lower",
 // 					Color:  "red",
-// 					Style:  strategy.StyleLine,
+// 					Style:  core.StyleLine,
 // 				},
 // 			},
 // 		},
@@ -103,12 +103,12 @@ package strategies
 // 			Overlay:   false,
 // 			GroupName: "RSI",
 // 			Time:      df.Time,
-// 			Metrics: []strategy.IndicatorMetric{
+// 			Metrics: []core.IndicatorMetric{
 // 				{
 // 					Values: df.Metadata["rsi"],
 // 					Name:   "RSI(" + string(rune(b.rsiPeriod+'0')) + ")",
 // 					Color:  "purple",
-// 					Style:  strategy.StyleLine,
+// 					Style:  core.StyleLine,
 // 				},
 // 			},
 // 		},
