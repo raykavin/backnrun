@@ -397,7 +397,7 @@ func (n *Backnrun) Run(ctx context.Context) error {
 			return err
 		}
 
-		// link to ninja bot controller
+		// link to backnrun controller
 		n.dataFeed.Subscribe(pair, n.strategy.Timeframe(), n.onCandle, false)
 
 		// start strategy controller
