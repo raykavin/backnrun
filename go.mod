@@ -5,6 +5,7 @@ go 1.23.6
 require (
 	github.com/StudioSol/set v1.0.0
 	github.com/adshao/go-binance/v2 v2.6.1
+	github.com/aybabtme/uniplot v0.0.0-20151203143629-039c559e5e7e
 	github.com/evanw/esbuild v0.21.4
 	github.com/google/goterm v0.0.0-20200907032337-555d40f16ae2
 	github.com/jpillora/backoff v1.0.0

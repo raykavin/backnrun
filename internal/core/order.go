@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+type OrderSubscriber interface {
+	OnOrder(Order)
+}
+
 // OrderFilter defines a function type for filtering orders
 type OrderFilter func(order Order) bool
 

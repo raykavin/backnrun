@@ -8,107 +8,141 @@ import (
 	"strconv"
 
 	"github.com/aybabtme/uniplot/histogram"
+	"github.com/raykavin/backnrun/internal/core"
 	"github.com/raykavin/backnrun/internal/exchange"
+	"github.com/raykavin/backnrun/internal/metric"
 	"github.com/raykavin/backnrun/internal/notification"
 	"github.com/raykavin/backnrun/internal/order"
+	"github.com/raykavin/backnrun/internal/storage"
 	"github.com/raykavin/backnrun/internal/strategy"
-	"github.com/rodrigo-brito/ninjabot/model"
-	"github.com/rodrigo-brito/ninjabot/service"
-	"github.com/rodrigo-brito/ninjabot/storage"
-	"github.com/rodrigo-brito/ninjabot/tools/log"
-	"github.com/rodrigo-brito/ninjabot/tools/metrics"
+	"github.com/raykavin/backnrun/pkg/logger"
+	"github.com/raykavin/backnrun/pkg/logger/zerolog"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/schollz/progressbar/v3"
 )
 
-const defaultDatabase = "ninjabot.db"
+const defaultDatabase = "backnrun.db"
 
-func init() {
-	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "2006-01-02 15:04",
-	})
-}
-
-type OrderSubscriber interface {
-	OnOrder(model.Order)
-}
-
-type CandleSubscriber interface {
-	OnCandle(model.Candle)
-}
-
-type NinjaBot struct {
-	storage  storage.Storage
-	settings model.Settings
-	exchange service.Exchange
+type Backnrun struct {
+	storage  core.OrderStorage
+	settings core.Settings
+	exchange core.Exchange
 	strategy strategy.Strategy
-	notifier service.Notifier
-	telegram service.Telegram
+	notifier core.Notifier
+	telegram core.NotifierWithStart
+	logger   logger.Logger
 
-	orderController       *order.Controller
-	priorityQueueCandle   *model.PriorityQueue
+	orderController     *order.Controller
+	priorityQueueCandle *core.PriorityQueue
+	orderFeed           *order.Feed
+	dataFeed            *exchange.DataFeedSubscription
+	paperWallet         *exchange.PaperWallet
+
 	strategiesControllers map[string]*strategy.Controller
-	orderFeed             *order.Feed
-	dataFeed              *exchange.DataFeedSubscription
-	paperWallet           *exchange.PaperWallet
 
 	backtest bool
 }
 
-type Option func(*NinjaBot)
+type Option func(*Backnrun)
 
-func NewBot(ctx context.Context, settings model.Settings, exch service.Exchange, str strategy.Strategy,
-	options ...Option) (*NinjaBot, error) {
+// NewBot creates a new Backnrun bot instance with the provided settings and dependencies
+func NewBot(ctx context.Context, settings core.Settings, exch core.Exchange, str strategy.Strategy,
+	options ...Option) (*Backnrun, error) {
 
-	bot := &NinjaBot{
+	// Initialize bot with required core components
+	bot := &Backnrun{
 		settings:              settings,
 		exchange:              exch,
 		strategy:              str,
 		orderFeed:             order.NewOrderFeed(),
 		dataFeed:              exchange.NewDataFeed(exch),
 		strategiesControllers: make(map[string]*strategy.Controller),
-		priorityQueueCandle:   model.NewPriorityQueue(nil),
+		priorityQueueCandle:   core.NewPriorityQueue(nil),
 	}
 
-	for _, pair := range settings.Pairs {
-		asset, quote := exchange.SplitAssetQuote(pair)
-		if asset == "" || quote == "" {
-			return nil, fmt.Errorf("invalid pair: %s", pair)
-		}
+	// Validate trading pairs
+	if err := validatePairs(settings.GetPairs()); err != nil {
+		return nil, err
 	}
 
+	// Apply custom options
 	for _, option := range options {
 		option(bot)
 	}
 
-	var err error
-	if bot.storage == nil {
-		bot.storage, err = storage.FromFile(defaultDatabase)
-		if err != nil {
-			return nil, err
-		}
+	// Initialize storage
+	if err := initializeStorage(bot); err != nil {
+		return nil, err
 	}
 
+	// Initialize order controller
 	bot.orderController = order.NewController(ctx, exch, bot.storage, bot.orderFeed)
 
-	if settings.Telegram.Enabled {
-		bot.telegram, err = notification.NewTelegram(bot.orderController, settings)
-		if err != nil {
-			return nil, err
-		}
-		// register telegram as notifier
-		WithNotifier(bot.telegram)(bot)
+	// Initialize notification systems
+	if err := initializeNotifications(ctx, bot, settings); err != nil {
+		return nil, err
+	}
+
+	// Initialize logger
+	if err := initializeLogger(bot); err != nil {
+		return nil, err
 	}
 
 	return bot, nil
 }
 
+// validatePairs ensures all trading pairs have valid asset and quote components
+func validatePairs(pairs []string) error {
+	for _, pair := range pairs {
+		asset, quote := exchange.SplitAssetQuote(pair)
+		if asset == "" || quote == "" {
+			return fmt.Errorf("invalid pair: %s", pair)
+		}
+	}
+	return nil
+}
+
+// initializeStorage sets up the bot's data storage
+func initializeStorage(bot *Backnrun) error {
+	var err error
+	if bot.storage == nil {
+		bot.storage, err = storage.FromFile(defaultDatabase)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// initializeNotifications sets up notification systems like Telegram
+func initializeNotifications(ctx context.Context, bot *Backnrun, settings core.Settings) error {
+	var err error
+	if settings.GetTelegram().IsEnabled() {
+		bot.telegram, err = notification.NewTelegram(bot.orderController, settings)
+		if err != nil {
+			return err
+		}
+		// Register telegram as notifier
+		WithNotifier(bot.telegram)(bot)
+	}
+	return nil
+}
+
+// initializeLogger sets up the logging system
+func initializeLogger(bot *Backnrun) error {
+	log, err := zerolog.NewZerolog("debug", "2006-01-02 15:04:05", true, false)
+	if err != nil {
+		return err
+	}
+	bot.logger = &zerolog.ZerologAdapter{Logger: log.Logger}
+	return nil
+}
+
 // WithBacktest sets the bot to run in backtest mode, it is required for backtesting environments
 // Backtest mode optimize the input read for CSV and deal with race conditions
 func WithBacktest(wallet *exchange.PaperWallet) Option {
-	return func(bot *NinjaBot) {
+	return func(bot *Backnrun) {
 		bot.backtest = true
 		opt := WithPaperWallet(wallet)
 		opt(bot)
@@ -116,22 +150,22 @@ func WithBacktest(wallet *exchange.PaperWallet) Option {
 }
 
 // WithStorage sets the storage for the bot, by default it uses a local file called ninjabot.db
-func WithStorage(storage storage.Storage) Option {
-	return func(bot *NinjaBot) {
+func WithStorage(storage core.OrderStorage) Option {
+	return func(bot *Backnrun) {
 		bot.storage = storage
 	}
 }
 
-// WithLogLevel sets the log level. eg: log.DebugLevel, log.InfoLevel, log.WarnLevel, log.ErrorLevel, log.FatalLevel
-func WithLogLevel(level log.Level) Option {
-	return func(_ *NinjaBot) {
-		log.SetLevel(level)
+// WithLogLevel sets the log level. eg: n.logger.DebugLevel, n.logger.InfoLevel, n.logger.WarnLevel, n.logger.ErrorLevel, n.logger.FatalLevel
+func WithLogLevel(level logger.Level) Option {
+	return func(n *Backnrun) {
+		n.logger.SetLevel(level)
 	}
 }
 
 // WithNotifier registers a notifier to the bot, currently only email and telegram are supported
-func WithNotifier(notifier service.Notifier) Option {
-	return func(bot *NinjaBot) {
+func WithNotifier(notifier core.Notifier) Option {
+	return func(bot *Backnrun) {
 		bot.notifier = notifier
 		bot.orderController.SetNotifier(notifier)
 		bot.SubscribeOrder(notifier)
@@ -139,48 +173,48 @@ func WithNotifier(notifier service.Notifier) Option {
 }
 
 // WithCandleSubscription subscribes a given struct to the candle feed
-func WithCandleSubscription(subscriber CandleSubscriber) Option {
-	return func(bot *NinjaBot) {
+func WithCandleSubscription(subscriber core.CandleSubscriber) Option {
+	return func(bot *Backnrun) {
 		bot.SubscribeCandle(subscriber)
 	}
 }
 
 // WithPaperWallet sets the paper wallet for the bot (used for backtesting and live simulation)
 func WithPaperWallet(wallet *exchange.PaperWallet) Option {
-	return func(bot *NinjaBot) {
+	return func(bot *Backnrun) {
 		bot.paperWallet = wallet
 	}
 }
 
-func (n *NinjaBot) SubscribeCandle(subscriptions ...CandleSubscriber) {
-	for _, pair := range n.settings.Pairs {
+func (n *Backnrun) SubscribeCandle(subscriptions ...core.CandleSubscriber) {
+	for _, pair := range n.settings.GetPairs() {
 		for _, subscription := range subscriptions {
 			n.dataFeed.Subscribe(pair, n.strategy.Timeframe(), subscription.OnCandle, false)
 		}
 	}
 }
 
-func WithOrderSubscription(subscriber OrderSubscriber) Option {
-	return func(bot *NinjaBot) {
+func WithOrderSubscription(subscriber core.OrderSubscriber) Option {
+	return func(bot *Backnrun) {
 		bot.SubscribeOrder(subscriber)
 	}
 }
 
-func (n *NinjaBot) SubscribeOrder(subscriptions ...OrderSubscriber) {
-	for _, pair := range n.settings.Pairs {
+func (n *Backnrun) SubscribeOrder(subscriptions ...core.OrderSubscriber) {
+	for _, pair := range n.settings.GetPairs() {
 		for _, subscription := range subscriptions {
 			n.orderFeed.Subscribe(pair, subscription.OnOrder, false)
 		}
 	}
 }
 
-func (n *NinjaBot) Controller() *order.Controller {
+func (n *Backnrun) Controller() *order.Controller {
 	return n.orderController
 }
 
-// Summary function displays all trades, accuracy and some bot metrics in stdout
+// Summary function displays all trades, accuracy and some bot metric in stdout
 // To access the raw data, you may access `bot.Controller().Results`
-func (n *NinjaBot) Summary() {
+func (n *Backnrun) Summary() {
 	var (
 		total  float64
 		wins   int
@@ -252,9 +286,9 @@ func (n *NinjaBot) Summary() {
 	for pair, summary := range n.orderController.Results {
 		fmt.Printf("| %s |\n", pair)
 		returns := append(summary.WinPercent(), summary.LosePercent()...)
-		returnsInterval := metrics.Bootstrap(returns, metrics.Mean, 10000, 0.95)
-		payoffInterval := metrics.Bootstrap(returns, metrics.Payoff, 10000, 0.95)
-		profitFactorInterval := metrics.Bootstrap(returns, metrics.ProfitFactor, 10000, 0.95)
+		returnsInterval := metric.Bootstrap(returns, metric.Mean, 10000, 0.95)
+		payoffInterval := metric.Bootstrap(returns, metric.Payoff, 10000, 0.95)
+		profitFactorInterval := metric.Bootstrap(returns, metric.ProfitFactor, 10000, 0.95)
 
 		fmt.Printf("RETURN:      %.2f%% (%.2f%% ~ %.2f%%)\n",
 			returnsInterval.Mean*100, returnsInterval.Lower*100, returnsInterval.Upper*100)
@@ -272,7 +306,7 @@ func (n *NinjaBot) Summary() {
 
 }
 
-func (n NinjaBot) SaveReturns(outputDir string) error {
+func (n Backnrun) SaveReturns(outputDir string) error {
 	for _, summary := range n.orderController.Results {
 		outputFile := fmt.Sprintf("%s/%s.csv", outputDir, summary.Pair)
 		if err := summary.SaveReturns(outputFile); err != nil {
@@ -282,11 +316,11 @@ func (n NinjaBot) SaveReturns(outputDir string) error {
 	return nil
 }
 
-func (n *NinjaBot) onCandle(candle model.Candle) {
+func (n *Backnrun) onCandle(candle core.Candle) {
 	n.priorityQueueCandle.Push(candle)
 }
 
-func (n *NinjaBot) processCandle(candle model.Candle) {
+func (n *Backnrun) processCandle(candle core.Candle) {
 	if n.paperWallet != nil {
 		n.paperWallet.OnCandle(candle)
 	}
@@ -299,22 +333,22 @@ func (n *NinjaBot) processCandle(candle model.Candle) {
 }
 
 // Process pending candles in buffer
-func (n *NinjaBot) processCandles() {
+func (n *Backnrun) processCandles() {
 	for item := range n.priorityQueueCandle.PopLock() {
-		n.processCandle(item.(model.Candle))
+		n.processCandle(item.(core.Candle))
 	}
 }
 
 // Start the backtest process and create a progress bar
 // backtestCandles will process candles from a prirority queue in chronological order
-func (n *NinjaBot) backtestCandles() {
-	log.Info("[SETUP] Starting backtesting")
+func (n *Backnrun) backtestCandles() {
+	n.logger.Info("[SETUP] Starting backtesting")
 
 	progressBar := progressbar.Default(int64(n.priorityQueueCandle.Len()))
 	for n.priorityQueueCandle.Len() > 0 {
 		item := n.priorityQueueCandle.Pop()
 
-		candle := item.(model.Candle)
+		candle := item.(core.Candle)
 		if n.paperWallet != nil {
 			n.paperWallet.OnCandle(candle)
 		}
@@ -325,14 +359,14 @@ func (n *NinjaBot) backtestCandles() {
 		}
 
 		if err := progressBar.Add(1); err != nil {
-			log.Warnf("update progressbar fail: %v", err)
+			n.logger.Warnf("update progressbar fail: %v", err)
 		}
 	}
 }
 
 // Before Ninjabot start, we need to load the necessary data to fill strategy indicators
 // Then, we need to get the time frame and warmup period to fetch the necessary candles
-func (n *NinjaBot) preload(ctx context.Context, pair string) error {
+func (n *Backnrun) preload(ctx context.Context, pair string) error {
 	if n.backtest {
 		return nil
 	}
@@ -352,8 +386,8 @@ func (n *NinjaBot) preload(ctx context.Context, pair string) error {
 }
 
 // Run will initialize the strategy controller, order controller, preload data and start the bot
-func (n *NinjaBot) Run(ctx context.Context) error {
-	for _, pair := range n.settings.Pairs {
+func (n *Backnrun) Run(ctx context.Context) error {
+	for _, pair := range n.settings.GetPairs() {
 		// setup and subscribe strategy to data feed (candles)
 		n.strategiesControllers[pair] = strategy.NewStrategyController(pair, n.strategy, n.orderController)
 

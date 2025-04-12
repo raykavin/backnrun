@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+type CandleSubscriber interface {
+	OnCandle(Candle)
+}
+
 // Candle represents a trading candle with OHLCV data
 type Candle struct {
 	Pair      string
