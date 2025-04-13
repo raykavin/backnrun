@@ -13,103 +13,120 @@ import (
 	"github.com/raykavin/backnrun/pkg/storage"
 )
 
-// This example shows how to use backtesting with BackNRun
-// Backtesting is a simulation of the strategy in historical data (from CSV)
+// main demonstrates how to use BackNRun for backtesting a trading strategy
+// against historical data loaded from CSV files.
 func main() {
+	// Set up context and logging
 	ctx := context.Background()
+	log := backnrun.DefaultLog
+	log.SetLevel(logger.DebugLevel)
 
-	backnrun.DefaultLog.SetLevel(logger.DebugLevel)
-	backnrun.DefaultLog.Info("Starting backtest...")
+	// Initialize trading strategy
+	strategy := strategies.NewWilliams91Strategy()
 
-	// bot settings (eg: pairs, telegram, etc)
+	// Configure trading pairs
 	settings := &core.Settings{
-		Pairs: []string{
-			"BTCUSDT",
-			// "ETHUSDT",
-		},
+		Pairs: []string{"BTCUSDT"},
 	}
 
-	// initialize your strategy
-	strategy := strategies.NewCrossEMA(9, 21, 10.0)
+	// Initialize services
+	dataFeed, err := initializeDataFeed(strategy.Timeframe())
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// load historical data from CSV files
-	csvFeed, err := exchange.NewCSVFeed(
-		strategy.Timeframe(),
+	db, err := storage.FromMemory()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	wallet := initializeWallet(ctx, log, dataFeed)
+
+	chart, err := initializeChart(log, strategy, wallet)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Set up the trading bot
+	bot, err := initializeBot(ctx, settings, wallet, strategy, db, chart, log)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Run simulation
+	if err := bot.Run(ctx); err != nil {
+		log.Fatal(err)
+	}
+
+	// Display results
+	bot.Summary()
+
+	// Show interactive chart
+	if err := chart.Start(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+// initializeDataFeed sets up the historical data source from CSV files
+func initializeDataFeed(timeframe string) (*exchange.CSVFeed, error) {
+	return exchange.NewCSVFeed(
+		timeframe,
 		exchange.PairFeed{
 			Pair:      "BTCUSDT",
 			File:      "btc-5m.csv",
 			Timeframe: "5m",
 		},
+		// Additional pairs can be added like this:
 		// exchange.PairFeed{
-		// 	Pair:      "ETHUSDT",
-		// 	File:      "testdata/eth-1h.csv",
-		// 	Timeframe: "1h",
+		//     Pair:      "ETHUSDT",
+		//     File:      "testdata/eth-1h.csv",
+		//     Timeframe: "1h",
 		// },
 	)
-	if err != nil {
-		backnrun.DefaultLog.Fatal(err)
-	}
+}
 
-	// initialize a database in memory
-	storage, err := storage.FromMemory()
-	if err != nil {
-		backnrun.DefaultLog.Fatal(err)
-	}
-
-	// create a paper wallet for simulation, initializing with 1000 USDT
-	wallet := exchange.NewPaperWallet(
+// initializeWallet creates a paper trading wallet with initial funds
+func initializeWallet(ctx context.Context, log logger.Logger, feed *exchange.CSVFeed) *exchange.PaperWallet {
+	return exchange.NewPaperWallet(
 		ctx,
 		"USDT",
-		backnrun.DefaultLog,
+		log,
 		exchange.WithPaperAsset("USDT", 1000),
-		exchange.WithDataFeed(csvFeed),
+		exchange.WithDataFeed(feed),
 	)
+}
 
-	// create a chart  with indicators from the strategy and a custom additional RSI indicator
-	chart, err := plot.NewChart(
-		backnrun.DefaultLog,
+// initializeChart sets up visualization with strategy indicators
+func initializeChart(log logger.Logger, strategy core.Strategy, wallet *exchange.PaperWallet) (*plot.Chart, error) {
+	return plot.NewChart(
+		log,
 		plot.WithStrategyIndicators(strategy),
 		plot.WithCustomIndicators(
 			indicator.RSI(14, "purple"),
 		),
 		plot.WithPaperWallet(wallet),
 	)
-	if err != nil {
-		backnrun.DefaultLog.Fatal(err)
-		return
-	}
+}
 
-	// initializer BackNRun with the objects created before
-	bot, err := backnrun.NewBot(
+// initializeBot sets up the BackNRun trading bot with all required components
+func initializeBot(
+	ctx context.Context,
+	settings *core.Settings,
+	wallet *exchange.PaperWallet,
+	strategy core.Strategy,
+	db core.OrderStorage,
+	chart *plot.Chart,
+	log logger.Logger,
+) (*backnrun.Backnrun, error) {
+	return backnrun.NewBot(
 		ctx,
 		settings,
 		wallet,
 		strategy,
-		backnrun.DefaultLog,
+		log,
 		backnrun.WithBacktest(wallet), // Required for Backtest mode
-		backnrun.WithStorage(storage),
-
-		// connect bot feed (candle and orders) to the chart
+		backnrun.WithStorage(db),
 		backnrun.WithCandleSubscription(chart),
 		backnrun.WithOrderSubscription(chart),
 	)
-
-	if err != nil {
-		backnrun.DefaultLog.Fatal(err)
-	}
-
-	// Initializer simulation
-	err = bot.Run(ctx)
-	if err != nil {
-		backnrun.DefaultLog.Fatal(err)
-	}
-
-	// Print bot results
-	bot.Summary()
-
-	// Display candlesticks chart in local browser
-	err = chart.Start()
-	if err != nil {
-		backnrun.DefaultLog.Fatal(err)
-	}
 }
