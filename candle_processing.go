@@ -49,7 +49,7 @@ func (bot *Bot) backtestCandles() {
 			bot.strategiesControllers[candle.Pair].OnCandle(candle)
 		}
 
-		time.Sleep(5 * time.Millisecond) // prevent CPU overload
+		time.Sleep(1 * time.Millisecond) // prevent CPU overload
 	}
 }
 

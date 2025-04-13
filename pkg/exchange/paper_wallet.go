@@ -360,7 +360,7 @@ func (p *PaperWallet) validateSellFunds(pair, asset, quote string, amount, value
 	}
 
 	// Check if there are sufficient funds
-	if funds < amount*value {
+	if funds < (amount * value) {
 		return &OrderError{
 			Err:      ErrInsufficientFunds,
 			Pair:     pair,
@@ -413,7 +413,7 @@ func (p *PaperWallet) validateBuyFunds(pair, asset, quote string, amount, value 
 		}
 
 		// Check if there are sufficient funds
-		if funds < amountToBuy*value {
+		if funds < (amountToBuy * value) {
 			return &OrderError{
 				Err:      ErrInsufficientFunds,
 				Pair:     pair,
@@ -985,6 +985,7 @@ func (p *PaperWallet) Order(_ string, id int64) (core.Order, error) {
 
 	for _, order := range p.orders {
 		if order.ExchangeID == id {
+			order.ID = id
 			return order, nil
 		}
 	}

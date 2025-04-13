@@ -1,7 +1,6 @@
 package binance
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"time"
@@ -21,25 +20,26 @@ var (
 // BinanceExchangeType defines the common interface for all Binance exchange types
 type BinanceExchangeType interface {
 	// Market data
-	LastQuote(ctx context.Context, pair string) (float64, error)
-	AssetsInfo(pair string) core.AssetInfo
-	Position(pair string) (asset float64, quote float64, err error)
-	Account() (core.Account, error)
-
+	core.Feeder
+	// LastQuote(ctx context.Context, pair string) (float64, error)
+	// AssetsInfo(pair string) core.AssetInfo
 	// Candles
-	CandlesByLimit(ctx context.Context, pair, period string, limit int) ([]core.Candle, error)
-	CandlesByPeriod(ctx context.Context, pair, period string, start, end time.Time) ([]core.Candle, error)
-	CandlesSubscription(ctx context.Context, pair, period string) (chan core.Candle, chan error)
-
+	// CandlesByLimit(ctx context.Context, pair, period string, limit int) ([]core.Candle, error)
+	// CandlesByPeriod(ctx context.Context, pair, period string, start, end time.Time) ([]core.Candle, error)
+	// CandlesSubscription(ctx context.Context, pair, period string) (chan core.Candle, chan error)
+	
 	// Order management
-	CreateOrderLimit(side core.SideType, pair string, quantity, limit float64) (core.Order, error)
-	CreateOrderMarket(side core.SideType, pair string, quantity float64) (core.Order, error)
-	CreateOrderMarketQuote(side core.SideType, pair string, quantity float64) (core.Order, error)
-	CreateOrderStop(pair string, quantity, limit float64) (core.Order, error)
-	CreateOrderOCO(side core.SideType, pair string, quantity, price, stop, stopLimit float64) ([]core.Order, error)
-	Orders(pair string, limit int) ([]core.Order, error)
-	Order(pair string, id int64) (core.Order, error)
-	Cancel(order core.Order) error
+	core.Broker
+	// Account() (core.Account, error)
+	// Position(pair string) (asset float64, quote float64, err error)
+	// CreateOrderLimit(side core.SideType, pair string, quantity, limit float64) (core.Order, error)
+	// CreateOrderMarket(side core.SideType, pair string, quantity float64) (core.Order, error)
+	// CreateOrderMarketQuote(side core.SideType, pair string, quantity float64) (core.Order, error)
+	// CreateOrderStop(pair string, quantity, limit float64) (core.Order, error)
+	// CreateOrderOCO(side core.SideType, pair string, quantity, price, stop, stopLimit float64) ([]core.Order, error)
+	// Orders(pair string, limit int) ([]core.Order, error)
+	// Order(pair string, id int64) (core.Order, error)
+	// Cancel(order core.Order) error
 }
 
 // OrderError represents an error that occurred during order creation or execution
