@@ -1,6 +1,9 @@
 package strategies
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/raykavin/backnrun"
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/indicator"
@@ -12,6 +15,8 @@ type CrossEMA struct {
 	// Configuration parameters
 	emaLength      int
 	smaLength      int
+	emaName        string
+	smaName        string
 	minQuoteAmount float64
 }
 
@@ -33,12 +38,15 @@ func NewCrossEMA(emaLength, smaLength int, minQuoteAmount float64) *CrossEMA {
 		crossMA.minQuoteAmount = minQuoteAmount
 	}
 
+	crossMA.emaName = fmt.Sprintf("ema%d", crossMA.emaLength)
+	crossMA.smaName = fmt.Sprintf("sma%d", crossMA.smaLength)
+
 	return crossMA
 }
 
 // Timeframe returns the required timeframe for this strategy
 func (s CrossEMA) Timeframe() string {
-	return "1m"
+	return "30m"
 }
 
 // WarmupPeriod returns the number of candles needed before the strategy is ready
@@ -48,9 +56,10 @@ func (s CrossEMA) WarmupPeriod() int {
 
 // Indicators calculates and returns the indicators used by this strategy
 func (s CrossEMA) Indicators(df *core.Dataframe) []core.ChartIndicator {
+
 	// Calculate indicators
-	df.Metadata["ema9"] = indicator.EMA(df.Close, s.emaLength)
-	df.Metadata["sma21"] = indicator.SMA(df.Close, s.smaLength)
+	df.Metadata[s.emaName] = indicator.EMA(df.Close, s.emaLength)
+	df.Metadata[s.smaName] = indicator.SMA(df.Close, s.smaLength)
 
 	// Return chart indicators for visualization
 	return []core.ChartIndicator{
@@ -60,14 +69,14 @@ func (s CrossEMA) Indicators(df *core.Dataframe) []core.ChartIndicator {
 			Time:      df.Time,
 			Metrics: []core.IndicatorMetric{
 				{
-					Values: df.Metadata["ema9"],
-					Name:   "EMA " + string(rune(s.emaLength+'0')),
+					Values: df.Metadata[s.emaName],
+					Name:   strings.ToUpper(s.emaName),
 					Color:  "red",
 					Style:  core.StyleLine,
 				},
 				{
-					Values: df.Metadata["sma21"],
-					Name:   "SMA " + string(rune(s.smaLength+'0')),
+					Values: df.Metadata[s.smaName],
+					Name:   strings.ToUpper(s.smaName),
 					Color:  "blue",
 					Style:  core.StyleLine,
 				},
@@ -102,13 +111,13 @@ func (s *CrossEMA) OnCandle(df *core.Dataframe, broker core.Broker) {
 // shouldBuy checks if buying conditions are met
 func (s *CrossEMA) shouldBuy(df *core.Dataframe, quotePosition float64) bool {
 	return quotePosition >= s.minQuoteAmount &&
-		df.Metadata["ema9"].Crossover(df.Metadata["sma21"])
+		df.Metadata[s.emaName].Crossover(df.Metadata[s.smaName])
 }
 
 // shouldSell checks if selling conditions are met
 func (s *CrossEMA) shouldSell(df *core.Dataframe, assetPosition float64) bool {
 	return assetPosition > 0 &&
-		df.Metadata["ema9"].Crossunder(df.Metadata["sma21"])
+		df.Metadata[s.emaName].Crossunder(df.Metadata[s.smaName])
 }
 
 // executeBuy performs the buy operation

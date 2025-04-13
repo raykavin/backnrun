@@ -1,2 +1,4 @@
 .vscode
 .docker
+*__debug*
+*.csv

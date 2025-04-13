@@ -26,7 +26,7 @@ func NewTurtleStrategy() *TurtleStrategy {
 
 // Timeframe returns the required timeframe for this strategy
 func (t TurtleStrategy) Timeframe() string {
-	return "4h"
+	return "5m"
 }
 
 // WarmupPeriod returns the number of candles needed before the strategy is ready

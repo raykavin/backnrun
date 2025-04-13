@@ -22,7 +22,7 @@ func main() {
 	log.SetLevel(logger.DebugLevel)
 
 	// Initialize trading strategy
-	strategy := strategies.NewWilliams91Strategy()
+	strategy := strategies.NewCrossEMA(9, 21, 10)
 
 	// Configure trading pairs
 	settings := &core.Settings{
@@ -48,7 +48,16 @@ func main() {
 	}
 
 	// Set up the trading bot
-	bot, err := initializeBot(ctx, settings, wallet, strategy, db, chart, log)
+	bot, err := initializeBot(
+		ctx,
+		settings,
+		wallet,
+		strategy,
+		db,
+		chart,
+		log,
+	)
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,7 +85,6 @@ func initializeDataFeed(timeframe string) (*exchange.CSVFeed, error) {
 			File:      "btc-5m.csv",
 			Timeframe: "5m",
 		},
-		// Additional pairs can be added like this:
 		// exchange.PairFeed{
 		//     Pair:      "ETHUSDT",
 		//     File:      "testdata/eth-1h.csv",
@@ -117,7 +125,7 @@ func initializeBot(
 	db core.OrderStorage,
 	chart *plot.Chart,
 	log logger.Logger,
-) (*backnrun.Backnrun, error) {
+) (*backnrun.Bot, error) {
 	return backnrun.NewBot(
 		ctx,
 		settings,
