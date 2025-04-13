@@ -13,7 +13,7 @@ import (
 
 // Summary displays all trades, accuracy and bot metrics in stdout
 // To access the raw data, you may access `bot.Controller().Results`
-func (n *Backnrun) Summary() {
+func (bot *Bot) Summary() {
 	var (
 		total  float64
 		wins   int
@@ -30,7 +30,7 @@ func (n *Backnrun) Summary() {
 	avgProfitFactor := 0.0
 
 	returns := make([]float64, 0)
-	for _, summary := range n.orderController.Results {
+	for _, summary := range bot.orderController.Results {
 		avgPayoff += summary.Payoff() * float64(len(summary.Win())+len(summary.Lose()))
 		avgProfitFactor += summary.ProfitFactor() * float64(len(summary.Win())+len(summary.Lose()))
 		table.Append([]string{
@@ -63,7 +63,7 @@ func (n *Backnrun) Summary() {
 		fmt.Sprintf("%.1f %%", float64(wins)/float64(wins+loses)*100),
 		fmt.Sprintf("%.3f", avgPayoff/float64(wins+loses)),
 		fmt.Sprintf("%.3f", avgProfitFactor/float64(wins+loses)),
-		fmt.Sprintf("%.1f", sqn/float64(len(n.orderController.Results))),
+		fmt.Sprintf("%.1f", sqn/float64(len(bot.orderController.Results))),
 		fmt.Sprintf("%.2f", total),
 		fmt.Sprintf("%.2f", volume),
 	})
@@ -82,7 +82,7 @@ func (n *Backnrun) Summary() {
 	fmt.Println()
 
 	fmt.Println("------ CONFIDENCE INTERVAL (95%) -------")
-	for pair, summary := range n.orderController.Results {
+	for pair, summary := range bot.orderController.Results {
 		fmt.Printf("| %s |\n", pair)
 		returns := append(summary.WinPercent(), summary.LosePercent()...)
 		returnsInterval := metric.Bootstrap(returns, metric.Mean, 10000, 0.95)
@@ -99,14 +99,14 @@ func (n *Backnrun) Summary() {
 
 	fmt.Println()
 
-	if n.paperWallet != nil {
-		n.paperWallet.Summary()
+	if bot.paperWallet != nil {
+		bot.paperWallet.Summary()
 	}
 }
 
 // SaveReturns saves trade returns to CSV files in the specified directory
-func (n Backnrun) SaveReturns(outputDir string) error {
-	for _, summary := range n.orderController.Results {
+func (bot Bot) SaveReturns(outputDir string) error {
+	for _, summary := range bot.orderController.Results {
 		outputFile := fmt.Sprintf("%s/%s.csv", outputDir, summary.Pair)
 		if err := summary.SaveReturns(outputFile); err != nil {
 			return err

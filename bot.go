@@ -9,14 +9,13 @@ import (
 	"github.com/raykavin/backnrun/pkg/logger"
 	"github.com/raykavin/backnrun/pkg/order"
 	"github.com/raykavin/backnrun/pkg/storage"
-	"github.com/raykavin/backnrun/pkg/strategy"
 	strg "github.com/raykavin/backnrun/pkg/strategy"
 )
 
 const defaultDatabase = "backnrun.db"
 
-// Backnrun represents the main trading bot
-type Backnrun struct {
+// Bot represents the main trading bot
+type Bot struct {
 	storage  core.OrderStorage
 	exchange core.Exchange
 	strategy core.Strategy
@@ -31,12 +30,12 @@ type Backnrun struct {
 	dataFeed            *exchange.DataFeedSubscription
 	paperWallet         *exchange.PaperWallet
 
-	strategiesControllers map[string]*strategy.Controller
+	strategiesControllers map[string]*strg.Controller
 
 	backtest bool
 }
 
-// NewBot creates a new Backnrun bot instance with the provided settings and dependencies
+// NewBot creates a new Bot bot instance with the provided settings and dependencies
 func NewBot(
 	ctx context.Context,
 	settings *core.Settings,
@@ -44,7 +43,7 @@ func NewBot(
 	strategy core.Strategy,
 	log logger.Logger,
 	options ...Option,
-) (*Backnrun, error) {
+) (*Bot, error) {
 	// Validate parameters
 	err := validate(settings, exch, strategy, log)
 	if err != nil {
@@ -52,7 +51,7 @@ func NewBot(
 	}
 
 	// Initialize bot with required core components
-	bot := &Backnrun{
+	bot := &Bot{
 		settings:              settings,
 		exchange:              exch,
 		strategy:              strategy,
@@ -122,7 +121,7 @@ func validate(settings *core.Settings, exch core.Exchange, strategy core.Strateg
 }
 
 // initializeStorage sets up the bot's data storage
-func initializeStorage(bot *Backnrun) error {
+func initializeStorage(bot *Bot) error {
 	var err error
 	if bot.storage == nil {
 		bot.storage, err = storage.FromFile(defaultDatabase)
@@ -134,12 +133,12 @@ func initializeStorage(bot *Backnrun) error {
 }
 
 // Controller returns the order controller
-func (n *Backnrun) Controller() *order.Controller {
+func (n *Bot) Controller() *order.Controller {
 	return n.orderController
 }
 
 // Run will initialize the strategy controller, order controller, preload data and start the bot
-func (n *Backnrun) Run(ctx context.Context) error {
+func (n *Bot) Run(ctx context.Context) error {
 	for _, pair := range n.settings.Pairs {
 		// setup and subscribe strategy to data feed (candles)
 		n.strategiesControllers[pair] = strg.NewStrategyController(pair, n.strategy, n.orderController, n.log)

@@ -102,7 +102,7 @@ func (c *Controller) Stop() {
 		c.status = StatusStopped
 		c.updateOrders()
 		c.finish <- true
-		c.log.Info("Bot stopped.")
+		c.log.Info("Bot stopped")
 	}
 }
 
@@ -391,18 +391,21 @@ func (c *Controller) recordTradeResult(pair string, result *TradeResult) {
 // notifyTradeResult sends a notification about a completed trade
 func (c *Controller) notifyTradeResult(pair string, result *TradeResult) {
 	_, quote := exchange.SplitAssetQuote(pair)
-	c.notify(fmt.Sprintf(
-		"[PROFIT] %f %s (%f %%)\n`%s`",
-		result.ProfitValue,
-		quote,
-		result.ProfitPercent*100,
-		c.Results[pair].String(),
-	))
+
+	c.notify(fmt.Sprintf("[PROFIT] %f %s (%f %%)\n",
+		result.ProfitValue, quote, result.ProfitPercent*100), true)
+
+	c.notify(c.Results[pair].String())
 }
 
 // notify sends a message through the logging system and notifier
-func (c *Controller) notify(message string) {
-	c.log.Info(message)
+func (c *Controller) notify(message string, withLogger ...bool) {
+	if len(withLogger) > 0 && withLogger[0] {
+		c.log.Info(message)
+	} else {
+		fmt.Println(message)
+	}
+
 	if c.notifier != nil {
 		c.notifier.Notify(message)
 	}

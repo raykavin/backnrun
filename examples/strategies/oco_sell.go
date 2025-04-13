@@ -33,7 +33,7 @@ func NewOCOSell() *OCOSell {
 
 // Timeframe returns the required timeframe for this strategy
 func (s OCOSell) Timeframe() string {
-	return "1d"
+	return "5m"
 }
 
 // WarmupPeriod returns the number of candles needed before the strategy is ready

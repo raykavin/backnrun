@@ -9,7 +9,7 @@ import (
 )
 
 // initializeNotifications sets up notification systems like Telegram
-func initializeNotifications(ctx context.Context, bot *Backnrun, settings *core.Settings, log logger.Logger) error {
+func initializeNotifications(ctx context.Context, bot *Bot, settings *core.Settings, log logger.Logger) error {
 	var err error
 	if settings.Telegram.Enabled {
 		bot.telegram, err = notification.NewTelegram(bot.orderController, settings, log)
@@ -23,19 +23,19 @@ func initializeNotifications(ctx context.Context, bot *Backnrun, settings *core.
 }
 
 // SubscribeOrder subscribes the given subscribers to order updates for all pairs
-func (n *Backnrun) SubscribeOrder(subscriptions ...core.OrderSubscriber) {
-	for _, pair := range n.settings.Pairs {
+func (bot *Bot) SubscribeOrder(subscriptions ...core.OrderSubscriber) {
+	for _, pair := range bot.settings.Pairs {
 		for _, subscription := range subscriptions {
-			n.orderFeed.Subscribe(pair, subscription.OnOrder, false)
+			bot.orderFeed.Subscribe(pair, subscription.OnOrder, false)
 		}
 	}
 }
 
 // SubscribeCandle subscribes the given subscribers to candle updates for all pairs
-func (n *Backnrun) SubscribeCandle(subscriptions ...core.CandleSubscriber) {
-	for _, pair := range n.settings.Pairs {
+func (bot *Bot) SubscribeCandle(subscriptions ...core.CandleSubscriber) {
+	for _, pair := range bot.settings.Pairs {
 		for _, subscription := range subscriptions {
-			n.dataFeed.Subscribe(pair, n.strategy.Timeframe(), subscription.OnCandle, false)
+			bot.dataFeed.Subscribe(pair, bot.strategy.Timeframe(), subscription.OnCandle, false)
 		}
 	}
 }

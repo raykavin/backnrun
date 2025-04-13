@@ -36,7 +36,7 @@ func NewWilliams91Strategy() *Williams91Strategy {
 
 // Timeframe returns the required timeframe for this strategy
 func (w Williams91Strategy) Timeframe() string {
-	return "1d" // Daily timeframe is typically used for this strategy
+	return "1m" // Daily timeframe is typically used for this strategy
 }
 
 // WarmupPeriod returns the number of candles needed before the strategy is ready
