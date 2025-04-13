@@ -9,24 +9,24 @@ import (
 	"github.com/raykavin/backnrun/pkg/exchange"
 	"github.com/raykavin/backnrun/pkg/logger"
 	"github.com/raykavin/backnrun/pkg/plot"
-	"github.com/raykavin/backnrun/pkg/plot/indicator"
 	"github.com/raykavin/backnrun/pkg/storage"
 )
 
 // main demonstrates how to use BackNRun for backtesting a trading strategy
 // against historical data loaded from CSV files.
 func main() {
+
 	// Set up context and logging
 	ctx := context.Background()
 	log := backnrun.DefaultLog
 	log.SetLevel(logger.DebugLevel)
 
 	// Initialize trading strategy
-	strategy := strategies.NewCrossEMA(9, 21, 10)
+	strategy := strategies.NewTrendMasterStrategy()
 
 	// Configure trading pairs
 	settings := &core.Settings{
-		Pairs: []string{"BTCUSDT"},
+		Pairs: []string{"BTCUSDT", "ETHUSDT"},
 	}
 
 	// Initialize services
@@ -82,14 +82,14 @@ func initializeDataFeed(timeframe string) (*exchange.CSVFeed, error) {
 		timeframe,
 		exchange.PairFeed{
 			Pair:      "BTCUSDT",
-			File:      "btc-5m.csv",
-			Timeframe: "5m",
+			File:      "btc-15m.csv",
+			Timeframe: "15m",
 		},
-		// exchange.PairFeed{
-		//     Pair:      "ETHUSDT",
-		//     File:      "testdata/eth-1h.csv",
-		//     Timeframe: "1h",
-		// },
+		exchange.PairFeed{
+			Pair:      "ETHUSDT",
+			File:      "eth-15m.csv",
+			Timeframe: "15m",
+		},
 	)
 }
 
@@ -99,7 +99,7 @@ func initializeWallet(ctx context.Context, log logger.Logger, feed *exchange.CSV
 		ctx,
 		"USDT",
 		log,
-		exchange.WithPaperAsset("USDT", 1000),
+		exchange.WithPaperAsset("USDT", 100),
 		exchange.WithDataFeed(feed),
 	)
 }
@@ -109,9 +109,6 @@ func initializeChart(log logger.Logger, strategy core.Strategy, wallet *exchange
 	return plot.NewChart(
 		log,
 		plot.WithStrategyIndicators(strategy),
-		plot.WithCustomIndicators(
-			indicator.RSI(14, "purple"),
-		),
 		plot.WithPaperWallet(wallet),
 	)
 }
