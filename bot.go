@@ -10,10 +10,8 @@ import (
 	"github.com/raykavin/backnrun/pkg/order"
 	"github.com/raykavin/backnrun/pkg/storage"
 	"github.com/raykavin/backnrun/pkg/strategy"
+	strg "github.com/raykavin/backnrun/pkg/strategy"
 )
-
-// DefaultLog is the default logger instance
-var DefaultLog logger.Logger
 
 const defaultDatabase = "backnrun.db"
 
@@ -24,6 +22,7 @@ type Backnrun struct {
 	strategy core.Strategy
 	notifier core.Notifier
 	telegram core.NotifierWithStart
+	log      logger.Logger
 
 	orderFeed           *order.Feed
 	settings            *core.Settings
@@ -42,19 +41,26 @@ func NewBot(
 	ctx context.Context,
 	settings *core.Settings,
 	exch core.Exchange,
-	strg core.Strategy,
+	strategy core.Strategy,
+	log logger.Logger,
 	options ...Option,
 ) (*Backnrun, error) {
+	// Validate parameters
+	err := validate(settings, exch, strategy, log)
+	if err != nil {
+		return nil, err
+	}
 
 	// Initialize bot with required core components
 	bot := &Backnrun{
 		settings:              settings,
 		exchange:              exch,
-		strategy:              strg,
+		strategy:              strategy,
 		orderFeed:             order.NewOrderFeed(),
-		dataFeed:              exchange.NewDataFeed(exch, DefaultLog),
-		strategiesControllers: make(map[string]*strategy.Controller),
+		dataFeed:              exchange.NewDataFeed(exch, log),
+		log:                   log,
 		priorityQueueCandle:   core.NewPriorityQueue(nil),
+		strategiesControllers: make(map[string]*strg.Controller),
 	}
 
 	// Validate trading pairs
@@ -73,10 +79,10 @@ func NewBot(
 	}
 
 	// Initialize order controller
-	bot.orderController = order.NewController(ctx, exch, bot.storage, bot.orderFeed)
+	bot.orderController = order.NewController(ctx, exch, bot.storage, log, bot.orderFeed)
 
 	// Initialize notification systems
-	if err := initializeNotifications(ctx, bot, settings); err != nil {
+	if err := initializeNotifications(ctx, bot, settings, log); err != nil {
 		return nil, err
 	}
 
@@ -91,6 +97,27 @@ func validatePairs(pairs []string) error {
 			return fmt.Errorf("invalid pair: %s", pair)
 		}
 	}
+	return nil
+}
+
+// validate checks if the provided settings, exchange, strategy, and logger are valid
+func validate(settings *core.Settings, exch core.Exchange, strategy core.Strategy, log logger.Logger) error {
+	if settings == nil || len(settings.Pairs) == 0 {
+		return fmt.Errorf("settings cannot be nil")
+	}
+
+	if exch == nil {
+		return fmt.Errorf("exchange cannot be nil")
+	}
+
+	if strategy == nil {
+		return fmt.Errorf("strategy cannot be nil")
+	}
+
+	if log == nil {
+		return fmt.Errorf("logger cannot be nil")
+	}
+
 	return nil
 }
 
@@ -115,7 +142,7 @@ func (n *Backnrun) Controller() *order.Controller {
 func (n *Backnrun) Run(ctx context.Context) error {
 	for _, pair := range n.settings.Pairs {
 		// setup and subscribe strategy to data feed (candles)
-		n.strategiesControllers[pair] = strategy.NewStrategyController(pair, n.strategy, n.orderController, DefaultLog)
+		n.strategiesControllers[pair] = strg.NewStrategyController(pair, n.strategy, n.orderController, n.log)
 
 		// preload candles for warmup period
 		err := n.preload(ctx, pair)

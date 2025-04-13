@@ -88,11 +88,11 @@ func WithDataFeed(feeder core.Feeder) PaperWalletOption {
 }
 
 // NewPaperWallet creates a new simulated wallet
-func NewPaperWallet(ctx context.Context, baseCoin string, logger logger.Logger, options ...PaperWalletOption) *PaperWallet {
+func NewPaperWallet(ctx context.Context, baseCoin string, log logger.Logger, options ...PaperWalletOption) *PaperWallet {
 	wallet := PaperWallet{
 		ctx:           ctx,
 		baseCoin:      baseCoin,
-		log:           logger,
+		log:           log,
 		orders:        make([]core.Order, 0),
 		assets:        make(map[string]*assetInfo),
 		fistCandle:    make(map[string]core.Candle),
@@ -112,8 +112,8 @@ func NewPaperWallet(ctx context.Context, baseCoin string, logger logger.Logger, 
 	// Initialize initial wallet value
 	wallet.initialValue = wallet.getAssetFreeAmount(wallet.baseCoin)
 
-	logger.Info("Using paper wallet")
-	logger.Infof("Initial Portfolio = %f %s", wallet.initialValue, wallet.baseCoin)
+	log.Info("Using paper wallet")
+	log.Infof("Initial Portfolio = %f %s", wallet.initialValue, wallet.baseCoin)
 
 	return &wallet
 }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/exchange"
-	log "github.com/sirupsen/logrus"
+	"github.com/raykavin/backnrun/pkg/logger"
 )
 
 // Status represents the current state of the order controller
@@ -23,10 +23,11 @@ const (
 
 // Controller manages orders, positions, and trading operations
 type Controller struct {
-	mtx            sync.Mutex
 	ctx            context.Context
 	exchange       core.Exchange
 	storage        core.OrderStorage
+	log            logger.Logger
+	mu             sync.Mutex
 	orderFeed      *Feed
 	notifier       core.Notifier
 	Results        map[string]*TradeSummary
@@ -38,8 +39,13 @@ type Controller struct {
 }
 
 // NewController creates a new order controller
-func NewController(ctx context.Context, exchange core.Exchange, storage core.OrderStorage,
-	orderFeed *Feed) *Controller {
+func NewController(
+	ctx context.Context,
+	exchange core.Exchange,
+	storage core.OrderStorage,
+	log logger.Logger,
+	orderFeed *Feed,
+) *Controller {
 
 	return &Controller{
 		ctx:            ctx,
@@ -47,6 +53,7 @@ func NewController(ctx context.Context, exchange core.Exchange, storage core.Ord
 		exchange:       exchange,
 		orderFeed:      orderFeed,
 		tickerInterval: time.Second,
+		log:            log,
 		lastPrice:      make(map[string]float64),
 		Results:        make(map[string]*TradeSummary),
 		finish:         make(chan bool),
@@ -85,7 +92,7 @@ func (c *Controller) Start() {
 				}
 			}
 		}()
-		log.Info("Bot started.")
+		c.log.Info("Bot started.")
 	}
 }
 
@@ -95,7 +102,7 @@ func (c *Controller) Stop() {
 		c.status = StatusStopped
 		c.updateOrders()
 		c.finish <- true
-		log.Info("Bot stopped.")
+		c.log.Info("Bot stopped.")
 	}
 }
 
@@ -131,10 +138,10 @@ func (c *Controller) Order(pair string, id int64) (core.Order, error) {
 // CreateOrderOCO creates a One-Cancels-the-Other order pair
 func (c *Controller) CreateOrderOCO(side core.SideType, pair string, size, price, stop,
 	stopLimit float64) ([]core.Order, error) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	log.Infof("Creating OCO order for %s", pair)
+	c.log.Infof("Creating OCO order for %s", pair)
 	orders, err := c.exchange.CreateOrderOCO(side, pair, size, price, stop, stopLimit)
 	if err != nil {
 		c.notifyError(err)
@@ -155,10 +162,10 @@ func (c *Controller) CreateOrderOCO(side core.SideType, pair string, size, price
 
 // CreateOrderLimit creates a limit order
 func (c *Controller) CreateOrderLimit(side core.SideType, pair string, size, limit float64) (core.Order, error) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	log.Infof("Creating LIMIT %s order for %s", side, pair)
+	c.log.Infof("Creating LIMIT %s order for %s", side, pair)
 	order, err := c.exchange.CreateOrderLimit(side, pair, size, limit)
 	if err != nil {
 		c.notifyError(err)
@@ -171,16 +178,16 @@ func (c *Controller) CreateOrderLimit(side core.SideType, pair string, size, lim
 		return core.Order{}, err
 	}
 	go c.orderFeed.Publish(order, true)
-	log.Infof("[ORDER CREATED] %s", order)
+	c.log.Infof("[ORDER CREATED] %s", order)
 	return order, nil
 }
 
 // CreateOrderMarketQuote creates a market order with a specified quote amount
 func (c *Controller) CreateOrderMarketQuote(side core.SideType, pair string, amount float64) (core.Order, error) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	log.Infof("Creating MARKET %s order for %s", side, pair)
+	c.log.Infof("Creating MARKET %s order for %s", side, pair)
 	order, err := c.exchange.CreateOrderMarketQuote(side, pair, amount)
 	if err != nil {
 		c.notifyError(err)
@@ -196,16 +203,16 @@ func (c *Controller) CreateOrderMarketQuote(side core.SideType, pair string, amo
 	// calculate profit
 	c.processTrade(&order)
 	go c.orderFeed.Publish(order, true)
-	log.Infof("[ORDER CREATED] %s", order)
+	c.log.Infof("[ORDER CREATED] %s", order)
 	return order, err
 }
 
 // CreateOrderMarket creates a market order with a specified size
 func (c *Controller) CreateOrderMarket(side core.SideType, pair string, size float64) (core.Order, error) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	log.Infof("Creating MARKET %s order for %s", side, pair)
+	c.log.Infof("Creating MARKET %s order for %s", side, pair)
 	order, err := c.exchange.CreateOrderMarket(side, pair, size)
 	if err != nil {
 		c.notifyError(err)
@@ -221,16 +228,16 @@ func (c *Controller) CreateOrderMarket(side core.SideType, pair string, size flo
 	// calculate profit
 	c.processTrade(&order)
 	go c.orderFeed.Publish(order, true)
-	log.Infof("[ORDER CREATED] %s", order)
+	c.log.Infof("[ORDER CREATED] %s", order)
 	return order, err
 }
 
 // CreateOrderStop creates a stop loss order
 func (c *Controller) CreateOrderStop(pair string, size float64, limit float64) (core.Order, error) {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	log.Infof("Creating STOP order for %s", pair)
+	c.log.Infof("Creating STOP order for %s", pair)
 	order, err := c.exchange.CreateOrderStop(pair, size, limit)
 	if err != nil {
 		c.notifyError(err)
@@ -243,16 +250,16 @@ func (c *Controller) CreateOrderStop(pair string, size float64, limit float64) (
 		return core.Order{}, err
 	}
 	go c.orderFeed.Publish(order, true)
-	log.Infof("[ORDER CREATED] %s", order)
+	c.log.Infof("[ORDER CREATED] %s", order)
 	return order, nil
 }
 
 // Cancel cancels an existing order
 func (c *Controller) Cancel(order core.Order) error {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
-	log.Infof("Cancelling order for %s", order.Pair)
+	c.log.Infof("Cancelling order for %s", order.Pair)
 	err := c.exchange.Cancel(order)
 	if err != nil {
 		return err
@@ -264,14 +271,14 @@ func (c *Controller) Cancel(order core.Order) error {
 		c.notifyError(err)
 		return err
 	}
-	log.Infof("[ORDER CANCELED] %s", order)
+	c.log.Infof("[ORDER CANCELED] %s", order)
 	return nil
 }
 
 // updateOrders checks for status changes in pending orders
 func (c *Controller) updateOrders() {
-	c.mtx.Lock()
-	defer c.mtx.Unlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	// Get pending orders
 	orders, err := c.storage.Orders(core.WithStatusIn(
@@ -289,7 +296,7 @@ func (c *Controller) updateOrders() {
 	for _, order := range orders {
 		excOrder, err := c.exchange.Order(order.Pair, order.ExchangeID)
 		if err != nil {
-			log.WithField("id", order.ExchangeID).Error("orderController/get: ", err)
+			c.log.WithField("id", order.ExchangeID).Error("orderController/get: ", err)
 			continue
 		}
 
@@ -305,7 +312,7 @@ func (c *Controller) updateOrders() {
 			continue
 		}
 
-		log.Infof("[ORDER %s] %s", excOrder.Status, excOrder)
+		c.log.Infof("[ORDER %s] %s", excOrder.Status, excOrder)
 		updatedOrders = append(updatedOrders, excOrder)
 	}
 
@@ -395,7 +402,7 @@ func (c *Controller) notifyTradeResult(pair string, result *TradeResult) {
 
 // notify sends a message through the logging system and notifier
 func (c *Controller) notify(message string) {
-	log.Info(message)
+	c.log.Info(message)
 	if c.notifier != nil {
 		c.notifier.Notify(message)
 	}
@@ -403,7 +410,7 @@ func (c *Controller) notify(message string) {
 
 // notifyError sends an error through the logging system and notifier
 func (c *Controller) notifyError(err error) {
-	log.Error(err)
+	c.log.Error(err)
 	if c.notifier != nil {
 		c.notifier.OnError(err)
 	}

@@ -80,7 +80,7 @@ func WithSpotCustomTestnetAPIEndpoint(apiURL, wsURL, combinedURL string) SpotOpt
 }
 
 // NewSpot creates a new Binance spot exchange client
-func NewSpot(ctx context.Context, logger logger.Logger, options ...SpotOption) (*Spot, error) {
+func NewSpot(ctx context.Context, log logger.Logger, options ...SpotOption) (*Spot, error) {
 	binance.WebsocketKeepalive = true
 
 	spot := &Spot{
@@ -88,7 +88,7 @@ func NewSpot(ctx context.Context, logger logger.Logger, options ...SpotOption) (
 		client:           binance.NewClient("", ""),
 		assetsInfo:       make(map[string]core.AssetInfo),
 		metadataFetchers: make([]MetadataFetcher, 0),
-		log:              logger,
+		log:              log,
 	}
 
 	// Apply options
@@ -136,7 +136,7 @@ func NewSpot(ctx context.Context, logger logger.Logger, options ...SpotOption) (
 		spot.assetsInfo[info.Symbol] = assetInfo
 	}
 
-	logger.Info("Using Binance Spot exchange")
+	log.Info("Using Binance Spot exchange")
 	return spot, nil
 }
 

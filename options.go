@@ -3,7 +3,6 @@ package backnrun
 import (
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/exchange"
-	"github.com/raykavin/backnrun/pkg/logger"
 )
 
 // Option is a functional option for configuring a Backnrun instance
@@ -23,13 +22,6 @@ func WithBacktest(wallet *exchange.PaperWallet) Option {
 func WithStorage(storage core.OrderStorage) Option {
 	return func(bot *Backnrun) {
 		bot.storage = storage
-	}
-}
-
-// WithLogLevel sets the log level. eg: n.logger.DebugLevel, n.logger.InfoLevel, n.logger.WarnLevel, n.logger.ErrorLevel, n.logger.FatalLevel
-func WithLogLevel(level logger.Level) Option {
-	return func(n *Backnrun) {
-		DefaultLog.SetLevel(level)
 	}
 }
 

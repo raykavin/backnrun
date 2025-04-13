@@ -35,7 +35,7 @@ func (n *Backnrun) processCandles() {
 
 // backtestCandles processes candles for backtesting with a progress bar
 func (n *Backnrun) backtestCandles() {
-	DefaultLog.Info("Starting backtesting")
+	n.log.Info("Starting backtesting")
 
 	progressBar := progressbar.Default(int64(n.priorityQueueCandle.Len()))
 	for n.priorityQueueCandle.Len() > 0 {
@@ -52,7 +52,7 @@ func (n *Backnrun) backtestCandles() {
 		}
 
 		if err := progressBar.Add(1); err != nil {
-			DefaultLog.Warnf("update progressbar fail: %v", err)
+			n.log.Warnf("update progressbar fail: %v", err)
 		}
 
 		time.Sleep(5 * time.Millisecond) // prevent CPU overload

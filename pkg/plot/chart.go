@@ -78,10 +78,10 @@ func WithCustomIndicators(indicators ...Indicator) Option {
 }
 
 // NewChart creates a new chart instance with the provided options
-func NewChart(logger logger.Logger, options ...Option) (*Chart, error) {
+func NewChart(log logger.Logger, options ...Option) (*Chart, error) {
 	chart := &Chart{
 		port:            8080,
-		log:             logger,
+		log:             log,
 		candles:         make(map[string][]Candle),
 		dataframe:       make(map[string]*core.Dataframe),
 		ordersIDsByPair: make(map[string]*set.LinkedHashSetINT64),

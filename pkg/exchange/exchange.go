@@ -57,11 +57,11 @@ func (o *OrderError) Error() string {
 type DataFeedConsumer func(core.Candle)
 
 // NewDataFeed cria uma nova instância de DataFeedSubscription
-func NewDataFeed(exchange core.Exchange, logger logger.Logger) *DataFeedSubscription {
+func NewDataFeed(exchange core.Exchange, log logger.Logger) *DataFeedSubscription {
 	return &DataFeedSubscription{
 		exchange:                exchange,
 		Feeds:                   set.NewLinkedHashSetString(),
-		log:                     logger,
+		log:                     log,
 		DataFeeds:               make(map[string]*DataFeed),
 		SubscriptionsByDataFeed: make(map[string][]Subscription),
 	}

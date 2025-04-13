@@ -18,6 +18,9 @@ import (
 func main() {
 	ctx := context.Background()
 
+	backnrun.DefaultLog.SetLevel(logger.DebugLevel)
+	backnrun.DefaultLog.Info("Starting backtest...")
+
 	// bot settings (eg: pairs, telegram, etc)
 	settings := &core.Settings{
 		Pairs: []string{
@@ -82,14 +85,15 @@ func main() {
 		settings,
 		wallet,
 		strategy,
+		backnrun.DefaultLog,
 		backnrun.WithBacktest(wallet), // Required for Backtest mode
 		backnrun.WithStorage(storage),
 
 		// connect bot feed (candle and orders) to the chart
 		backnrun.WithCandleSubscription(chart),
 		backnrun.WithOrderSubscription(chart),
-		backnrun.WithLogLevel(logger.WarnLevel),
 	)
+
 	if err != nil {
 		backnrun.DefaultLog.Fatal(err)
 	}

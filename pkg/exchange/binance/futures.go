@@ -83,14 +83,14 @@ func WithFuturesMetadataFetcher(fetcher MetadataFetcher) FuturesOption {
 }
 
 // NewFutures creates a new Binance futures exchange client
-func NewFutures(ctx context.Context, logger logger.Logger, options ...FuturesOption) (*Futures, error) {
+func NewFutures(ctx context.Context, log logger.Logger, options ...FuturesOption) (*Futures, error) {
 	futures := &Futures{
 		ctx:              ctx,
 		client:           futures.NewClient("", ""),
 		assetsInfo:       make(map[string]core.AssetInfo),
 		metadataFetchers: make([]MetadataFetcher, 0),
 		pairOptions:      make([]PairOption, 0),
-		log:              logger,
+		log:              log,
 	}
 
 	// Apply options
@@ -160,7 +160,7 @@ func NewFutures(ctx context.Context, logger logger.Logger, options ...FuturesOpt
 		futures.assetsInfo[info.Symbol] = assetInfo
 	}
 
-	logger.Info("Using Binance Futures exchange")
+	log.Info("Using Binance Futures exchange")
 	return futures, nil
 }
 

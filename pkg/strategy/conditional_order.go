@@ -2,7 +2,7 @@ package strategy
 
 import (
 	"github.com/raykavin/backnrun/pkg/core"
-	log "github.com/sirupsen/logrus"
+	"github.com/raykavin/backnrun/pkg/logger"
 )
 
 // OrderCondition represents a conditional trading order to be executed when the condition is met.
@@ -15,13 +15,15 @@ type OrderCondition struct {
 // Scheduler manages conditional orders for a trading pair.
 type Scheduler struct {
 	pair            string
+	log             logger.Logger
 	orderConditions []OrderCondition
 }
 
 // NewScheduler creates a new Scheduler instance for the specified trading pair.
-func NewScheduler(pair string) *Scheduler {
+func NewScheduler(pair string, log logger.Logger) *Scheduler {
 	return &Scheduler{
 		pair:            pair,
+		log:             log,
 		orderConditions: make([]OrderCondition, 0),
 	}
 }
@@ -72,9 +74,9 @@ func (s *Scheduler) Update(df *core.Dataframe, broker core.Broker) {
 func (s *Scheduler) executeOrder(broker core.Broker, oc OrderCondition) error {
 	_, err := broker.CreateOrderMarket(oc.Side, s.pair, oc.Size)
 	if err != nil {
-		log.Errorf("Failed to execute %s order for %s: %v", oc.Side, s.pair, err)
+		s.log.Errorf("Failed to execute %s order for %s: %v", oc.Side, s.pair, err)
 		return err
 	}
-	log.Infof("Successfully executed %s order for %s with size %f", oc.Side, s.pair, oc.Size)
+	s.log.Infof("Successfully executed %s order for %s with size %f", oc.Side, s.pair, oc.Size)
 	return nil
 }

@@ -4,14 +4,15 @@ import (
 	"context"
 
 	"github.com/raykavin/backnrun/pkg/core"
+	"github.com/raykavin/backnrun/pkg/logger"
 	"github.com/raykavin/backnrun/pkg/notification"
 )
 
 // initializeNotifications sets up notification systems like Telegram
-func initializeNotifications(ctx context.Context, bot *Backnrun, settings *core.Settings) error {
+func initializeNotifications(ctx context.Context, bot *Backnrun, settings *core.Settings, log logger.Logger) error {
 	var err error
 	if settings.Telegram.Enabled {
-		bot.telegram, err = notification.NewTelegram(bot.orderController, settings)
+		bot.telegram, err = notification.NewTelegram(bot.orderController, settings, log)
 		if err != nil {
 			return err
 		}

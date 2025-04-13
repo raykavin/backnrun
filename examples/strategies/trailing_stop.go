@@ -4,6 +4,7 @@ import (
 	"github.com/raykavin/backnrun"
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/indicator"
+	"github.com/raykavin/backnrun/pkg/logger"
 	"github.com/raykavin/backnrun/pkg/strategy"
 )
 
@@ -21,7 +22,7 @@ type TrailingStrategy struct {
 }
 
 // NewTrailingStrategy creates a new instance of the TrailingStrategy with default parameters
-func NewTrailingStrategy(pairs []string) *TrailingStrategy {
+func NewTrailingStrategy(pairs []string, log logger.Logger) *TrailingStrategy {
 	str := &TrailingStrategy{
 		emaLength:      8,
 		smaLength:      21,
@@ -34,7 +35,7 @@ func NewTrailingStrategy(pairs []string) *TrailingStrategy {
 	// Initialize trailing stops and schedulers for each pair
 	for _, pair := range pairs {
 		str.trailingStop[pair] = strategy.NewTrailingStop()
-		str.scheduler[pair] = strategy.NewScheduler(pair)
+		str.scheduler[pair] = strategy.NewScheduler(pair, log)
 	}
 
 	return str

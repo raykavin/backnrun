@@ -26,10 +26,10 @@ type Downloader struct {
 }
 
 // NewDownloader creates a new downloader instance with the provided exchange
-func NewDownloader(exchange core.Feeder, logger logger.Logger) Downloader {
+func NewDownloader(exchange core.Feeder, log logger.Logger) Downloader {
 	return Downloader{
 		exchange: exchange,
-		log:      logger,
+		log:      log,
 	}
 }
 

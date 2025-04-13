@@ -83,6 +83,7 @@ func main() {
 		settings,
 		paperWallet,
 		strategy,
+		backnrun.DefaultLog,
 		backnrun.WithStorage(storage),
 		backnrun.WithPaperWallet(paperWallet),
 		backnrun.WithCandleSubscription(chart),

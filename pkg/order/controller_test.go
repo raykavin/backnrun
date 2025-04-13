@@ -30,7 +30,7 @@ func TestController_updatePosition(t *testing.T) {
 		require.NoError(t, err)
 		ctx := context.Background()
 		wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 3000))
-		controller := NewController(ctx, wallet, storage, NewOrderFeed())
+		controller := NewController(ctx, wallet, storage, getLog(), NewOrderFeed())
 
 		wallet.OnCandle(core.Candle{Pair: "BTCUSDT", Close: 1000})
 		_, err = controller.CreateOrderMarket(core.SideTypeBuy, "BTCUSDT", 1)
@@ -73,7 +73,7 @@ func TestController_updatePosition(t *testing.T) {
 		require.NoError(t, err)
 		ctx := context.Background()
 		wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 3000))
-		controller := NewController(ctx, wallet, storage, NewOrderFeed())
+		controller := NewController(ctx, wallet, storage, getLog(), NewOrderFeed())
 		wallet.OnCandle(core.Candle{Time: time.Now(), Pair: "BTCUSDT", High: 1500, Close: 1500})
 
 		_, err = controller.CreateOrderLimit(core.SideTypeBuy, "BTCUSDT", 1, 1000)
@@ -105,7 +105,7 @@ func TestController_updatePosition(t *testing.T) {
 		require.NoError(t, err)
 		ctx := context.Background()
 		wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 3000))
-		controller := NewController(ctx, wallet, storage, NewOrderFeed())
+		controller := NewController(ctx, wallet, storage, getLog(), NewOrderFeed())
 		wallet.OnCandle(core.Candle{Time: time.Now(), Pair: "BTCUSDT", High: 1500, Close: 1500})
 
 		_, err = controller.CreateOrderLimit(core.SideTypeBuy, "BTCUSDT", 1, 1000)
@@ -134,7 +134,7 @@ func TestController_updatePosition(t *testing.T) {
 		require.NoError(t, err)
 		ctx := context.Background()
 		wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 3000))
-		controller := NewController(ctx, wallet, storage, NewOrderFeed())
+		controller := NewController(ctx, wallet, storage, getLog(), NewOrderFeed())
 		wallet.OnCandle(core.Candle{Time: time.Now(), Pair: "BTCUSDT", Close: 1500, Low: 1500})
 
 		_, err = controller.CreateOrderLimit(core.SideTypeBuy, "BTCUSDT", 0.5, 1000)
@@ -179,7 +179,7 @@ func TestController_updatePosition(t *testing.T) {
 
 		wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 0),
 			exchange.WithPaperAsset("BTC", 2))
-		controller := NewController(ctx, wallet, storage, NewOrderFeed())
+		controller := NewController(ctx, wallet, storage, getLog(), NewOrderFeed())
 		wallet.OnCandle(core.Candle{Time: time.Now(), Pair: "BTCUSDT", Close: 1500, Low: 1500})
 
 		_, err = controller.CreateOrderMarket(core.SideTypeSell, "BTCUSDT", 1)
@@ -196,7 +196,7 @@ func TestController_PositionValue(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 	wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 3000))
-	controller := NewController(ctx, wallet, storage, NewOrderFeed())
+	controller := NewController(ctx, wallet, storage, getLog(), NewOrderFeed())
 
 	lastCandle := core.Candle{Time: time.Now(), Pair: "BTCUSDT", Close: 1500, Low: 1500}
 
@@ -217,7 +217,7 @@ func TestController_Position(t *testing.T) {
 	require.NoError(t, err)
 	ctx := context.Background()
 	wallet := exchange.NewPaperWallet(ctx, "USDT", getLog(), exchange.WithPaperAsset("USDT", 3000))
-	controller := NewController(ctx, wallet, storage, NewOrderFeed())
+	controller := NewController(ctx, wallet, storage, getLog(), NewOrderFeed())
 
 	lastCandle := core.Candle{Time: time.Now(), Pair: "BTCUSDT", Close: 1500, Low: 1500}
 

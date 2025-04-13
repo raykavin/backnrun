@@ -14,7 +14,6 @@ require (
 	github.com/rs/zerolog v1.29.0
 	github.com/samber/lo v1.49.1
 	github.com/schollz/progressbar/v3 v3.14.3
-	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/buntdb v1.3.1

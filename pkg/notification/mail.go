@@ -5,7 +5,7 @@ import (
 	"net/smtp"
 
 	"github.com/raykavin/backnrun/pkg/core"
-	log "github.com/sirupsen/logrus"
+	"github.com/raykavin/backnrun/pkg/logger"
 )
 
 // Mail handles email notifications for the application
@@ -15,6 +15,7 @@ type Mail struct {
 	smtpServerAddress string
 	to                string
 	from              string
+	log               logger.Logger
 }
 
 // MailParams contains all parameters needed to initialize a Mail instance
@@ -27,12 +28,13 @@ type MailParams struct {
 }
 
 // NewMail creates a new Mail instance with the provided parameters
-func NewMail(params MailParams) Mail {
+func NewMail(params MailParams, log logger.Logger) Mail {
 	return Mail{
 		from:              params.From,
 		to:                params.To,
 		smtpServerPort:    params.SMTPServerPort,
 		smtpServerAddress: params.SMTPServerAddress,
+		log:               log,
 		auth: smtp.PlainAuth(
 			"",
 			params.From,
@@ -64,7 +66,7 @@ From: "BackNRun" <%s>
 	)
 
 	if err != nil {
-		log.WithError(err).Error("notification/mail: failed to send email")
+		m.log.WithError(err).Error("notification/mail: failed to send email")
 	}
 }
 

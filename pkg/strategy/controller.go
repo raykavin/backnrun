@@ -15,12 +15,12 @@ type Controller struct {
 }
 
 // NewStrategyController creates a new strategy controller
-func NewStrategyController(pair string, strategy core.Strategy, broker core.Broker, logger logger.Logger) *Controller {
+func NewStrategyController(pair string, strategy core.Strategy, broker core.Broker, log logger.Logger) *Controller {
 	return &Controller{
 		dataframeManager: NewDataframeManager(pair),
 		strategy:         strategy,
 		broker:           broker,
-		log:              logger,
+		log:              log,
 	}
 }
 

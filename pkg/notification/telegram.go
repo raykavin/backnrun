@@ -13,8 +13,8 @@ import (
 
 	"github.com/raykavin/backnrun/pkg/core"
 	"github.com/raykavin/backnrun/pkg/exchange"
+	"github.com/raykavin/backnrun/pkg/logger"
 	"github.com/raykavin/backnrun/pkg/order"
-	log "github.com/sirupsen/logrus"
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
@@ -25,24 +25,28 @@ var (
 )
 
 // Telegram implements the core.NotifierWithStart interface
-type telegram struct {
+type Telegram struct {
 	settings        *core.Settings
 	orderController *order.Controller
 	defaultMenu     *tb.ReplyMarkup
 	client          *tb.Bot
+	log             logger.Logger
 }
 
 // Option is a function that configures a telegram instance
-type Option func(telegram *telegram)
+type Option func(telegram *Telegram)
 
 // NewTelegram creates and initializes a new Telegram service
-func NewTelegram(controller *order.Controller, settings *core.Settings, options ...Option) (core.NotifierWithStart, error) {
+func NewTelegram(controller *order.Controller, settings *core.Settings, log logger.Logger, options ...Option) (
+	core.NotifierWithStart,
+	error,
+) {
 	// Initialize menu and poller
 	menu := &tb.ReplyMarkup{ResizeReplyKeyboard: true}
 	poller := &tb.LongPoller{Timeout: 10 * time.Second}
 
 	// Create user authorization middleware
-	userMiddleware := createAuthMiddleware(poller, settings)
+	userMiddleware := createAuthMiddleware(poller, settings, log)
 
 	// Initialize bot client
 	client, err := tb.NewBot(tb.Settings{
@@ -50,6 +54,7 @@ func NewTelegram(controller *order.Controller, settings *core.Settings, options 
 		Token:     settings.Telegram.Token,
 		Poller:    userMiddleware,
 	})
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to create telegram bot: %w", err)
 	}
@@ -61,11 +66,12 @@ func NewTelegram(controller *order.Controller, settings *core.Settings, options 
 	}
 
 	// Create and configure bot instance
-	bot := &telegram{
+	bot := &Telegram{
 		orderController: controller,
 		client:          client,
 		settings:        settings,
 		defaultMenu:     menu,
+		log:             log,
 	}
 
 	// Apply custom options if provided
@@ -80,7 +86,7 @@ func NewTelegram(controller *order.Controller, settings *core.Settings, options 
 }
 
 // createAuthMiddleware creates a middleware to validate authorized users
-func createAuthMiddleware(poller *tb.LongPoller, settings *core.Settings) *tb.MiddlewarePoller {
+func createAuthMiddleware(poller *tb.LongPoller, settings *core.Settings, log logger.Logger) *tb.MiddlewarePoller {
 	return tb.NewMiddlewarePoller(poller, func(u *tb.Update) bool {
 		if u.Message == nil || u.Message.Sender == nil {
 			log.Error("message or sender is nil ", u)
@@ -131,7 +137,7 @@ func setupCommands(client *tb.Bot) error {
 }
 
 // registerHandlers registers all command handlers
-func registerHandlers(client *tb.Bot, bot *telegram) {
+func registerHandlers(client *tb.Bot, bot *Telegram) {
 	client.Handle("/help", bot.HelpHandle)
 	client.Handle("/start", bot.StartHandle)
 	client.Handle("/stop", bot.StopHandle)
@@ -143,44 +149,44 @@ func registerHandlers(client *tb.Bot, bot *telegram) {
 }
 
 // Start begins the Telegram bot and notifies all authorized users
-func (t *telegram) Start() {
+func (t *Telegram) Start() {
 	go t.client.Start()
 	t.sendMessageWithOptions("Bot initialized.", t.defaultMenu)
 }
 
 // Notify sends a message to all authorized users
-func (t *telegram) Notify(text string) {
+func (t *Telegram) Notify(text string) {
 	for _, user := range t.settings.Telegram.Users {
 		_, err := t.client.Send(&tb.User{ID: int64(user)}, text)
 		if err != nil {
-			log.WithError(err).Error("failed to send notification")
+			t.log.WithError(err).Error("failed to send notification")
 		}
 	}
 }
 
 // sendMessageWithOptions sends a message to all authorized users with additional options
-func (t *telegram) sendMessageWithOptions(text string, options ...interface{}) {
+func (t *Telegram) sendMessageWithOptions(text string, options ...interface{}) {
 	for _, user := range t.settings.Telegram.Users {
 		_, err := t.client.Send(&tb.User{ID: int64(user)}, text, options...)
 		if err != nil {
-			log.WithError(err).Error("failed to send notification with options")
+			t.log.WithError(err).Error("failed to send notification with options")
 		}
 	}
 }
 
 // sendMessage sends a message to a specific user
-func (t *telegram) sendMessage(to *tb.User, text string, options ...interface{}) {
+func (t *Telegram) sendMessage(to *tb.User, text string, options ...interface{}) {
 	_, err := t.client.Send(to, text, options...)
 	if err != nil {
-		log.WithError(err).Error("failed to send message")
+		t.log.WithError(err).Error("failed to send message")
 	}
 }
 
 // BalanceHandle shows the balance of all assets
-func (t *telegram) BalanceHandle(m *tb.Message) {
+func (t *Telegram) BalanceHandle(m *tb.Message) {
 	account, err := t.orderController.Account()
 	if err != nil {
-		log.WithError(err).Error("failed to get account")
+		t.log.WithError(err).Error("failed to get account")
 		t.OnError(err)
 		return
 	}
@@ -195,7 +201,7 @@ func (t *telegram) BalanceHandle(m *tb.Message) {
 }
 
 // formatBalanceMessage creates a formatted balance message
-func (t *telegram) formatBalanceMessage(account core.Account) (string, error) {
+func (t *Telegram) formatBalanceMessage(account core.Account) (string, error) {
 	message := "*BALANCE*\n"
 	quotesValue := make(map[string]float64)
 	total := 0.0
@@ -230,10 +236,10 @@ func (t *telegram) formatBalanceMessage(account core.Account) (string, error) {
 }
 
 // HelpHandle displays available commands
-func (t *telegram) HelpHandle(m *tb.Message) {
+func (t *Telegram) HelpHandle(m *tb.Message) {
 	commands, err := t.client.GetCommands()
 	if err != nil {
-		log.WithError(err).Error("failed to get commands")
+		t.log.WithError(err).Error("failed to get commands")
 		t.OnError(err)
 		return
 	}
@@ -248,7 +254,7 @@ func (t *telegram) HelpHandle(m *tb.Message) {
 }
 
 // ProfitHandle shows trading results
-func (t *telegram) ProfitHandle(m *tb.Message) {
+func (t *Telegram) ProfitHandle(m *tb.Message) {
 	if len(t.orderController.Results) == 0 {
 		t.sendMessage(m.Sender, "No trades registered.")
 		return
@@ -261,7 +267,7 @@ func (t *telegram) ProfitHandle(m *tb.Message) {
 }
 
 // BuyHandle processes buy commands
-func (t *telegram) BuyHandle(m *tb.Message) {
+func (t *Telegram) BuyHandle(m *tb.Message) {
 	match := buyRegexp.FindStringSubmatch(m.Text)
 	if len(match) == 0 {
 		t.sendMessage(m.Sender, "Invalid command.\nExamples of usage:\n`/buy BTCUSDT 100`\n\n`/buy BTCUSDT 50%`")
@@ -276,7 +282,7 @@ func (t *telegram) BuyHandle(m *tb.Message) {
 }
 
 // processBuyOrder handles the buy order creation logic
-func (t *telegram) processBuyOrder(sender *tb.User, match []string) error {
+func (t *Telegram) processBuyOrder(sender *tb.User, match []string) error {
 	// Extract command parameters
 	command := extractCommandParams(buyRegexp, match)
 	pair := strings.ToUpper(command["pair"])
@@ -306,12 +312,12 @@ func (t *telegram) processBuyOrder(sender *tb.User, match []string) error {
 		return fmt.Errorf("failed to create buy order for %s: %w", pair, err)
 	}
 
-	log.Info("[TELEGRAM]: BUY ORDER CREATED: ", order)
+	t.log.Info("[TELEGRAM]: BUY ORDER CREATED: ", order)
 	return nil
 }
 
 // SellHandle processes sell commands
-func (t *telegram) SellHandle(m *tb.Message) {
+func (t *Telegram) SellHandle(m *tb.Message) {
 	match := sellRegexp.FindStringSubmatch(m.Text)
 	if len(match) == 0 {
 		t.sendMessage(m.Sender, "Invalid command.\nExample of usage:\n`/sell BTCUSDT 100`\n\n`/sell BTCUSDT 50%`")
@@ -326,7 +332,7 @@ func (t *telegram) SellHandle(m *tb.Message) {
 }
 
 // processSellOrder handles the sell order creation logic
-func (t *telegram) processSellOrder(sender *tb.User, match []string) error {
+func (t *Telegram) processSellOrder(sender *tb.User, match []string) error {
 	// Extract command parameters
 	command := extractCommandParams(sellRegexp, match)
 	pair := strings.ToUpper(command["pair"])
@@ -353,7 +359,7 @@ func (t *telegram) processSellOrder(sender *tb.User, match []string) error {
 			return fmt.Errorf("failed to create percentage-based sell order for %s: %w", pair, err)
 		}
 
-		log.Info("[TELEGRAM]: SELL ORDER CREATED: ", order)
+		t.log.Info("[TELEGRAM]: SELL ORDER CREATED: ", order)
 		return nil
 	}
 
@@ -363,18 +369,18 @@ func (t *telegram) processSellOrder(sender *tb.User, match []string) error {
 		return fmt.Errorf("failed to create quote-based sell order for %s: %w", pair, err)
 	}
 
-	log.Info("[TELEGRAM]: SELL ORDER CREATED: ", order)
+	t.log.Info("[TELEGRAM]: SELL ORDER CREATED: ", order)
 	return nil
 }
 
 // StatusHandle displays the current bot status
-func (t *telegram) StatusHandle(m *tb.Message) {
+func (t *Telegram) StatusHandle(m *tb.Message) {
 	status := t.orderController.Status()
 	t.sendMessage(m.Sender, fmt.Sprintf("Status: `%s`", status))
 }
 
 // StartHandle starts the bot operation
-func (t *telegram) StartHandle(m *tb.Message) {
+func (t *Telegram) StartHandle(m *tb.Message) {
 	if t.orderController.Status() == order.StatusRunning {
 		t.sendMessage(m.Sender, "Bot is already running.", t.defaultMenu)
 		return
@@ -385,7 +391,7 @@ func (t *telegram) StartHandle(m *tb.Message) {
 }
 
 // StopHandle stops the bot operation
-func (t *telegram) StopHandle(m *tb.Message) {
+func (t *Telegram) StopHandle(m *tb.Message) {
 	if t.orderController.Status() == order.StatusStopped {
 		t.sendMessage(m.Sender, "Bot is already stopped.", t.defaultMenu)
 		return
@@ -396,7 +402,7 @@ func (t *telegram) StopHandle(m *tb.Message) {
 }
 
 // OnOrder notifies users about order status changes
-func (t *telegram) OnOrder(order core.Order) {
+func (t *Telegram) OnOrder(order core.Order) {
 	var title string
 
 	switch order.Status {
@@ -413,7 +419,7 @@ func (t *telegram) OnOrder(order core.Order) {
 }
 
 // OnError notifies users about errors
-func (t *telegram) OnError(err error) {
+func (t *Telegram) OnError(err error) {
 	var sb strings.Builder
 	sb.WriteString("🛑 ERROR\n")
 

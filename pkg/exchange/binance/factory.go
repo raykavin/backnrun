@@ -52,19 +52,19 @@ type CustomEndpoint struct {
 }
 
 // NewExchange creates a new exchange client based on the provided configuration
-func NewExchange(ctx context.Context, logger logger.Logger, config Config) (BinanceExchangeType, error) {
+func NewExchange(ctx context.Context, log logger.Logger, config Config) (BinanceExchangeType, error) {
 	switch config.Type {
 	case MarketTypeSpot:
-		return newSpotExchange(ctx, logger, config)
+		return newSpotExchange(ctx, log, config)
 	case MarketTypeFutures:
-		return newFuturesExchange(ctx, logger, config)
+		return newFuturesExchange(ctx, log, config)
 	default:
 		return nil, fmt.Errorf("unknown market type: %s", config.Type)
 	}
 }
 
 // newSpotExchange creates a new spot exchange client
-func newSpotExchange(ctx context.Context, logger logger.Logger, config Config) (BinanceExchangeType, error) {
+func newSpotExchange(ctx context.Context, log logger.Logger, config Config) (BinanceExchangeType, error) {
 	options := []SpotOption{}
 
 	// Add credentials if provided
@@ -105,11 +105,11 @@ func newSpotExchange(ctx context.Context, logger logger.Logger, config Config) (
 	}
 
 	// Create and return the spot client
-	return NewSpot(ctx, logger, options...)
+	return NewSpot(ctx, log, options...)
 }
 
 // newFuturesExchange creates a new futures exchange client
-func newFuturesExchange(ctx context.Context, logger logger.Logger, config Config) (BinanceExchangeType, error) {
+func newFuturesExchange(ctx context.Context, log logger.Logger, config Config) (BinanceExchangeType, error) {
 	options := []FuturesOption{}
 
 	// Add credentials if provided
@@ -137,5 +137,5 @@ func newFuturesExchange(ctx context.Context, logger logger.Logger, config Config
 	}
 
 	// Create and return the futures client
-	return NewFutures(ctx, logger, options...)
+	return NewFutures(ctx, log, options...)
 }
