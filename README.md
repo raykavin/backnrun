@@ -2,41 +2,41 @@
 
 BackNRun is a powerful, flexible trading bot framework written in Go. It provides a comprehensive set of tools for developing, backtesting, and optimizing trading strategies for cryptocurrency markets.
 
-## Features
 
-- **Strategy Development**: Create custom trading strategies using a simple, extensible interface
-- **Backtesting**: Test strategies against historical data to evaluate performance
-- **Parameter Optimization**: Find optimal parameters for your strategies using grid search or random search
-- **Exchange Integration**: Connect to real exchanges (currently supports Binance)
-- **Paper Trading**: Simulate trading with virtual funds
-- **Visualization**: Plot trading results with indicators and trades
-- **Notifications**: Receive alerts via Telegram
-- **Performance Metrics**: Analyze strategy performance with comprehensive metrics
+## 📌 Roadmap & Features
 
-## Architecture
+- [x] **Backtesting**: Test strategies against historical data to evaluate performance 
+- [x] **Strategy Development**: Create custom trading strategies using a simple, extensible interface
+- [x] **Notifications** - Telegram Notifications: Implemented notifications from Telegram channel
+- [x] **Parameter Optimization**: Find optimal parameters for your strategies using grid search or random search  
+- [x] **Performance Metrics**: Analyze strategy performance with comprehensive metrics  
+- [ ] **Web dashboard for live tracking:** Plot trading results with indicators and trades  
+
+---
+## 📁 Architecture
 
 BackNRun is built with a modular architecture that separates concerns and allows for easy extension:
 
 ```
-backnrun/
-├── cmd/                  # Command-line applications
-├── examples/             # Example strategies and usage
-├── internal/             # Internal packages
-├── pkg/                  # Core packages
-│   ├── core/             # Core interfaces and types
-│   ├── exchange/         # Exchange implementations
-│   ├── indicator/        # Technical indicators
-│   ├── logger/           # Logging utilities
-│   ├── metric/           # Performance metrics
-│   ├── notification/     # Notification systems
-│   ├── optimizer/        # Strategy parameter optimization
-│   ├── order/            # Order management
-│   ├── plot/             # Visualization tools
-│   ├── storage/          # Data storage
-│   └── strategy/         # Strategy implementations
+📁 backnrun/
+├── 📁 cmd/                  # Command-line application
+├── 📁 examples/             # Example strategies and usage
+├── 📁 internal/             # Internal packages
+├── 📁 pkg/                  # Core packages
+│   ├──📁 core/             # Core interfaces and types
+│   ├──📁 exchange/         # Exchange implementations
+│   ├──📁 indicator/        # Technical indicators
+│   ├──📁 logger/           # Logging utilities
+│   ├──📁 metric/           # Performance metrics
+│   ├──📁 notification/     # Notification systems
+│   ├──📁 optimizer/        # Strategy parameter optimization
+│   ├──📁 order/            # Order management
+│   ├──📁 plot/             # Visualization tools
+│   ├──📁 storage/          # Data storage
+│   └──📁 strategy/         # Strategy implementations
 ```
 
-## Installation
+## 📦 Installation
 
 ### Prerequisites
 
@@ -54,7 +54,7 @@ cd backnrun
 go build -o backnrun cmd/backnrun/main.go
 ```
 
-## Quick Start
+## ⚡ Quick Start
 
 ### Downloading Historical Data
 
@@ -171,7 +171,7 @@ Run the backtest:
 go run backtest.go
 ```
 
-## Available Strategies
+## 🤖 Available Strategies
 
 BackNRun comes with several example strategies:
 
@@ -285,7 +285,7 @@ func (s *MyStrategy) OnCandle(df *core.Dataframe, broker core.Broker) {
 }
 ```
 
-## Parameter Optimization
+## 📊 Parameter Optimization
 
 BackNRun includes a powerful parameter optimization package that helps you find the best parameters for your trading strategies. The optimizer supports multiple algorithms and performance metrics.
 
@@ -456,7 +456,7 @@ func main() {
 }
 ```
 
-## Live Trading
+## 🛑 Live Trading
 
 To use BackNRun for live trading, you need to configure it with a real exchange:
 
@@ -528,7 +528,7 @@ func main() {
 }
 ```
 
-## Contributing
+## 🤝 Contributing
 
 Contributions to BackNRun are welcome! Here are some ways you can contribute:
 
@@ -537,6 +537,17 @@ Contributions to BackNRun are welcome! Here are some ways you can contribute:
 3. Improve documentation
 4. Share your custom strategies with the community
 
-## License
+## 📄License
 
-BackNRun is licensed under the MIT License. See the LICENSE file for details.
+MIT License © [Raykavin Meireles](https://github.com/raykavin)
+
+BackNRun is licensed under the MIT License. See the [LICENSE](https://github.com/raykavin/backnrun/LICENSE.md) file for details.
+
+---
+## 📬 Contact
+
+Feel free to reach out for support or collaboration:  
+**Email**: [raykavin.meireles@gmail.com](mailto:raykavin.meireles@gmail.com)  
+**GitHub**: [@raykavin](https://github.com/raykavin)\
+**LinkedIn**: [@raykavin.dev](https://www.linkedin.com/in/raykavin-dev)
+**Instagram**: [@raykavin.dev](https://www.linkedin.com/in/raykavin-dev)
