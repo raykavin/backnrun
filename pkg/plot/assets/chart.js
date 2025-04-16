@@ -1,292 +1,543 @@
-const LIMIT_TYPE = "LIMIT";
-const MARKET_TYPE = "MARKET";
-const STOP_LOSS_TYPE = "STOP_LOSS";
-const LIMIT_MAKER_TYPE = "LIMIT_MAKER";
+/**
+ * BackNRun - Trading Chart Visualization
+ * 
+ * This script handles the visualization of trading data including
+ * price charts, trade markers, equity values, and technical indicators.
+ */
 
-const SELL_SIDE = "SELL";
-const BUY_SIDE = "BUY";
+// Constants
+const ORDER_TYPES = {
+  LIMIT: "LIMIT",
+  MARKET: "MARKET",
+  STOP_LOSS: "STOP_LOSS",
+  LIMIT_MAKER: "LIMIT_MAKER"
+};
 
-const STATUS_FILLED = "FILLED";
+const SIDES = {
+  SELL: "SELL",
+  BUY: "BUY"
+};
 
+const STATUS = {
+  FILLED: "FILLED"
+};
+
+const COLORS = {
+  UP: '#26a69a',
+  DOWN: '#ef5350',
+  EQUITY: 'rgba(38, 166, 154, 1)',
+  ASSET: 'rgba(239, 83, 80, 1)',
+  DEFAULT_INDICATOR: '#2196F3',
+  GRID: 'rgba(197, 203, 206, 0.5)',
+  BORDER: 'rgba(197, 203, 206, 1)',
+  BACKGROUND: '#ffffff',
+  TEXT: '#333'
+};
+
+/**
+ * Helper Functions
+ */
+
+// Extract values from arrays
 function unpack(rows, key) {
-  return rows.map(function (row) {
-    return row[key];
-  });
+  return rows.map(row => row[key]);
 }
 
-document.addEventListener("DOMContentLoaded", function () {
-  const params = new URLSearchParams(window.location.search);
-  const pair = params.get("pair") || "";
-  fetch("/data?pair=" + pair)
-    .then((data) => data.json())
-    .then((data) => {
-      const candleStickData = {
-        name: "Candles",
-        x: unpack(data.candles, "time"),
-        close: unpack(data.candles, "close"),
-        open: unpack(data.candles, "open"),
-        low: unpack(data.candles, "low"),
-        high: unpack(data.candles, "high"),
-        type: "candlestick",
-        xaxis: "x1",
-        yaxis: "y2",
-      };
+// Format dates for display
+function formatDate(dateStr) {
+  const date = new Date(dateStr);
+  return date.toLocaleString();
+}
 
-      const equityData = {
-        name: `Equity (${data.quote})`,
-        x: unpack(data.equity_values, "time"),
-        y: unpack(data.equity_values, "value"),
-        mode: "lines",
-        fill: "tozeroy",
-        xaxis: "x1",
-        yaxis: "y1",
-      };
+// Create DOM element with optional class and parent
+function createElement(tag, className, parent) {
+  const element = document.createElement(tag);
+  if (className) element.className = className;
+  if (parent) parent.appendChild(element);
+  return element;
+}
 
-      const assetData = {
-        name: `Position (${data.asset}/${data.quote})`,
-        x: unpack(data.asset_values, "time"),
-        y: unpack(data.asset_values, "value"),
-        mode: "lines",
-        fill: "tozeroy",
-        xaxis: "x1",
-        yaxis: "y1",
-      };
+// Add an item to the legend
+function addLegendItem(container, name, color) {
+  const item = createElement('div', 'legend-item', container);
 
-      const points = [];
-      const annotations = [];
-      data.candles.forEach((candle) => {
-        candle.orders
-          .filter((o) => o.status === STATUS_FILLED)
-          .forEach((order) => {
-            const point = {
-              time: candle.time,
-              position: order.price,
-              side: order.side,
-              color: "green",
-            };
-            if (order.side === SELL_SIDE) {
-              point.color = "red";
-            }
-            points.push(point);
+  const marker = createElement('div', 'legend-marker', item);
+  marker.style.backgroundColor = color;
 
-            const annotation = {
-              x: candle.time,
-              y: candle.low,
-              xref: "x1",
-              yref: "y2",
-              text: "B",
-              hovertext: `${order.updated_at}
-                        <br>ID: ${order.id}
-                        <br>Price: ${order.price.toLocaleString()}
-                        <br>Size: ${order.quantity
-                          .toPrecision(4)
-                          .toLocaleString()}<br>Type: ${order.type}<br>${
-                (order.profit &&
-                  "Profit: " +
-                    +(order.profit * 100).toPrecision(2).toLocaleString() +
-                    "%") ||
-                ""
-              }`,
-              showarrow: true,
-              arrowcolor: "green",
-              valign: "bottom",
-              borderpad: 4,
-              arrowhead: 2,
-              ax: 0,
-              ay: 20,
-              font: {
-                size: 12,
-                color: "green",
-              },
-            };
+  const label = createElement('div', '', item);
+  label.textContent = name;
 
-            if (order.side === SELL_SIDE) {
-              annotation.font.color = "red";
-              annotation.arrowcolor = "red";
-              annotation.text = "S";
-              annotation.y = candle.high;
-              annotation.ay = -20;
-              annotation.valign = "top";
-            }
+  return item;
+}
 
-            annotations.push(annotation);
-          });
-      });
+/**
+ * Chart Creation and Management
+ */
+class TradingChart {
+  constructor() {
+    this.additionalCharts = [];
+    this.mainChart = null;
+    this.candleSeries = null;
+    this.tooltip = null;
+    this.pair = '';
+    this.buyMarkers = [];
+    this.sellMarkers = [];
+  }
 
-      const shapes = data.shapes.map((s) => {
-        return {
-          type: "rect",
-          xref: "x1",
-          yref: "y2",
-          yaxis: "y2",
-          xaxis: "x1",
-          x0: s.x0,
-          y0: s.y0,
-          x1: s.x1,
-          y1: s.y1,
-          line: {
-            width: 0,
-          },
-          fillcolor: s.color,
-        };
-      });
+  // Initialize the chart when DOM is ready
+  init() {
+    const params = new URLSearchParams(window.location.search);
+    this.pair = params.get("pair") || "";
 
-      // max draw down
-      if (data.max_drawdown) {
-        const topPosition = data.equity_values.reduce((p, v) => {
-          return p > v.value ? p : v.value;
-        });
-        shapes.push({
-          type: "rect",
-          xref: "x1",
-          yref: "y1",
-          yaxis: "y1",
-          xaxis: "x1",
-          x0: data.max_drawdown.start,
-          y0: 0,
-          x1: data.max_drawdown.end,
-          y1: topPosition,
-          line: {
-            width: 0,
-          },
-          fillcolor: "rgba(255,0,0,0.2)",
-          layer: "below",
-        });
+    this.tooltip = createElement('div', 'tooltip', document.body);
 
-        const annotationPosition = new Date(
-          (new Date(data.max_drawdown.start).getTime() +
-            new Date(data.max_drawdown.end).getTime()) /
-            2
-        );
+    this.fetchData();
+  }
 
-        annotations.push({
-          x: annotationPosition,
-          y: topPosition / 2.0,
-          xref: "x1",
-          yref: "y1",
-          text: `Drawdown<br>${data.max_drawdown.value}%`,
-          showarrow: false,
-          font: {
-            size: 12,
-            color: "red",
-          },
+  // Fetch data from the server
+  async fetchData() {
+    try {
+      const response = await fetch("/data?pair=" + this.pair);
+      const data = await response.json();
+      this.renderCharts(data);
+    } catch (error) {
+      console.error('Error fetching chart data:', error);
+      document.getElementById('graph').innerHTML = `
+        <div style="padding: 20px; color: red;">
+          Error loading chart data: ${error.message}
+        </div>
+      `;
+    }
+  }
+
+  // Create and configure the main chart
+  createMainChart(container) {
+    return LightweightCharts.createChart(container, {
+      width: container.clientWidth,
+      height: container.clientHeight,
+      layout: {
+        backgroundColor: COLORS.BACKGROUND,
+        textColor: COLORS.TEXT,
+      },
+      grid: {
+        vertLines: { color: COLORS.GRID },
+        horzLines: { color: COLORS.GRID },
+      },
+      crosshair: {
+        mode: LightweightCharts.CrosshairMode.Normal,
+      },
+      rightPriceScale: {
+        borderColor: COLORS.BORDER,
+      },
+      timeScale: {
+        borderColor: COLORS.BORDER,
+        timeVisible: true,
+      },
+    });
+  }
+
+  // Create a secondary chart (for indicators, equity, etc.)
+  createSecondaryChart(container, showTimeScale = false) {
+    const chart = LightweightCharts.createChart(container, {
+      width: container.clientWidth,
+      height: container.clientHeight,
+      layout: {
+        backgroundColor: COLORS.BACKGROUND,
+        textColor: COLORS.TEXT,
+      },
+      grid: {
+        vertLines: { color: COLORS.GRID },
+        horzLines: { color: COLORS.GRID },
+      },
+      rightPriceScale: {
+        borderColor: COLORS.BORDER,
+      },
+      timeScale: {
+        borderColor: COLORS.BORDER,
+        visible: showTimeScale,
+      },
+    });
+
+    this.additionalCharts.push(chart);
+    return chart;
+  }
+
+  // Set up window resize handler
+  setupResizeHandler() {
+    window.addEventListener('resize', () => {
+      if (this.mainChart) {
+        const container = document.getElementById('main-chart');
+        this.mainChart.applyOptions({
+          width: container.clientWidth,
+          height: container.clientHeight,
         });
       }
 
-      const sellPoints = points.filter((p) => p.side === SELL_SIDE);
-      const buyPoints = points.filter((p) => p.side === BUY_SIDE);
-      const buyData = {
-        name: "Buy Points",
-        x: unpack(buyPoints, "time"),
-        y: unpack(buyPoints, "position"),
-        xaxis: "x1",
-        yaxis: "y2",
-        mode: "markers",
-        type: "scatter",
-        marker: {
-          color: "green",
-        },
-      };
-      const sellData = {
-        name: "Sell Points",
-        x: unpack(sellPoints, "time"),
-        y: unpack(sellPoints, "position"),
-        xaxis: "x1",
-        yaxis: "y2",
-        mode: "markers",
-        type: "scatter",
-        marker: {
-          color: "red",
-        },
-      };
-
-      const standaloneIndicators = data.indicators.reduce(
-        (total, indicator) => {
-          if (!indicator.overlay) {
-            return total + 1;
-          }
-          return total;
-        },
-        0
-      );
-
-      let layout = {
-        template: "ggplot2",
-        dragmode: "zoom",
-        margin: {
-          t: 25,
-        },
-        showlegend: true,
-        xaxis: {
-          autorange: true,
-          rangeslider: { visible: false },
-          showline: true,
-          anchor: standaloneIndicators > 0 ? "y3" : "y2",
-        },
-        yaxis2: {
-          domain: standaloneIndicators > 0 ? [0.4, 0.9] : [0, 0.9],
-          autorange: true,
-          mirror: true,
-          showline: true,
-          gridcolor: "#ddd",
-        },
-        yaxis1: {
-          domain: [0.9, 1],
-          autorange: true,
-          mirror: true,
-          showline: true,
-          gridcolor: "#ddd",
-        },
-        hovermode: "x unified",
-        annotations: annotations,
-        shapes: shapes,
-      };
-
-      let plotData = [
-        candleStickData,
-        equityData,
-        assetData,
-        buyData,
-        sellData,
-      ];
-
-      const indicatorsHeight = 0.39 / standaloneIndicators;
-      let standaloneIndicatorIndex = 0;
-      data.indicators.forEach((indicator) => {
-        const axisNumber = standaloneIndicatorIndex + 3;
-        if (!indicator.overlay) {
-          const heightStart = standaloneIndicatorIndex * indicatorsHeight;
-          layout["yaxis" + axisNumber] = {
-            title: indicator.name,
-            domain: [heightStart, heightStart + indicatorsHeight],
-            autorange: true,
-            mirror: true,
-            showline: true,
-            linecolor: "black",
-            gridcolor: "#ddd",
-          };
-          standaloneIndicatorIndex++;
-        }
-
-        indicator.metrics.forEach((metric) => {
-          const data = {
-            title: indicator.name,
-            name: indicator.name + (metric.name && " - " + metric.name),
-            x: metric.time,
-            y: metric.value,
-            type: metric.style,
-            line: {
-              color: metric.color,
-            },
-            xaxis: "x1",
-            yaxis: "y2",
-          };
-          if (!indicator.overlay) {
-            data.yaxis = "y" + axisNumber;
-          }
-          plotData.push(data);
+      this.additionalCharts.forEach(chart => {
+        chart.applyOptions({
+          width: chart.container.clientWidth,
+          height: chart.container.clientHeight,
         });
       });
-      Plotly.newPlot("graph", plotData, layout);
     });
+  }
+
+  // Format candle data for TradingView
+  formatCandleData(candles) {
+    return candles.map(candle => ({
+      time: new Date(candle.time).getTime() / 1000,
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close,
+      orders: candle.orders || []
+    }));
+  }
+
+  // Process buy/sell markers
+  processOrderMarkers(candles) {
+    this.buyMarkers = [];
+    this.sellMarkers = [];
+
+    candles.forEach(candle => {
+      if (!candle.orders) return;
+
+      candle.orders
+        .filter(order => order.status === STATUS.FILLED)
+        .forEach(order => {
+          const marker = {
+            time: new Date(candle.time).getTime() / 1000,
+            position: order.side === SIDES.BUY ? 'belowBar' : 'aboveBar',
+            color: order.side === SIDES.BUY ? COLORS.UP : COLORS.DOWN,
+            shape: order.side === SIDES.BUY ? 'arrowUp' : 'arrowDown',
+            text: order.side === SIDES.BUY ? 'B' : 'S',
+            size: 2,
+            id: order.id,
+            order: order
+          };
+
+          if (order.side === SIDES.BUY) {
+            this.buyMarkers.push(marker);
+          } else {
+            this.sellMarkers.push(marker);
+          }
+        });
+    });
+
+    return [...this.buyMarkers, ...this.sellMarkers];
+  }
+
+  // Setup tooltip functionality
+  setupTooltip() {
+    this.mainChart.subscribeCrosshairMove(param => {
+      if (!param.point || !param.time) {
+        this.tooltip.style.display = 'none';
+        return;
+      }
+
+      const markers = [...this.buyMarkers, ...this.sellMarkers];
+      const marker = markers.find(m => m.time === param.time);
+
+      if (marker && marker.order) {
+        const order = marker.order;
+        this.tooltip.innerHTML = `
+          <div><strong>${order.side} Order</strong></div>
+          <div>Time: ${formatDate(order.updated_at || order.created_at)}</div>
+          <div>ID: ${order.id}</div>
+          <div>Price: ${order.price.toLocaleString()}</div>
+          <div>Size: ${order.quantity.toPrecision(4).toLocaleString()}</div>
+          <div>Type: ${order.type}</div>
+          ${order.profit ? `<div>Profit: ${(order.profit * 100).toPrecision(2).toLocaleString()}%</div>` : ''}
+        `;
+
+        const x = param.point.x;
+        const y = param.point.y;
+
+        this.tooltip.style.display = 'block';
+        this.tooltip.style.left = `${x + 15}px`;
+        this.tooltip.style.top = `${y + 15}px`;
+      } else {
+        this.tooltip.style.display = 'none';
+      }
+    });
+  }
+
+  // Create equity chart
+  createEquityChart(data, graphContainer) {
+    if (!data.equity_values || data.equity_values.length === 0) return;
+
+    // Create container
+    const equityContainer = createElement('div', 'chart-container', graphContainer);
+    equityContainer.style.height = '150px';
+
+    // Create chart
+    const equityChart = this.createSecondaryChart(equityContainer, false);
+    equityChart.container = equityContainer;
+
+    // Sync with main chart
+    this.syncChartWithMain(equityChart);
+
+    // Create legend
+    const equityLegend = createElement('div', 'legend-container', equityContainer);
+
+    // Format equity data
+    const equityData = data.equity_values.map(item => ({
+      time: new Date(item.time).getTime() / 1000,
+      value: item.value
+    }));
+
+    // Add equity series
+    const equitySeries = equityChart.addAreaSeries({
+      topColor: 'rgba(38, 166, 154, 0.56)',
+      bottomColor: 'rgba(38, 166, 154, 0.04)',
+      lineColor: COLORS.EQUITY,
+      lineWidth: 2,
+    });
+    equitySeries.setData(equityData);
+
+    // Add equity to legend
+    addLegendItem(equityLegend, `Equity (${data.quote})`, COLORS.EQUITY);
+
+    // Handle drawdown if available
+    this.addDrawdownVisualization(data, equityChart, equitySeries, equityLegend);
+
+    // Add asset values if available
+    this.addAssetSeries(data, equityChart, equityLegend);
+
+    return equityChart;
+  }
+
+  // Add drawdown visualization
+  addDrawdownVisualization(data, chart, series, legend) {
+    if (!data.max_drawdown) return;
+
+    // Find time range for drawdown
+    const startTime = new Date(data.max_drawdown.start).getTime() / 1000;
+    const endTime = new Date(data.max_drawdown.end).getTime() / 1000;
+
+    // Add drawdown marker
+    const drawdownMarker = {
+      time: (startTime + endTime) / 2,
+      position: 'aboveBar',
+      color: COLORS.DOWN,
+      shape: 'square',
+      text: `Drawdown: ${data.max_drawdown.value}%`,
+    };
+
+    series.setMarkers([drawdownMarker]);
+
+    // Add vertical lines
+    chart.addVerticalLine({
+      time: startTime,
+      color: `rgba(239, 83, 80, 0.5)`,
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+    });
+
+    chart.addVerticalLine({
+      time: endTime,
+      color: `rgba(239, 83, 80, 0.5)`,
+      lineWidth: 1,
+      lineStyle: LightweightCharts.LineStyle.Dashed,
+    });
+
+    // Add to legend
+    addLegendItem(legend, `Max Drawdown: ${data.max_drawdown.value}%`, COLORS.DOWN);
+  }
+
+  // Add asset value series
+  addAssetSeries(data, chart, legend) {
+    if (!data.asset_values || data.asset_values.length === 0) return;
+
+    // Format asset data
+    const assetData = data.asset_values.map(item => ({
+      time: new Date(item.time).getTime() / 1000,
+      value: item.value
+    }));
+
+    // Add asset series
+    const assetSeries = chart.addLineSeries({
+      color: COLORS.ASSET,
+      lineWidth: 2,
+    });
+    assetSeries.setData(assetData);
+
+    // Add to legend
+    addLegendItem(legend, `Position (${data.asset}/${data.quote})`, COLORS.ASSET);
+  }
+
+  // Sync a chart's time scale with the main chart
+  syncChartWithMain(chart) {
+    this.mainChart.timeScale().subscribeVisibleTimeRangeChange(timeRange => {
+      chart.timeScale().setVisibleRange(timeRange);
+    });
+
+    this.mainChart.timeScale().subscribeCrosshairMove(param => {
+      chart.setCrosshairPosition(param.time, param.point.x);
+    });
+  }
+
+  // Add indicators to charts
+  addIndicators(data, graphContainer, mainLegend) {
+    if (!data.indicators || data.indicators.length === 0) return;
+
+    // Group indicators
+    const overlayIndicators = data.indicators.filter(ind => ind.overlay);
+    const standaloneIndicators = data.indicators.filter(ind => !ind.overlay);
+
+    // Add overlay indicators to main chart
+    this.addOverlayIndicators(overlayIndicators, mainLegend);
+
+    // Add standalone indicators as separate charts
+    this.addStandaloneIndicators(standaloneIndicators, graphContainer);
+  }
+
+  // Add overlay indicators to the main chart
+  addOverlayIndicators(indicators, legend) {
+    indicators.forEach(indicator => {
+      indicator.metrics.forEach(metric => {
+        // Format indicator data
+        const indicatorData = metric.time.map((time, i) => ({
+          time: new Date(time).getTime() / 1000,
+          value: metric.value[i]
+        }));
+
+        // Add indicator series
+        const indicatorSeries = this.mainChart.addLineSeries({
+          color: metric.color || COLORS.DEFAULT_INDICATOR,
+          lineWidth: 1,
+          priceLineVisible: false,
+        });
+        indicatorSeries.setData(indicatorData);
+
+        // Add to legend
+        const name = indicator.name + (metric.name ? ` - ${metric.name}` : '');
+        addLegendItem(legend, name, metric.color || COLORS.DEFAULT_INDICATOR);
+      });
+    });
+  }
+
+  // Add standalone indicators as separate charts
+  addStandaloneIndicators(indicators, graphContainer) {
+    indicators.forEach((indicator, index) => {
+      // Create container
+      const indicatorContainer = createElement('div', 'chart-container', graphContainer);
+      indicatorContainer.style.height = '150px';
+
+      // Create chart
+      const showTimeScale = index === indicators.length - 1; // Only show time on last indicator
+      const indicatorChart = this.createSecondaryChart(indicatorContainer, showTimeScale);
+      indicatorChart.container = indicatorContainer;
+
+      // Sync with main chart
+      this.syncChartWithMain(indicatorChart);
+
+      // Create legend
+      const indicatorLegend = createElement('div', 'legend-container', indicatorContainer);
+
+      // Add title to legend
+      const titleElement = createElement('div', '', indicatorLegend);
+      titleElement.innerHTML = `<strong>${indicator.name}</strong>`;
+
+      // Add each metric as a series
+      indicator.metrics.forEach(metric => {
+        // Format data
+        const indicatorData = metric.time.map((time, i) => ({
+          time: new Date(time).getTime() / 1000,
+          value: metric.value[i]
+        }));
+
+        // Determine series type
+        let indicatorSeries;
+        if (metric.style === 'histogram') {
+          indicatorSeries = indicatorChart.addHistogramSeries({
+            color: metric.color || COLORS.DEFAULT_INDICATOR,
+            priceLineVisible: false,
+          });
+        } else {
+          indicatorSeries = indicatorChart.addLineSeries({
+            color: metric.color || COLORS.DEFAULT_INDICATOR,
+            lineWidth: 1,
+            priceLineVisible: false,
+          });
+        }
+
+        indicatorSeries.setData(indicatorData);
+
+        // Add to legend
+        const name = metric.name || indicator.name;
+        addLegendItem(indicatorLegend, name, metric.color || COLORS.DEFAULT_INDICATOR);
+      });
+    });
+  }
+
+  // Render all charts
+  renderCharts(data) {
+    // Clear existing content
+    const graphContainer = document.getElementById('graph');
+    graphContainer.innerHTML = '';
+
+    // Create main chart container
+    const mainChartContainer = createElement('div', 'chart-container', graphContainer);
+    mainChartContainer.id = 'main-chart';
+
+    // Create legend container
+    const legendContainer = createElement('div', 'legend-container', mainChartContainer);
+
+    // Initialize main chart
+    this.mainChart = this.createMainChart(mainChartContainer);
+    this.mainChart.container = mainChartContainer;
+
+    // Setup resize handler
+    this.setupResizeHandler();
+
+    // Format candle data
+    const candleData = this.formatCandleData(data.candles);
+
+    // Add candlestick series
+    this.candleSeries = this.mainChart.addCandlestickSeries({
+      upColor: COLORS.UP,
+      downColor: COLORS.DOWN,
+      borderVisible: false,
+      wickUpColor: COLORS.UP,
+      wickDownColor: COLORS.DOWN,
+    });
+    this.candleSeries.setData(candleData);
+
+    // Add legend item for candlestick
+    addLegendItem(legendContainer, 'Candles', COLORS.UP);
+
+    // Process markers
+    const markers = this.processOrderMarkers(data.candles);
+    this.candleSeries.setMarkers(markers);
+
+    // Add legend items for markers
+    if (this.buyMarkers.length > 0) {
+      addLegendItem(legendContainer, 'Buy Points', COLORS.UP);
+    }
+    if (this.sellMarkers.length > 0) {
+      addLegendItem(legendContainer, 'Sell Points', COLORS.DOWN);
+    }
+
+    // Setup tooltip
+    this.setupTooltip();
+
+    // Create equity chart
+    this.createEquityChart(data, graphContainer);
+
+    // Add indicators
+    this.addIndicators(data, graphContainer, legendContainer);
+
+    // Fit content
+    this.mainChart.timeScale().fitContent();
+  }
+}
+
+// Initialize when DOM is ready
+document.addEventListener("DOMContentLoaded", function () {
+  const chart = new TradingChart();
+  chart.init();
+
+  // Make chart accessible globally (for debugging)
+  window.tradingChart = chart;
 });
