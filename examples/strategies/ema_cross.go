@@ -46,7 +46,7 @@ func NewCrossEMA(emaLength, smaLength int, minQuoteAmount float64) *CrossEMA {
 
 // Timeframe returns the required timeframe for this strategy
 func (s CrossEMA) Timeframe() string {
-	return "30m"
+	return "5m"
 }
 
 // WarmupPeriod returns the number of candles needed before the strategy is ready

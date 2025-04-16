@@ -550,4 +550,4 @@ Feel free to reach out for support or collaboration:
 **Email**: [raykavin.meireles@gmail.com](mailto:raykavin.meireles@gmail.com)  
 **GitHub**: [@raykavin](https://github.com/raykavin)\
 **LinkedIn**: [@raykavin.dev](https://www.linkedin.com/in/raykavin-dev)\
-**Instagram**: [@raykavin.dev](https://www.linkedin.com/in/raykavin-dev)
+**Instagram**: [@raykavin.dev](https://www.instagram.com/raykavin.dev)

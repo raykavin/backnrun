@@ -7,8 +7,7 @@ import (
 	"github.com/raykavin/backnrun/pkg/indicator"
 )
 
-type TrendMasterParameters struct{
-	
+type TrendMasterParameters struct {
 }
 
 // TrendMasterStrategy implementa uma estratégia que combina múltiplos indicadores
@@ -96,7 +95,7 @@ func NewTrendMasterStrategy() *TrendMasterStrategy {
 
 // Timeframe retorna o timeframe necessário para esta estratégia
 func (t TrendMasterStrategy) Timeframe() string {
-	return "15m"
+	return "5m"
 }
 
 // WarmupPeriod retorna o número de candles necessários antes da estratégia estar pronta

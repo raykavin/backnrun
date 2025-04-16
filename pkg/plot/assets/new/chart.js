@@ -6,70 +6,13 @@
  * Added dark mode support and wider chart display.
  */
 
-// Initialize when DOM is ready and ensure the library is loaded
-document.addEventListener("DOMContentLoaded", function () {
-  // Check if the library is properly loaded
-  if (typeof LightweightCharts === 'undefined') {
-    console.error('LightweightCharts library not found! Attempting to load it...');
-
-    // Try to load the library dynamically
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js';
-    script.onload = function () {
-      console.log('LightweightCharts library loaded successfully!');
-      initializeChart();
-    };
-    script.onerror = function () {
-      console.error('Failed to load LightweightCharts library!');
-      document.getElementById('graph').innerHTML = `
-        <div style="padding: 20px; color: red;">
-          Error: Failed to load chart library. Please check your network connection and refresh the page.
-        </div>
-      `;
-    };
-    document.head.appendChild(script);
-  } else {
-    // Library already loaded, initialize the chart
-    initializeChart();
-  }
-
-  function initializeChart() {
-    try {
-      // Debug the library
-      console.log("LightweightCharts library:", LightweightCharts);
-      console.log("LightweightCharts.createChart:", typeof LightweightCharts.createChart);
-
-      // Check if createChart exists
-      if (typeof LightweightCharts.createChart !== 'function') {
-        throw new Error('LightweightCharts.createChart is not a function. Library may be corrupted or incompatible.');
-      }
-
-      const chart = new TradingChart();
-      chart.init();
-
-      // Make chart accessible globally (for debugging and theme toggling)
-      window.tradingChart = chart;
-    } catch (error) {
-      console.error("Error initializing chart:", error);
-      document.getElementById('graph').innerHTML = `
-        <div style="padding: 20px; color: red;">
-          Error initializing chart: ${error.message}<br>
-          Please check browser console for details.
-        </div>
-      `;
-    }
-  }
-});
-
 // Constants
 const ORDER_TYPES = {
   LIMIT: "LIMIT",
   MARKET: "MARKET",
   STOP_LOSS: "STOP_LOSS",
   LIMIT_MAKER: "LIMIT_MAKER"
-}
-
-
+};
 
 const SIDES = {
   SELL: "SELL",
@@ -152,211 +95,6 @@ function addLegendItem(container, name, color) {
 }
 
 /**
- * Function to check if marker support is available
- */
-function testMarkerSupport(chart) {
-  try {
-    // Create a test series
-    const testSeries = chart.addCandlestickSeries();
-    // Check if setMarkers exists
-    const hasSetMarkers = typeof testSeries.setMarkers === 'function';
-    // Remove the test series if possible
-    if (typeof testSeries.remove === 'function') {
-      testSeries.remove();
-    }
-    return hasSetMarkers;
-  } catch (e) {
-    console.error("Error testing marker support:", e);
-    return false;
-  }
-}
-
-/**
- * Add custom markers as separate series
- */
-function addCustomMarkers(chart, candleSeries, markers) {
-  // Create separate series for buy and sell markers
-  const buyMarkers = markers.filter(m => m.position === 'belowBar');
-  const sellMarkers = markers.filter(m => m.position === 'aboveBar');
-
-  console.log(`Adding ${buyMarkers.length} buy markers and ${sellMarkers.length} sell markers as separate series`);
-
-  if (buyMarkers.length > 0) {
-    // Format buy markers data for scatter series
-    const buyData = buyMarkers.map(marker => ({
-      time: marker.time,
-      value: marker.price || marker.order.price
-    }));
-
-    try {
-      // Add buy markers as a scatter series
-      const buyMarkerSeries = chart.addLineSeries({
-        color: COLORS.UP,
-        lineWidth: 0,
-        pointsVisible: true,
-        pointSize: 8,
-        pointShape: 'circle',
-        pointFill: COLORS.UP,
-        pointBorderColor: COLORS.UP,
-        pointBorderWidth: 0,
-        priceLineVisible: false,
-        lastValueVisible: false,
-      });
-
-      buyMarkerSeries.setData(buyData);
-      console.log('Buy marker series created successfully');
-    } catch (error) {
-      console.error('Failed to create buy marker series:', error);
-
-      // Fallback to simpler series if the advanced options fail
-      try {
-        const simpleBuyMarkerSeries = chart.addLineSeries({
-          color: COLORS.UP,
-          lineWidth: 0,
-          priceLineVisible: false,
-          lastValueVisible: false,
-        });
-
-        simpleBuyMarkerSeries.setData(buyData);
-        console.log('Simple buy marker series created as fallback');
-      } catch (fallbackError) {
-        console.error('Fallback buy marker series also failed:', fallbackError);
-      }
-    }
-  }
-
-  if (sellMarkers.length > 0) {
-    // Format sell markers data for scatter series
-    const sellData = sellMarkers.map(marker => ({
-      time: marker.time,
-      value: marker.price || marker.order.price
-    }));
-
-    try {
-      // Add sell markers as a scatter series
-      const sellMarkerSeries = chart.addLineSeries({
-        color: COLORS.DOWN,
-        lineWidth: 0,
-        pointsVisible: true,
-        pointSize: 8,
-        pointShape: 'circle',
-        pointFill: COLORS.DOWN,
-        pointBorderColor: COLORS.DOWN,
-        pointBorderWidth: 0,
-        priceLineVisible: false,
-        lastValueVisible: false,
-      });
-
-      sellMarkerSeries.setData(sellData);
-      console.log('Sell marker series created successfully');
-    } catch (error) {
-      console.error('Failed to create sell marker series:', error);
-
-      // Fallback to simpler series if the advanced options fail
-      try {
-        const simpleSellMarkerSeries = chart.addLineSeries({
-          color: COLORS.DOWN,
-          lineWidth: 0,
-          priceLineVisible: false,
-          lastValueVisible: false,
-        });
-
-        simpleSellMarkerSeries.setData(sellData);
-        console.log('Simple sell marker series created as fallback');
-      } catch (fallbackError) {
-        console.error('Fallback sell marker series also failed:', fallbackError);
-      }
-    }
-  }
-}
-
-/**
- * Create HTML text markers at buy/sell points
- */
-function createTextMarkers(chart, markers) {
-  // Check if the createElement method exists (needed for HTML markers)
-  if (typeof document.createElement !== 'function') {
-    console.error('Document createElement not available, cannot create text markers');
-    return;
-  }
-
-  // Create container for markers if it doesn't exist
-  let markerContainer = document.getElementById('custom-markers-container');
-  if (!markerContainer) {
-    markerContainer = document.createElement('div');
-    markerContainer.id = 'custom-markers-container';
-    markerContainer.style.position = 'absolute';
-    markerContainer.style.top = '0';
-    markerContainer.style.left = '0';
-    markerContainer.style.width = '100%';
-    markerContainer.style.height = '100%';
-    markerContainer.style.pointerEvents = 'none'; // Pass through mouse events
-
-    // Find the chart container and append
-    const chartContainer = document.getElementById('graph');
-    if (chartContainer) {
-      chartContainer.style.position = 'relative'; // Ensure relative positioning
-      chartContainer.appendChild(markerContainer);
-    } else {
-      console.error('Chart container not found, cannot add marker container');
-      return;
-    }
-  } else {
-    // Clear existing markers
-    markerContainer.innerHTML = '';
-  }
-
-  // Create a marker element for each buy/sell point
-  markers.forEach(marker => {
-    try {
-      // Get pixel coordinates from chart
-      const time = marker.time;
-      const price = marker.price || marker.order.price;
-
-      // Skip if we can't get proper coordinates
-      if (!chart.timeScale || !chart.priceScale) {
-        console.warn('Chart scales not available, skipping text marker');
-        return;
-      }
-
-      // Convert time to pixel coordinates
-      const timeScale = chart.timeScale();
-      const priceScale = chart.priceScale('right');
-
-      if (!timeScale || !priceScale) {
-        console.warn('Time or price scale not available');
-        return;
-      }
-
-      const timeCoordinate = timeScale.timeToCoordinate(time);
-      const priceCoordinate = priceScale.priceToCoordinate(price);
-
-      if (timeCoordinate === null || priceCoordinate === null) {
-        console.warn('Could not convert time or price to coordinates');
-        return;
-      }
-
-      // Create marker element
-      const markerEl = document.createElement('div');
-      markerEl.className = 'trade-marker';
-      markerEl.style.position = 'absolute';
-      markerEl.style.left = `${timeCoordinate}px`;
-      markerEl.style.top = `${priceCoordinate}px`;
-      markerEl.style.transform = 'translate(-50%, -50%)';
-      markerEl.style.color = marker.color;
-      markerEl.style.fontSize = '12px';
-      markerEl.style.fontWeight = 'bold';
-      markerEl.style.zIndex = '1000';
-      markerEl.textContent = marker.text;
-
-      markerContainer.appendChild(markerEl);
-    } catch (error) {
-      console.error('Error creating text marker:', error);
-    }
-  });
-}
-
-/**
  * Chart Creation and Management
  */
 class TradingChart {
@@ -370,22 +108,6 @@ class TradingChart {
     this.sellMarkers = [];
     this.currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
     // We'll use the global LightweightCharts variable directly instead of storing it
-
-    // Add CSS for custom markers
-    const style = document.createElement('style');
-    style.textContent = `
-      .trade-marker {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        background-color: white;
-        border: 2px solid;
-      }
-    `;
-    document.head.appendChild(style);
   }
 
   // Initialize the chart when DOM is ready
@@ -426,22 +148,6 @@ class TradingChart {
     try {
       const response = await fetch("/data?pair=" + this.pair);
       const data = await response.json();
-
-      // Debug the data to see its structure
-      console.log('Fetched data:', data);
-
-      // Check if data contains indicators and order information
-      if (data.indicators) {
-        console.log('Indicators found:', data.indicators.length);
-      }
-
-      // Check if candles have orders
-      if (data.candles && data.candles.length > 0) {
-        const ordersCount = data.candles.reduce((count, candle) =>
-          count + (candle.orders ? candle.orders.length : 0), 0);
-        console.log('Total orders found:', ordersCount);
-      }
-
       this.renderCharts(data);
     } catch (error) {
       console.error('Error fetching chart data:', error);
@@ -508,7 +214,6 @@ class TradingChart {
       timeScale: {
         borderColor: COLORS.BORDER,
         visible: showTimeScale,
-        timeVisible: true,
       },
     });
 
@@ -559,15 +264,13 @@ class TradingChart {
       candle.orders
         .filter(order => order.status === STATUS.FILLED)
         .forEach(order => {
-          // Create marker with explicit positioning
           const marker = {
             time: new Date(candle.time).getTime() / 1000,
             position: order.side === SIDES.BUY ? 'belowBar' : 'aboveBar',
             color: order.side === SIDES.BUY ? COLORS.UP : COLORS.DOWN,
             shape: order.side === SIDES.BUY ? 'arrowUp' : 'arrowDown',
             text: order.side === SIDES.BUY ? 'B' : 'S',
-            size: 2, // Slightly larger for visibility
-            price: order.price, // Store price for reference
+            size: 2,
             id: order.id,
             order: order
           };
@@ -579,10 +282,6 @@ class TradingChart {
           }
         });
     });
-
-    // Debug markers
-    console.log('Buy markers:', this.buyMarkers.length);
-    console.log('Sell markers:', this.sellMarkers.length);
 
     return [...this.buyMarkers, ...this.sellMarkers];
   }
@@ -686,7 +385,7 @@ class TradingChart {
 
     series.setMarkers([drawdownMarker]);
 
-    // Add vertical lines - check for the correct method first
+    // Add vertical lines
     if (chart.addVerticalLine) {
       chart.addVerticalLine({
         time: startTime,
@@ -730,49 +429,24 @@ class TradingChart {
 
   // Sync a chart's time scale with the main chart
   syncChartWithMain(chart) {
-    // Make sure main chart exists and has a timeScale method
-    if (!this.mainChart || !this.methodExists(this.mainChart, 'timeScale')) {
-      console.error('Cannot sync chart: main chart does not exist or has no timeScale method');
-      return;
-    }
+    this.mainChart.timeScale().subscribeVisibleTimeRangeChange(timeRange => {
+      chart.timeScale().setVisibleRange(timeRange);
+    });
 
-    const mainTimeScale = this.mainChart.timeScale();
-
-    if (this.methodExists(mainTimeScale, 'subscribeVisibleTimeRangeChange')) {
-      mainTimeScale.subscribeVisibleTimeRangeChange(timeRange => {
-        if (chart && this.methodExists(chart, 'timeScale')) {
-          const chartTimeScale = chart.timeScale();
-          if (this.methodExists(chartTimeScale, 'setVisibleRange')) {
-            chartTimeScale.setVisibleRange(timeRange);
-          }
-        }
-      });
-    }
-
-    if (this.methodExists(mainTimeScale, 'subscribeCrosshairMove') &&
-      this.methodExists(chart, 'setCrosshairPosition')) {
-      mainTimeScale.subscribeCrosshairMove(param => {
-        if (param.time && param.point) {
-          chart.setCrosshairPosition(param.time, param.point.x);
-        }
+    if (chart.setCrosshairPosition) {
+      this.mainChart.timeScale().subscribeCrosshairMove(param => {
+        chart.setCrosshairPosition(param.time, param.point.x);
       });
     }
   }
 
   // Add indicators to charts
   addIndicators(data, graphContainer, mainLegend) {
-    if (!data.indicators || data.indicators.length === 0) {
-      console.log('No indicators found in data');
-      return;
-    }
-
-    console.log(`Processing ${data.indicators.length} indicators`);
+    if (!data.indicators || data.indicators.length === 0) return;
 
     // Group indicators
     const overlayIndicators = data.indicators.filter(ind => ind.overlay);
     const standaloneIndicators = data.indicators.filter(ind => !ind.overlay);
-
-    console.log(`Found ${overlayIndicators.length} overlay and ${standaloneIndicators.length} standalone indicators`);
 
     // Add overlay indicators to main chart
     this.addOverlayIndicators(overlayIndicators, mainLegend);
@@ -784,20 +458,7 @@ class TradingChart {
   // Add overlay indicators to the main chart
   addOverlayIndicators(indicators, legend) {
     indicators.forEach(indicator => {
-      console.log(`Adding overlay indicator: ${indicator.name}`);
-
-      if (!indicator.metrics || indicator.metrics.length === 0) {
-        console.log(`No metrics found for indicator ${indicator.name}`);
-        return;
-      }
-
       indicator.metrics.forEach(metric => {
-        // Make sure metric.time and metric.value exist and have the same length
-        if (!metric.time || !metric.value || metric.time.length !== metric.value.length) {
-          console.error(`Invalid metric data for ${indicator.name}:`, metric);
-          return;
-        }
-
         // Format indicator data
         const indicatorData = metric.time.map((time, i) => ({
           time: new Date(time).getTime() / 1000,
@@ -825,23 +486,19 @@ class TradingChart {
 
   // Add standalone indicators as separate charts
   addStandaloneIndicators(indicators, graphContainer) {
-    console.log(`Setting up ${indicators.length} standalone indicators`);
-
     indicators.forEach((indicator, index) => {
       try {
-        console.log(`Creating container for indicator: ${indicator.name}`);
-
-        // Create container with specific height to ensure visibility
+        // Create container
         const indicatorContainer = createElement('div', 'chart-container', graphContainer);
         indicatorContainer.style.height = '150px';
-        indicatorContainer.style.minHeight = '150px'; // Force minimum height
-        indicatorContainer.style.margin = '10px 0'; // Add margin for visual separation
-        indicatorContainer.style.position = 'relative'; // Ensure positioning context for legend
 
         // Create chart
         const showTimeScale = index === indicators.length - 1; // Only show time on last indicator
         const indicatorChart = this.createSecondaryChart(indicatorContainer, showTimeScale);
         indicatorChart.container = indicatorContainer;
+
+        // Sync with main chart
+        this.syncChartWithMain(indicatorChart);
 
         // Create legend
         const indicatorLegend = createElement('div', 'legend-container', indicatorContainer);
@@ -850,25 +507,8 @@ class TradingChart {
         const titleElement = createElement('div', '', indicatorLegend);
         titleElement.innerHTML = `<strong>${indicator.name}</strong>`;
 
-        // Check if metric data exists
-        if (!indicator.metrics || indicator.metrics.length === 0) {
-          console.error(`No metrics found for indicator ${indicator.name}`);
-          titleElement.innerHTML += ' <span style="color:red">(No data available)</span>';
-          return;
-        }
-
-        // Sync with main chart - do this BEFORE adding series
-        this.syncChartWithMain(indicatorChart);
-
         // Add each metric as a series
         indicator.metrics.forEach(metric => {
-          if (!metric.time || !metric.value || metric.time.length === 0) {
-            console.error(`Invalid metric data for ${indicator.name}:`, metric);
-            return;
-          }
-
-          console.log(`Adding ${metric.name || 'unnamed'} metric to ${indicator.name} (${metric.time.length} data points)`);
-
           // Format data
           const indicatorData = metric.time.map((time, i) => ({
             time: new Date(time).getTime() / 1000,
@@ -895,15 +535,7 @@ class TradingChart {
           // Add to legend
           const name = metric.name || indicator.name;
           addLegendItem(indicatorLegend, name, metric.color || COLORS.DEFAULT_INDICATOR);
-
-          console.log(`Added series for ${name} with ${indicatorData.length} points`);
         });
-
-        // Fit content to the chart
-        if (this.methodExists(indicatorChart.timeScale(), 'fitContent')) {
-          indicatorChart.timeScale().fitContent();
-        }
-
       } catch (error) {
         console.error(`Failed to add standalone indicator ${indicator.name}:`, error);
       }
@@ -918,15 +550,13 @@ class TradingChart {
   // Render all charts
   renderCharts(data) {
     try {
-      // Clear existing content and charts array
+      // Clear existing content
       const graphContainer = document.getElementById('graph');
       graphContainer.innerHTML = '';
-      this.additionalCharts = [];
 
       // Create main chart container
       const mainChartContainer = createElement('div', 'chart-container', graphContainer);
       mainChartContainer.id = 'main-chart';
-      mainChartContainer.style.height = '400px'; // Ensure main chart has enough height
 
       // Create legend container
       const legendContainer = createElement('div', 'legend-container', mainChartContainer);
@@ -942,6 +572,12 @@ class TradingChart {
 
       // Format candle data
       const candleData = this.formatCandleData(data.candles);
+
+      // Log chart object structure to debug
+      console.log("Chart object:", this.mainChart);
+      console.log("Chart methods:", Object.getOwnPropertyNames(this.mainChart).filter(
+        prop => typeof this.mainChart[prop] === 'function'
+      ));
 
       // Add candlestick series with proper error handling
       try {
@@ -1022,36 +658,9 @@ class TradingChart {
       // Process markers
       const markers = this.processOrderMarkers(data.candles);
 
-      // Store a reference to candle data for alternative marker implementations
-      this.candleData = candleData;
-
-      // Check if native marker support is available
-      const hasMarkerSupport = testMarkerSupport(this.mainChart);
-      console.log("Native marker support available:", hasMarkerSupport);
-
-      // Add markers using the appropriate method
-      if (markers.length > 0) {
-        console.log(`Adding ${markers.length} markers to chart`);
-
-        let nativeMarkersWorked = false;
-        if (hasMarkerSupport && this.methodExists(this.candleSeries, 'setMarkers')) {
-          try {
-            this.candleSeries.setMarkers(markers);
-            console.log("Using native setMarkers method");
-            nativeMarkersWorked = true;
-          } catch (error) {
-            console.error("Native setMarkers method failed:", error);
-          }
-        }
-
-        // If native markers didn't work, use our custom approach
-        if (!nativeMarkersWorked) {
-          console.log("Falling back to custom marker implementation");
-          addCustomMarkers(this.mainChart, this.candleSeries, markers);
-
-          // Uncomment the next line if you want text labels at buy/sell points
-          // createTextMarkers(this.mainChart, markers);
-        }
+      // Add markers if method exists
+      if (this.methodExists(this.candleSeries, 'setMarkers')) {
+        this.candleSeries.setMarkers(markers);
 
         // Add legend items for markers
         if (this.buyMarkers.length > 0) {
@@ -1060,8 +669,6 @@ class TradingChart {
         if (this.sellMarkers.length > 0) {
           addLegendItem(legendContainer, 'Sell Points', COLORS.DOWN);
         }
-      } else {
-        console.log('No markers to add');
       }
 
       // Setup tooltip
@@ -1070,24 +677,13 @@ class TradingChart {
       // Create equity chart
       this.createEquityChart(data, graphContainer);
 
-      // Add indicators - call this AFTER creating the main chart and equity chart
+      // Add indicators
       this.addIndicators(data, graphContainer, legendContainer);
 
       // Fit content
       if (this.methodExists(this.mainChart.timeScale(), 'fitContent')) {
         this.mainChart.timeScale().fitContent();
       }
-
-      // If we have standalone indicators, make sure they're visible in the UI
-      const standaloneIndicators = data.indicators ? data.indicators.filter(ind => !ind.overlay) : [];
-      if (standaloneIndicators.length > 0) {
-        console.log(`Added ${standaloneIndicators.length} standalone indicator charts`);
-
-        // Adjust the container heights to make room for indicators
-        const containerHeight = Math.max(500, 400 - (standaloneIndicators.length * 50));
-        mainChartContainer.style.height = `${containerHeight}px`;
-      }
-
     } catch (error) {
       console.error("Error rendering charts:", error);
       document.getElementById('graph').innerHTML = `
@@ -1099,3 +695,58 @@ class TradingChart {
     }
   }
 }
+
+// Initialize when DOM is ready and ensure the library is loaded
+document.addEventListener("DOMContentLoaded", function () {
+  // Check if the library is properly loaded
+  if (typeof LightweightCharts === 'undefined') {
+    console.error('LightweightCharts library not found! Attempting to load it...');
+
+    // Try to load the library dynamically
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js';
+    script.onload = function () {
+      console.log('LightweightCharts library loaded successfully!');
+      initializeChart();
+    };
+    script.onerror = function () {
+      console.error('Failed to load LightweightCharts library!');
+      document.getElementById('graph').innerHTML = `
+        <div style="padding: 20px; color: red;">
+          Error: Failed to load chart library. Please check your network connection and refresh the page.
+        </div>
+      `;
+    };
+    document.head.appendChild(script);
+  } else {
+    // Library already loaded, initialize the chart
+    initializeChart();
+  }
+
+  function initializeChart() {
+    try {
+      // Debug the library
+      console.log("LightweightCharts library:", LightweightCharts);
+      console.log("LightweightCharts.createChart:", typeof LightweightCharts.createChart);
+
+      // Check if createChart exists
+      if (typeof LightweightCharts.createChart !== 'function') {
+        throw new Error('LightweightCharts.createChart is not a function. Library may be corrupted or incompatible.');
+      }
+
+      const chart = new TradingChart();
+      chart.init();
+
+      // Make chart accessible globally (for debugging and theme toggling)
+      window.tradingChart = chart;
+    } catch (error) {
+      console.error("Error initializing chart:", error);
+      document.getElementById('graph').innerHTML = `
+        <div style="padding: 20px; color: red;">
+          Error initializing chart: ${error.message}<br>
+          Please check browser console for details.
+        </div>
+      `;
+    }
+  }
+});

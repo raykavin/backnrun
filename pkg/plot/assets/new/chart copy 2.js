@@ -566,7 +566,7 @@ class TradingChart {
             color: order.side === SIDES.BUY ? COLORS.UP : COLORS.DOWN,
             shape: order.side === SIDES.BUY ? 'arrowUp' : 'arrowDown',
             text: order.side === SIDES.BUY ? 'B' : 'S',
-            size: 2, // Slightly larger for visibility
+            size: 3, // Slightly larger for visibility
             price: order.price, // Store price for reference
             id: order.id,
             order: order
