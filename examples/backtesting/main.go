@@ -22,12 +22,12 @@ func main() {
 	log.SetLevel(logger.DebugLevel)
 
 	// Initialize trading strategy
-	// strategy := strategies.NewCrossEMA(9, 21, 10)
-	strategy := strategies.NewWilliams91Strategy()
+	strategy := strategies.NewTrendMasterStrategy()
+	// strategy := strategies.NewWilliams91Strategy()
 
 	// Configure trading pairs
 	settings := &core.Settings{
-		Pairs: []string{"BTCUSDT", "ETHUSDT"},
+		Pairs: []string{"BTCUSDT"},
 	}
 
 	// Initialize services
@@ -83,14 +83,14 @@ func initializeDataFeed(timeframe string) (*exchange.CSVFeed, error) {
 		timeframe,
 		exchange.PairFeed{
 			Pair:      "BTCUSDT",
-			File:      "btc-15m.csv",
-			Timeframe: "15m",
+			File:      "btc-5m-2.csv",
+			Timeframe: "5m",
 		},
-		exchange.PairFeed{
-			Pair:      "ETHUSDT",
-			File:      "eth-15m.csv",
-			Timeframe: "15m",
-		},
+		// exchange.PairFeed{
+		// 	Pair:      "ETHUSDT",
+		// 	File:      "eth-15m.csv",
+		// 	Timeframe: "15m",
+		// },
 	)
 }
 
