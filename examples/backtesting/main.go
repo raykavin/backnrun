@@ -22,7 +22,8 @@ func main() {
 	log.SetLevel(logger.DebugLevel)
 
 	// Initialize trading strategy
-	strategy := strategies.NewTrendMasterStrategy()
+	// strategy := strategies.NewCrossEMA(9, 21, 10)
+	strategy := strategies.NewWilliams91Strategy()
 
 	// Configure trading pairs
 	settings := &core.Settings{

@@ -163,7 +163,7 @@
     <div class="card mb-3">
       <div class="card-body">
         <h5 class="card-title mb-3">Trading Pairs</h5>
-        <div class="d-flex flex-wrap">
+        <div class="d-flex flex-wrap" style="gap: 5px;">
           {{range $val := .pairs}}
           <a class="btn btn-outline-primary pair-btn {{if eq $.pair $val}}active{{end}}" href="/?pair={{ $val }}">
             {{ $val }}

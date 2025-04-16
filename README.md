@@ -549,5 +549,5 @@ BackNRun is licensed under the MIT License. See the [LICENSE](LICENSE.md) file f
 Feel free to reach out for support or collaboration:  
 **Email**: [raykavin.meireles@gmail.com](mailto:raykavin.meireles@gmail.com)  
 **GitHub**: [@raykavin](https://github.com/raykavin)\
-**LinkedIn**: [@raykavin.dev](https://www.linkedin.com/in/raykavin-dev)
+**LinkedIn**: [@raykavin.dev](https://www.linkedin.com/in/raykavin-dev)\
 **Instagram**: [@raykavin.dev](https://www.linkedin.com/in/raykavin-dev)
