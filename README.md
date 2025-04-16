@@ -541,7 +541,7 @@ Contributions to BackNRun are welcome! Here are some ways you can contribute:
 
 MIT License © [Raykavin Meireles](https://github.com/raykavin)
 
-BackNRun is licensed under the MIT License. See the [LICENSE](https://github.com/raykavin/backnrun/LICENSE.md) file for details.
+BackNRun is licensed under the MIT License. See the [LICENSE](LICENSE.md) file for details.
 
 ---
 ## 📬 Contact
