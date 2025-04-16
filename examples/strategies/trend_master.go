@@ -7,6 +7,10 @@ import (
 	"github.com/raykavin/backnrun/pkg/indicator"
 )
 
+type TrendMasterParameters struct{
+	
+}
+
 // TrendMasterStrategy implementa uma estratégia que combina múltiplos indicadores
 // para identificar tendências fortes e gerar sinais de entrada e saída
 type TrendMasterStrategy struct {
