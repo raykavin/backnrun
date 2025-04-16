@@ -14,5 +14,7 @@ services:
       - TZ=America/Belem
     networks:
       - backnrun
+    ports:
+      - "8080:8080"
     tty: true
     restart: on-failure

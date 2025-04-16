@@ -82,6 +82,7 @@ class TradingChart {
     this.pair = '';
     this.buyMarkers = [];
     this.sellMarkers = [];
+    // We'll use the global LightweightCharts variable directly instead of storing it
   }
 
   // Initialize the chart when DOM is ready
@@ -90,6 +91,20 @@ class TradingChart {
     this.pair = params.get("pair") || "";
 
     this.tooltip = createElement('div', 'tooltip', document.body);
+
+    // Check if LightweightCharts is available
+    if (typeof LightweightCharts === 'undefined') {
+      console.error('LightweightCharts library is not loaded!');
+      document.getElementById('graph').innerHTML = `
+        <div style="padding: 20px; color: red;">
+          Error: Chart library not loaded. Please check your network connection and refresh the page.
+        </div>
+      `;
+      return;
+    }
+
+    // Store reference to chart library
+    this.chartLib = LightweightCharts;
 
     this.fetchData();
   }
@@ -112,6 +127,11 @@ class TradingChart {
 
   // Create and configure the main chart
   createMainChart(container) {
+    if (typeof LightweightCharts === 'undefined' || typeof LightweightCharts.createChart !== 'function') {
+      throw new Error('LightweightCharts library not properly initialized');
+    }
+
+    // Use the global LightweightCharts variable directly instead of this.chartLib
     return LightweightCharts.createChart(container, {
       width: container.clientWidth,
       height: container.clientHeight,
@@ -138,6 +158,11 @@ class TradingChart {
 
   // Create a secondary chart (for indicators, equity, etc.)
   createSecondaryChart(container, showTimeScale = false) {
+    if (typeof LightweightCharts === 'undefined' || typeof LightweightCharts.createChart !== 'function') {
+      throw new Error('LightweightCharts library not properly initialized');
+    }
+
+    // Use the global LightweightCharts variable directly
     const chart = LightweightCharts.createChart(container, {
       width: container.clientWidth,
       height: container.clientHeight,
@@ -327,19 +352,21 @@ class TradingChart {
     series.setMarkers([drawdownMarker]);
 
     // Add vertical lines
-    chart.addVerticalLine({
-      time: startTime,
-      color: `rgba(239, 83, 80, 0.5)`,
-      lineWidth: 1,
-      lineStyle: LightweightCharts.LineStyle.Dashed,
-    });
+    if (chart.addVerticalLine) {
+      chart.addVerticalLine({
+        time: startTime,
+        color: `rgba(239, 83, 80, 0.5)`,
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+      });
 
-    chart.addVerticalLine({
-      time: endTime,
-      color: `rgba(239, 83, 80, 0.5)`,
-      lineWidth: 1,
-      lineStyle: LightweightCharts.LineStyle.Dashed,
-    });
+      chart.addVerticalLine({
+        time: endTime,
+        color: `rgba(239, 83, 80, 0.5)`,
+        lineWidth: 1,
+        lineStyle: LightweightCharts.LineStyle.Dashed,
+      });
+    }
 
     // Add to legend
     addLegendItem(legend, `Max Drawdown: ${data.max_drawdown.value}%`, COLORS.DOWN);
@@ -372,9 +399,11 @@ class TradingChart {
       chart.timeScale().setVisibleRange(timeRange);
     });
 
-    this.mainChart.timeScale().subscribeCrosshairMove(param => {
-      chart.setCrosshairPosition(param.time, param.point.x);
-    });
+    if (chart.setCrosshairPosition) {
+      this.mainChart.timeScale().subscribeCrosshairMove(param => {
+        chart.setCrosshairPosition(param.time, param.point.x);
+      });
+    }
   }
 
   // Add indicators to charts
@@ -403,16 +432,20 @@ class TradingChart {
         }));
 
         // Add indicator series
-        const indicatorSeries = this.mainChart.addLineSeries({
-          color: metric.color || COLORS.DEFAULT_INDICATOR,
-          lineWidth: 1,
-          priceLineVisible: false,
-        });
-        indicatorSeries.setData(indicatorData);
+        try {
+          const indicatorSeries = this.mainChart.addLineSeries({
+            color: metric.color || COLORS.DEFAULT_INDICATOR,
+            lineWidth: 1,
+            priceLineVisible: false,
+          });
+          indicatorSeries.setData(indicatorData);
 
-        // Add to legend
-        const name = indicator.name + (metric.name ? ` - ${metric.name}` : '');
-        addLegendItem(legend, name, metric.color || COLORS.DEFAULT_INDICATOR);
+          // Add to legend
+          const name = indicator.name + (metric.name ? ` - ${metric.name}` : '');
+          addLegendItem(legend, name, metric.color || COLORS.DEFAULT_INDICATOR);
+        } catch (error) {
+          console.error(`Failed to add overlay indicator ${indicator.name}:`, error);
+        }
       });
     });
   }
@@ -420,124 +453,266 @@ class TradingChart {
   // Add standalone indicators as separate charts
   addStandaloneIndicators(indicators, graphContainer) {
     indicators.forEach((indicator, index) => {
-      // Create container
-      const indicatorContainer = createElement('div', 'chart-container', graphContainer);
-      indicatorContainer.style.height = '150px';
+      try {
+        // Create container
+        const indicatorContainer = createElement('div', 'chart-container', graphContainer);
+        indicatorContainer.style.height = '150px';
 
-      // Create chart
-      const showTimeScale = index === indicators.length - 1; // Only show time on last indicator
-      const indicatorChart = this.createSecondaryChart(indicatorContainer, showTimeScale);
-      indicatorChart.container = indicatorContainer;
+        // Create chart
+        const showTimeScale = index === indicators.length - 1; // Only show time on last indicator
+        const indicatorChart = this.createSecondaryChart(indicatorContainer, showTimeScale);
+        indicatorChart.container = indicatorContainer;
 
-      // Sync with main chart
-      this.syncChartWithMain(indicatorChart);
+        // Sync with main chart
+        this.syncChartWithMain(indicatorChart);
 
-      // Create legend
-      const indicatorLegend = createElement('div', 'legend-container', indicatorContainer);
+        // Create legend
+        const indicatorLegend = createElement('div', 'legend-container', indicatorContainer);
 
-      // Add title to legend
-      const titleElement = createElement('div', '', indicatorLegend);
-      titleElement.innerHTML = `<strong>${indicator.name}</strong>`;
+        // Add title to legend
+        const titleElement = createElement('div', '', indicatorLegend);
+        titleElement.innerHTML = `<strong>${indicator.name}</strong>`;
 
-      // Add each metric as a series
-      indicator.metrics.forEach(metric => {
-        // Format data
-        const indicatorData = metric.time.map((time, i) => ({
-          time: new Date(time).getTime() / 1000,
-          value: metric.value[i]
-        }));
+        // Add each metric as a series
+        indicator.metrics.forEach(metric => {
+          // Format data
+          const indicatorData = metric.time.map((time, i) => ({
+            time: new Date(time).getTime() / 1000,
+            value: metric.value[i]
+          }));
 
-        // Determine series type
-        let indicatorSeries;
-        if (metric.style === 'histogram') {
-          indicatorSeries = indicatorChart.addHistogramSeries({
-            color: metric.color || COLORS.DEFAULT_INDICATOR,
-            priceLineVisible: false,
-          });
-        } else {
-          indicatorSeries = indicatorChart.addLineSeries({
-            color: metric.color || COLORS.DEFAULT_INDICATOR,
-            lineWidth: 1,
-            priceLineVisible: false,
-          });
-        }
+          // Determine series type
+          let indicatorSeries;
+          if (metric.style === 'histogram') {
+            indicatorSeries = indicatorChart.addHistogramSeries({
+              color: metric.color || COLORS.DEFAULT_INDICATOR,
+              priceLineVisible: false,
+            });
+          } else {
+            indicatorSeries = indicatorChart.addLineSeries({
+              color: metric.color || COLORS.DEFAULT_INDICATOR,
+              lineWidth: 1,
+              priceLineVisible: false,
+            });
+          }
 
-        indicatorSeries.setData(indicatorData);
+          indicatorSeries.setData(indicatorData);
 
-        // Add to legend
-        const name = metric.name || indicator.name;
-        addLegendItem(indicatorLegend, name, metric.color || COLORS.DEFAULT_INDICATOR);
-      });
+          // Add to legend
+          const name = metric.name || indicator.name;
+          addLegendItem(indicatorLegend, name, metric.color || COLORS.DEFAULT_INDICATOR);
+        });
+      } catch (error) {
+        console.error(`Failed to add standalone indicator ${indicator.name}:`, error);
+      }
     });
+  }
+
+  // Safely check if a method exists on an object
+  methodExists(obj, methodName) {
+    return obj && typeof obj[methodName] === 'function';
   }
 
   // Render all charts
   renderCharts(data) {
-    // Clear existing content
-    const graphContainer = document.getElementById('graph');
-    graphContainer.innerHTML = '';
+    try {
+      // Clear existing content
+      const graphContainer = document.getElementById('graph');
+      graphContainer.innerHTML = '';
 
-    // Create main chart container
-    const mainChartContainer = createElement('div', 'chart-container', graphContainer);
-    mainChartContainer.id = 'main-chart';
+      // Create main chart container
+      const mainChartContainer = createElement('div', 'chart-container', graphContainer);
+      mainChartContainer.id = 'main-chart';
 
-    // Create legend container
-    const legendContainer = createElement('div', 'legend-container', mainChartContainer);
+      // Create legend container
+      const legendContainer = createElement('div', 'legend-container', mainChartContainer);
 
-    // Initialize main chart
-    this.mainChart = this.createMainChart(mainChartContainer);
-    this.mainChart.container = mainChartContainer;
+      // Initialize main chart
+      this.mainChart = this.createMainChart(mainChartContainer);
 
-    // Setup resize handler
-    this.setupResizeHandler();
+      // Store container reference
+      this.mainChart.container = mainChartContainer;
 
-    // Format candle data
-    const candleData = this.formatCandleData(data.candles);
+      // Setup resize handler
+      this.setupResizeHandler();
 
-    // Add candlestick series
-    this.candleSeries = this.mainChart.addCandlestickSeries({
-      upColor: COLORS.UP,
-      downColor: COLORS.DOWN,
-      borderVisible: false,
-      wickUpColor: COLORS.UP,
-      wickDownColor: COLORS.DOWN,
-    });
-    this.candleSeries.setData(candleData);
+      // Format candle data
+      const candleData = this.formatCandleData(data.candles);
 
-    // Add legend item for candlestick
-    addLegendItem(legendContainer, 'Candles', COLORS.UP);
+      // Log chart object structure to debug
+      console.log("Chart object:", this.mainChart);
+      console.log("Chart methods:", Object.getOwnPropertyNames(this.mainChart).filter(
+        prop => typeof this.mainChart[prop] === 'function'
+      ));
 
-    // Process markers
-    const markers = this.processOrderMarkers(data.candles);
-    this.candleSeries.setMarkers(markers);
+      // Add candlestick series with proper error handling
+      try {
+        // Check for method existence using the proper approach
+        if (this.methodExists(this.mainChart, 'addCandlestickSeries')) {
+          this.candleSeries = this.mainChart.addCandlestickSeries({
+            upColor: COLORS.UP,
+            downColor: COLORS.DOWN,
+            borderVisible: false,
+            wickUpColor: COLORS.UP,
+            wickDownColor: COLORS.DOWN,
+          });
+          console.log("Using addCandlestickSeries method");
+        }
+        else if (this.methodExists(this.mainChart, 'createPriceSeries')) {
+          this.candleSeries = this.mainChart.createPriceSeries({
+            type: 'candlestick',
+            upColor: COLORS.UP,
+            downColor: COLORS.DOWN,
+            borderVisible: false,
+            wickUpColor: COLORS.UP,
+            wickDownColor: COLORS.DOWN,
+          });
+          console.log("Using createPriceSeries method");
+        }
+        else if (this.methodExists(this.mainChart, 'addBarSeries')) {
+          this.candleSeries = this.mainChart.addBarSeries({
+            upColor: COLORS.UP,
+            downColor: COLORS.DOWN,
+            thinBars: false,
+          });
+          console.log("Using addBarSeries method as fallback");
+        }
+        else if (this.methodExists(this.mainChart, 'addAreaSeries')) {
+          // Last resort fallback to area series
+          this.candleSeries = this.mainChart.addAreaSeries({
+            topColor: COLORS.UP,
+            bottomColor: 'rgba(38, 166, 154, 0.1)',
+            lineColor: COLORS.UP,
+            lineWidth: 2,
+          });
 
-    // Add legend items for markers
-    if (this.buyMarkers.length > 0) {
-      addLegendItem(legendContainer, 'Buy Points', COLORS.UP);
+          // For area series, we need to convert candlestick data to line data
+          const lineData = candleData.map(candle => ({
+            time: candle.time,
+            value: candle.close,
+            orders: candle.orders
+          }));
+
+          this.candleSeries.setData(lineData);
+          console.log("Using addAreaSeries method as last resort");
+        }
+        else {
+          throw new Error("No suitable chart series method found");
+        }
+      } catch (error) {
+        console.error("Error creating chart series:", error);
+
+        // Show error message to user
+        graphContainer.innerHTML = `
+          <div style="padding: 20px; color: red;">
+            Error creating chart: ${error.message}<br>
+            Please check browser console for details and ensure you're using the latest version of the library.
+          </div>
+        `;
+        return;
+      }
+
+      // Set data if we haven't already (in the area series fallback case)
+      if (this.methodExists(this.candleSeries, 'setData') &&
+        this.candleSeries.constructor.name !== 'AreaSeries') {
+        this.candleSeries.setData(candleData);
+      }
+
+      // Add legend item for candlestick
+      addLegendItem(legendContainer, 'Candles', COLORS.UP);
+
+      // Process markers
+      const markers = this.processOrderMarkers(data.candles);
+
+      // Add markers if method exists
+      if (this.methodExists(this.candleSeries, 'setMarkers')) {
+        this.candleSeries.setMarkers(markers);
+
+        // Add legend items for markers
+        if (this.buyMarkers.length > 0) {
+          addLegendItem(legendContainer, 'Buy Points', COLORS.UP);
+        }
+        if (this.sellMarkers.length > 0) {
+          addLegendItem(legendContainer, 'Sell Points', COLORS.DOWN);
+        }
+      }
+
+      // Setup tooltip
+      this.setupTooltip();
+
+      // Create equity chart
+      this.createEquityChart(data, graphContainer);
+
+      // Add indicators
+      this.addIndicators(data, graphContainer, legendContainer);
+
+      // Fit content
+      if (this.methodExists(this.mainChart.timeScale(), 'fitContent')) {
+        this.mainChart.timeScale().fitContent();
+      }
+    } catch (error) {
+      console.error("Error rendering charts:", error);
+      document.getElementById('graph').innerHTML = `
+        <div style="padding: 20px; color: red;">
+          Error rendering charts: ${error.message}<br>
+          Please check browser console for details.
+        </div>
+      `;
     }
-    if (this.sellMarkers.length > 0) {
-      addLegendItem(legendContainer, 'Sell Points', COLORS.DOWN);
-    }
-
-    // Setup tooltip
-    this.setupTooltip();
-
-    // Create equity chart
-    this.createEquityChart(data, graphContainer);
-
-    // Add indicators
-    this.addIndicators(data, graphContainer, legendContainer);
-
-    // Fit content
-    this.mainChart.timeScale().fitContent();
   }
 }
 
-// Initialize when DOM is ready
+// Initialize when DOM is ready and ensure the library is loaded
 document.addEventListener("DOMContentLoaded", function () {
-  const chart = new TradingChart();
-  chart.init();
+  // Check if the library is properly loaded
+  if (typeof LightweightCharts === 'undefined') {
+    console.error('LightweightCharts library not found! Attempting to load it...');
 
-  // Make chart accessible globally (for debugging)
-  window.tradingChart = chart;
+    // Try to load the library dynamically
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js';
+    script.onload = function () {
+      console.log('LightweightCharts library loaded successfully!');
+      initializeChart();
+    };
+    script.onerror = function () {
+      console.error('Failed to load LightweightCharts library!');
+      document.getElementById('graph').innerHTML = `
+        <div style="padding: 20px; color: red;">
+          Error: Failed to load chart library. Please check your network connection and refresh the page.
+        </div>
+      `;
+    };
+    document.head.appendChild(script);
+  } else {
+    // Library already loaded, initialize the chart
+    initializeChart();
+  }
+
+  function initializeChart() {
+    try {
+      // Debug the library
+      console.log("LightweightCharts library:", LightweightCharts);
+      console.log("LightweightCharts.createChart:", typeof LightweightCharts.createChart);
+
+      // Check if createChart exists
+      if (typeof LightweightCharts.createChart !== 'function') {
+        throw new Error('LightweightCharts.createChart is not a function. Library may be corrupted or incompatible.');
+      }
+
+      const chart = new TradingChart();
+      chart.init();
+
+      // Make chart accessible globally (for debugging)
+      window.tradingChart = chart;
+    } catch (error) {
+      console.error("Error initializing chart:", error);
+      document.getElementById('graph').innerHTML = `
+        <div style="padding: 20px; color: red;">
+          Error initializing chart: ${error.message}<br>
+          Please check browser console for details.
+        </div>
+      `;
+    }
+  }
 });

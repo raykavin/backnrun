@@ -3,105 +3,76 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport"
-    content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <title>BackNRun - Trade Results</title>
-  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Lightweight Charts Library -->
+  <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
   <script defer src="/assets/chart.js"></script>
-  <link rel="stylesheet" href="styles.css">
   <style>
-    /* Reset and Base Styles */
-    html {
-      box-sizing: border-box;
-      font-size: 16px;
+    /* Custom Styles */
+    :root {
+      --primary-color: #3498db;
+      --success-color: #26a69a;
+      --danger-color: #ef5350;
+      --dark-color: #2c3e50;
+      --light-color: #f8f9fa;
     }
 
-    *,
-    *:before,
-    *:after {
-      box-sizing: inherit;
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--light-color);
     }
 
-    body,
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6,
-    p,
-    ol,
-    ul {
-      margin: 0;
-      padding: 0;
-      font-weight: normal;
-      font-family: sans-serif;
+    .navbar {
+      background-color: white;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }
 
-    /* Navigation Styles */
-    .menu {
-      margin: 10px;
+    .navbar-brand {
+      font-weight: bold;
+      color: var(--dark-color);
     }
 
-    .menu ul {
-      display: inline-block;
-      list-style: none;
+    .card {
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+      background-color: white;
+      border: none;
+    }
+
+    .pair-btn {
+      margin-right: 5px;
+      margin-bottom: 5px;
+      border-radius: 20px;
+      transition: all 0.2s;
+    }
+
+    .pair-btn.active {
+      background-color: var(--primary-color);
+      color: white;
+      font-weight: 500;
+      transform: scale(1.05);
+    }
+
+    .chart-wrapper {
+      position: relative;
       width: 100%;
+      height: calc(100vh - 130px);
+      min-height: 500px;
+      background-color: white;
+      border-radius: 10px;
+      overflow: hidden;
     }
 
-    .menu li {
-      display: inline-block;
-      list-style-type: none;
-      padding-right: 20px;
-      float: none;
-    }
-
-    .menu li:last-child {
-      float: right;
-    }
-
-    /* Button Styles */
-    .btn {
-      display: inline-block;
-      font-family: sans-serif;
-      border-radius: 5px;
-      padding: 10px 15px;
-      text-decoration: none;
-      margin: 0;
-      color: #252525;
-      background-color: #ddd;
-      box-shadow: 0 5px 0 0 #ccc;
-      transition: background-color 0.2s ease;
-    }
-
-    .btn:hover {
-      background-color: #eee;
-    }
-
-    .btn:active {
-      transform: translate(0px, 5px);
-      -webkit-transform: translate(0px, 5px);
-      box-shadow: 0px 1px 0px 0px;
-    }
-
-    .btn.blue {
-      color: #fff;
-      background-color: #55acee;
-      box-shadow: 0px 5px 0px 0px #3c93d5;
-    }
-
-    .btn.blue:hover {
-      background-color: #6fc6ff;
-    }
-
-    /* Graph and Chart Styles */
     #graph {
       position: absolute;
-      bottom: 0;
+      top: 0;
       left: 0;
       right: 0;
-      top: 60px;
+      bottom: 0;
       display: flex;
       flex-direction: column;
     }
@@ -118,12 +89,13 @@
       top: 10px;
       right: 10px;
       z-index: 10;
-      background-color: rgba(255, 255, 255, 0.8);
+      background-color: rgba(255, 255, 255, 0.9);
       padding: 10px;
-      border-radius: 5px;
+      border-radius: 8px;
       font-size: 12px;
       max-height: 300px;
       overflow-y: auto;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     .legend-item {
@@ -136,50 +108,98 @@
       width: 10px;
       height: 10px;
       margin-right: 5px;
+      border-radius: 50%;
     }
 
     /* Tooltip Styles */
     .tooltip {
       position: absolute;
       display: none;
-      padding: 8px;
-      background-color: rgba(255, 255, 255, 0.9);
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      padding: 10px;
+      background-color: rgba(255, 255, 255, 0.95);
+      border: none;
+      border-radius: 8px;
       font-size: 12px;
       z-index: 100;
       pointer-events: none;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Footer */
+    .footer {
+      background-color: white;
+      padding: 10px;
+      font-size: 12px;
+      color: #777;
+      text-align: center;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
     }
   </style>
 </head>
 
 <body>
-  <header>
-    <nav class="menu">
-      <ul>
-        {{range $val := .pairs}}
-        <li>
-          <a class="btn {{if eq $.pair $val}}blue{{end}}" href="/?pair={{ $val }}">{{ $val }}</a>
-        </li>
-        {{end}}
-        <li>
-          <a class="btn" href="/history?pair={{ $.pair }}">History</a>
-        </li>
-      </ul>
-    </nav>
-  </header>
+  <!-- Navigation Bar -->
+  <nav class="navbar navbar-expand-lg navbar-light mb-3">
+    <div class="container">
+      <a class="navbar-brand" href="/">BackNRun</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/history?pair={{ $.pair }}">Trade History</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Settings</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
 
-  <main>
-    <div id="graph"></div>
+  <main class="container mb-4">
+    <!-- Pair Selection Card -->
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title mb-3">Trading Pairs</h5>
+        <div class="d-flex flex-wrap">
+          {{range $val := .pairs}}
+          <a class="btn btn-outline-primary pair-btn {{if eq $.pair $val}}active{{end}}" href="/?pair={{ $val }}">
+            {{ $val }}
+          </a>
+          {{end}}
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart Card -->
+    <div class="card">
+      <div class="card-body p-0">
+        <div class="chart-wrapper">
+          <div id="graph"></div>
+        </div>
+      </div>
+    </div>
   </main>
 
-  <!-- Template for tooltip content -->
+  <!-- Footer -->
+  <footer class="footer mt-auto py-2">
+    <div class="container">
+      <span>© 2025 BackNRun Trading System</span>
+    </div>
+  </footer>
+
+  <!-- Tooltip Template -->
   <template id="tooltip-template">
     <div class="tooltip-content">
-      <div class="tooltip-date"></div>
+      <div class="tooltip-date fw-bold"></div>
       <div class="tooltip-value"></div>
     </div>
   </template>
+
+  <!-- Bootstrap JS Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
