@@ -26,7 +26,8 @@
                 "yokoe.vscode-postfix-go",
                 "visualstudioexptteam.vscodeintellicode",
                 "redhat.vscode-yaml",
-                "golang.go"
+                "golang.go",
+                "saoudrizwan.claude-dev"
             ],
             "settings": {
                 "terminal.integrated.profiles.linux": {
