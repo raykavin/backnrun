@@ -22,8 +22,7 @@ func main() {
 	log.SetLevel(logger.DebugLevel)
 
 	// Initialize trading strategy
-	strategy := strategies.NewTrendMasterStrategy()
-	// strategy := strategies.NewWilliams91Strategy()
+	strategy := strategies.NewAdaptiveMomentumStrategy()
 
 	// Configure trading pairs
 	settings := &core.Settings{
