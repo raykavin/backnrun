@@ -12,7 +12,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/assets/chart.js"></script>
+  <!-- Import main.js as a module -->
+  <script type="module" src="/assets/js/main.js"></script>
   <style>
     /* Custom Styles */
     :root {
@@ -645,8 +646,8 @@
     </div>
 
     <!-- Performance Overview -->
-    <div class="row mb-4">
-      <div class="col-md-3 col-sm-6 mb-3">
+    <div class="row">
+      <div class="col-md-3 col-sm-6">
         <div class="stat-card">
           <div class="stat-title">Total Profit</div>
           <div class="stat-value">$12,458.32</div>
@@ -655,7 +656,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-3 col-sm-6 mb-3">
+      <div class="col-md-3 col-sm-6">
         <div class="stat-card">
           <div class="stat-title">Win Rate</div>
           <div class="stat-value">68.5%</div>
@@ -664,7 +665,7 @@
           </div>
         </div>
       </div>
-      <div class="col-md-3 col-sm-6 mb-3">
+      <div class="col-md-3 col-sm-6">
         <div class="stat-card">
           <div class="stat-title">Max Drawdown</div>
           <div class="stat-value">-12.4%</div>
@@ -687,8 +688,8 @@
     <!-- Main Content -->
     <div class="row">
       <!-- Chart Section -->
-      <div class="col-lg-8">
-        <div class="card mb-4">
+      <div class="col-lg-12">
+        <div class="card">
           <div class="card-header">
             <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>BTC/USDT</h5>
             <div class="card-actions">
@@ -793,9 +794,9 @@
       </div>
 
       <!-- Sidebar -->
-      <div class="col-lg-4">
+      <div class="col-lg-12">
         <!-- Trade Management -->
-        <div class="card mb-4">
+        <!-- <div class="card">
           <div class="card-header">
             <h5 class="card-title"><i class="fas fa-sliders-h me-2"></i>Trade Management</h5>
           </div>
@@ -857,10 +858,10 @@
               </div>
             </form>
           </div>
-        </div>
+        </div> -->
 
         <!-- Recent Trades -->
-        <div class="card mb-4">
+        <div class="card">
           <div class="card-header">
             <h5 class="card-title"><i class="fas fa-history me-2"></i>Recent Trades</h5>
           </div>
@@ -927,57 +928,10 @@
       </div>
     </div>
 
-    <!-- Additional Analytics -->
-    <div class="row">
-      <div class="col-12">
-        <div class="card mb-4">
-          <div class="card-header">
-            <h5 class="card-title"><i class="fas fa-chart-pie me-2"></i>Performance Metrics</h5>
-          </div>
-          <div class="card-body">
-            <div class="performance-metrics">
-              <div class="metric-card">
-                <div class="metric-title">Profit Factor</div>
-                <div class="metric-value">2.38</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">Average Win</div>
-                <div class="metric-value">$586.42</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">Average Loss</div>
-                <div class="metric-value">$248.75</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">Win/Loss Ratio</div>
-                <div class="metric-value">2.36</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">Total Trades</div>
-                <div class="metric-value">143</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">ROI</div>
-                <div class="metric-value">47.5%</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">Sharpe Ratio</div>
-                <div class="metric-value">1.82</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">Avg. Trade Duration</div>
-                <div class="metric-value">3.2h</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Open Positions -->
     <div class="row">
       <div class="col-12">
-        <div class="card mb-4">
+        <div class="card">
           <div class="card-header">
             <h5 class="card-title"><i class="fas fa-wallet me-2"></i>Open Positions</h5>
           </div>
@@ -1039,6 +993,53 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Additional Analytics -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title"><i class="fas fa-chart-pie me-2"></i>Performance Metrics</h5>
+          </div>
+          <div class="card-body">
+            <div class="performance-metrics">
+              <div class="metric-card">
+                <div class="metric-title">Profit Factor</div>
+                <div class="metric-value">2.38</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-title">Average Win</div>
+                <div class="metric-value">$586.42</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-title">Average Loss</div>
+                <div class="metric-value">$248.75</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-title">Win/Loss Ratio</div>
+                <div class="metric-value">2.36</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-title">Total Trades</div>
+                <div class="metric-value">143</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-title">ROI</div>
+                <div class="metric-value">47.5%</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-title">Sharpe Ratio</div>
+                <div class="metric-value">1.82</div>
+              </div>
+              <div class="metric-card">
+                <div class="metric-title">Avg. Trade Duration</div>
+                <div class="metric-value">3.2h</div>
+              </div>
             </div>
           </div>
         </div>
@@ -1119,109 +1120,20 @@
 
   <!-- Script to initialize theme from localStorage -->
   <script>
-    // Debug function to help troubleshoot chart initialization
-    function debugChartRendering() {
-      console.log("DOM Content Loaded - Running debug function");
-
-      // Check if the chart library is available
-      if (typeof LightweightCharts === 'undefined') {
-        console.error("ERROR: LightweightCharts library is not loaded!");
-        document.getElementById('graph').innerHTML = '<div style="padding: 20px; color: red;">Chart library not loaded. Please check console.</div>';
-        return;
-      }
-
-      console.log("Chart library is available:", LightweightCharts);
-
-      // Check if the container exists
-      const graphContainer = document.getElementById('graph');
-      if (!graphContainer) {
-        console.error("ERROR: Graph container element not found!");
-        return;
-      }
-
-      console.log("Graph container exists:", graphContainer);
-
-      // Try to create a simple chart to test if rendering works
-      try {
-        const testChart = LightweightCharts.createChart(graphContainer, {
-          width: graphContainer.clientWidth,
-          height: graphContainer.clientHeight
-        });
-
-        const lineSeries = testChart.addLineSeries();
-        lineSeries.setData([
-          { time: '2019-04-11', value: 80.01 },
-          { time: '2019-04-12', value: 96.63 },
-          { time: '2019-04-13', value: 76.64 },
-          { time: '2019-04-14', value: 81.89 },
-          { time: '2019-04-15', value: 74.43 }
-        ]);
-
-        console.log("Test chart created successfully");
-
-        // After 3 seconds, remove the test chart so the real chart can be created
-        setTimeout(() => {
-          testChart.remove();
-          console.log("Test chart removed, original chart script should now run");
-        }, 3000);
-
-      } catch (error) {
-        console.error("Failed to create test chart:", error);
-        graphContainer.innerHTML = `<div style="padding: 20px; color: red;">Error creating chart: ${error.message}</div>`;
-      }
-    }
-
-    // Call debug function when page loads
     document.addEventListener('DOMContentLoaded', function () {
-      // For debugging only - comment this out after fixing the issue
-      // debugChartRendering();
-
-      // Get the graph element
-      const graphEl = document.getElementById('graph');
-      if (!graphEl) return;
-
-      // Create main-chart element if it doesn't exist
-      if (!document.getElementById('main-chart')) {
-        const mainChartEl = document.createElement('div');
-        mainChartEl.id = 'main-chart';
-        mainChartEl.style.width = '100%';
-        mainChartEl.style.height = '100%';
-        graphEl.appendChild(mainChartEl);
-      }
-
-      // Make sure we can handle either element name in case of errors
-      window.getChartContainer = function () {
-        return document.getElementById('main-chart') || document.getElementById('graph');
-      };
-
       // Check for saved theme preference or use preferred color scheme
       const savedTheme = localStorage.getItem('theme') ||
         (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 
       // Apply the theme
       document.documentElement.setAttribute('data-theme', savedTheme);
-      updateThemeIcons(savedTheme);
-
-      // Theme toggle click handler
-      document.getElementById('theme-toggle').addEventListener('click', function () {
-        const currentTheme = document.documentElement.getAttribute('data-theme');
-        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-        document.documentElement.setAttribute('data-theme', newTheme);
-        localStorage.setItem('theme', newTheme);
-        updateThemeIcons(newTheme);
-
-        // If chart exists, update it with the new theme
-        if (window.tradingChart) {
-          window.tradingChart.updateChartTheme(newTheme);
-        }
-      });
-
-      function updateThemeIcons(theme) {
-        const darkIcon = document.getElementById('theme-icon-dark');
-        const lightIcon = document.getElementById('theme-icon-light');
-
-        if (theme === 'dark') {
+      
+      // Update theme icons
+      const darkIcon = document.getElementById('theme-icon-dark');
+      const lightIcon = document.getElementById('theme-icon-light');
+      
+      if (darkIcon && lightIcon) {
+        if (savedTheme === 'dark') {
           darkIcon.style.display = 'none';
           lightIcon.style.display = 'block';
         } else {

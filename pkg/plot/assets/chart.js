@@ -4,6 +4,7 @@
  * This script handles the visualization of trading data including
  * price charts, trade markers, equity values, and technical indicators.
  * Added dark mode support and wider chart display.
+ * Fixed standalone indicator display issues.
  */
 
 // Initialize when DOM is ready and ensure the library is loaded
@@ -68,8 +69,6 @@ const ORDER_TYPES = {
   STOP_LOSS: "STOP_LOSS",
   LIMIT_MAKER: "LIMIT_MAKER"
 }
-
-
 
 const SIDES = {
   SELL: "SELL",
@@ -384,6 +383,51 @@ class TradingChart {
         background-color: white;
         border: 2px solid;
       }
+      
+      .chart-container {
+        position: relative;
+        width: 100%;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      
+      .legend-container {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: ${COLORS.BACKGROUND}E6;
+        padding: 5px;
+        border-radius: 4px;
+        font-size: 11px;
+        z-index: 5;
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid ${COLORS.BORDER};
+      }
+      
+      .indicator-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 5px;
+        background-color: ${COLORS.BACKGROUND};
+        border-bottom: 1px solid ${COLORS.BORDER};
+        font-weight: bold;
+      }
+      
+      .legend-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 5px;
+      }
+      
+      .legend-marker {
+        width: 10px;
+        height: 10px;
+        margin-right: 5px;
+        border-radius: 50%;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -497,6 +541,7 @@ class TradingChart {
       layout: {
         backgroundColor: COLORS.BACKGROUND,
         textColor: COLORS.TEXT,
+        fontSize: 11, // Smaller font for indicators
       },
       grid: {
         vertLines: { color: COLORS.GRID },
@@ -504,6 +549,11 @@ class TradingChart {
       },
       rightPriceScale: {
         borderColor: COLORS.BORDER,
+        visible: true,
+        scaleMargins: {
+          top: 0.1,
+          bottom: 0.1,
+        },
       },
       timeScale: {
         borderColor: COLORS.BORDER,
@@ -519,19 +569,33 @@ class TradingChart {
   // Set up window resize handler
   setupResizeHandler() {
     window.addEventListener('resize', () => {
+      // First resize the main chart
       if (this.mainChart) {
-        const container = document.getElementById('main-chart');
-        this.mainChart.applyOptions({
-          width: container.clientWidth,
-          height: container.clientHeight,
-        });
+        const container = this.mainChart.container || document.getElementById('main-chart');
+        if (container) {
+          const width = container.clientWidth;
+          const height = container.clientHeight;
+          if (width > 0 && height > 0) {
+            this.mainChart.applyOptions({
+              width: width,
+              height: height,
+            });
+          }
+        }
       }
 
+      // Then resize all additional charts
       this.additionalCharts.forEach(chart => {
-        chart.applyOptions({
-          width: chart.container.clientWidth,
-          height: chart.container.clientHeight,
-        });
+        if (chart.container) {
+          const width = chart.container.clientWidth;
+          const height = chart.container.clientHeight;
+          if (width > 0 && height > 0) {
+            chart.applyOptions({
+              width: width,
+              height: height,
+            });
+          }
+        }
       });
     });
   }
@@ -626,9 +690,18 @@ class TradingChart {
   createEquityChart(data, graphContainer) {
     if (!data.equity_values || data.equity_values.length === 0) return;
 
+    // Get height (smaller if we have many indicators)
+    const equityHeight = data.equityHeight || 150;
+
     // Create container
     const equityContainer = createElement('div', 'chart-container', graphContainer);
-    equityContainer.style.height = '150px';
+    equityContainer.style.height = `${equityHeight}px`;
+    equityContainer.style.marginBottom = '10px';
+    equityContainer.style.border = `1px solid ${COLORS.BORDER}`;
+
+    // Add title
+    const equityHeader = createElement('div', 'indicator-header', equityContainer);
+    equityHeader.textContent = 'Equity Performance';
 
     // Create chart
     const equityChart = this.createSecondaryChart(equityContainer, false);
@@ -652,6 +725,11 @@ class TradingChart {
       bottomColor: this.currentTheme === 'dark' ? 'rgba(78, 204, 163, 0.04)' : 'rgba(38, 166, 154, 0.04)',
       lineColor: COLORS.EQUITY,
       lineWidth: 2,
+      priceFormat: {
+        type: 'price',
+        precision: 2,
+        minMove: 0.01,
+      },
     });
     equitySeries.setData(equityData);
 
@@ -721,6 +799,11 @@ class TradingChart {
     const assetSeries = chart.addLineSeries({
       color: COLORS.ASSET,
       lineWidth: 2,
+      priceFormat: {
+        type: 'price',
+        precision: 4,
+        minMove: 0.0001,
+      },
     });
     assetSeries.setData(assetData);
 
@@ -730,32 +813,44 @@ class TradingChart {
 
   // Sync a chart's time scale with the main chart
   syncChartWithMain(chart) {
-    // Make sure main chart exists and has a timeScale method
-    if (!this.mainChart || !this.methodExists(this.mainChart, 'timeScale')) {
-      console.error('Cannot sync chart: main chart does not exist or has no timeScale method');
-      return;
-    }
+    try {
+      // Make sure main chart exists and has a timeScale method
+      if (!this.mainChart || !this.methodExists(this.mainChart, 'timeScale')) {
+        console.error('Cannot sync chart: main chart does not exist or has no timeScale method');
+        return;
+      }
 
-    const mainTimeScale = this.mainChart.timeScale();
+      const mainTimeScale = this.mainChart.timeScale();
+      const chartTimeScale = chart.timeScale();
 
-    if (this.methodExists(mainTimeScale, 'subscribeVisibleTimeRangeChange')) {
-      mainTimeScale.subscribeVisibleTimeRangeChange(timeRange => {
-        if (chart && this.methodExists(chart, 'timeScale')) {
-          const chartTimeScale = chart.timeScale();
-          if (this.methodExists(chartTimeScale, 'setVisibleRange')) {
+      // First, set the visible range to match main chart's current range
+      if (this.methodExists(mainTimeScale, 'getVisibleRange') &&
+        this.methodExists(chartTimeScale, 'setVisibleRange')) {
+        const visibleRange = mainTimeScale.getVisibleRange();
+        if (visibleRange) {
+          chartTimeScale.setVisibleRange(visibleRange);
+        }
+      }
+
+      // Then subscribe to changes
+      if (this.methodExists(mainTimeScale, 'subscribeVisibleTimeRangeChange')) {
+        mainTimeScale.subscribeVisibleTimeRangeChange(timeRange => {
+          if (timeRange && this.methodExists(chartTimeScale, 'setVisibleRange')) {
             chartTimeScale.setVisibleRange(timeRange);
           }
-        }
-      });
-    }
+        });
+      }
 
-    if (this.methodExists(mainTimeScale, 'subscribeCrosshairMove') &&
-      this.methodExists(chart, 'setCrosshairPosition')) {
-      mainTimeScale.subscribeCrosshairMove(param => {
-        if (param.time && param.point) {
-          chart.setCrosshairPosition(param.time, param.point.x);
-        }
-      });
+      // Sync crosshair movement
+      if (this.mainChart.subscribeCrosshairMove && chart.setCrosshairPosition) {
+        this.mainChart.subscribeCrosshairMove(param => {
+          if (param && param.time && param.point) {
+            chart.setCrosshairPosition(param.time, param.point.x);
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error synchronizing charts:', error);
     }
   }
 
@@ -808,8 +903,14 @@ class TradingChart {
         try {
           const indicatorSeries = this.mainChart.addLineSeries({
             color: metric.color || COLORS.DEFAULT_INDICATOR,
-            lineWidth: 1,
+            lineWidth: 1.5,
             priceLineVisible: false,
+            lastValueVisible: true,
+            priceFormat: {
+              type: 'price',
+              precision: 5,
+              minMove: 0.00001,
+            }
           });
           indicatorSeries.setData(indicatorData);
 
@@ -838,22 +939,34 @@ class TradingChart {
         indicatorContainer.style.margin = '10px 0'; // Add margin for visual separation
         indicatorContainer.style.position = 'relative'; // Ensure positioning context for legend
 
+        // Add a visible border for better separation
+        indicatorContainer.style.border = `1px solid ${COLORS.BORDER}`;
+        indicatorContainer.style.borderRadius = '8px';
+        indicatorContainer.style.overflow = 'visible'; // Ensure content isn't clipped
+
+        // Add title header
+        const indicatorHeader = createElement('div', 'indicator-header', indicatorContainer);
+        indicatorHeader.textContent = indicator.name;
+
         // Create chart
         const showTimeScale = index === indicators.length - 1; // Only show time on last indicator
         const indicatorChart = this.createSecondaryChart(indicatorContainer, showTimeScale);
         indicatorChart.container = indicatorContainer;
 
+        // Force chart dimensions to match container (account for header)
+        const chartHeight = indicatorContainer.clientHeight - 30; // Subtract header height
+        indicatorChart.applyOptions({
+          width: indicatorContainer.clientWidth,
+          height: chartHeight > 0 ? chartHeight : 120
+        });
+
         // Create legend
         const indicatorLegend = createElement('div', 'legend-container', indicatorContainer);
-
-        // Add title to legend
-        const titleElement = createElement('div', '', indicatorLegend);
-        titleElement.innerHTML = `<strong>${indicator.name}</strong>`;
 
         // Check if metric data exists
         if (!indicator.metrics || indicator.metrics.length === 0) {
           console.error(`No metrics found for indicator ${indicator.name}`);
-          titleElement.innerHTML += ' <span style="color:red">(No data available)</span>';
+          indicatorHeader.innerHTML += ' <span style="color:red">(No data available)</span>';
           return;
         }
 
@@ -869,34 +982,59 @@ class TradingChart {
 
           console.log(`Adding ${metric.name || 'unnamed'} metric to ${indicator.name} (${metric.time.length} data points)`);
 
-          // Format data
-          const indicatorData = metric.time.map((time, i) => ({
-            time: new Date(time).getTime() / 1000,
-            value: metric.value[i]
-          }));
-
-          // Determine series type
-          let indicatorSeries;
-          if (metric.style === 'histogram') {
-            indicatorSeries = indicatorChart.addHistogramSeries({
-              color: metric.color || COLORS.DEFAULT_INDICATOR,
-              priceLineVisible: false,
-            });
-          } else {
-            indicatorSeries = indicatorChart.addLineSeries({
-              color: metric.color || COLORS.DEFAULT_INDICATOR,
-              lineWidth: 1,
-              priceLineVisible: false,
-            });
+          // Debug some data points
+          const samplePoints = Math.min(5, metric.time.length);
+          console.log(`Sample data points for ${indicator.name} - ${metric.name || 'unnamed'}:`);
+          for (let i = 0; i < samplePoints; i++) {
+            console.log(`  Time: ${metric.time[i]}, Value: ${metric.value[i]}`);
           }
 
-          indicatorSeries.setData(indicatorData);
+          try {
+            // Format data
+            const indicatorData = metric.time.map((time, i) => ({
+              time: new Date(time).getTime() / 1000,
+              value: metric.value[i]
+            }));
 
-          // Add to legend
-          const name = metric.name || indicator.name;
-          addLegendItem(indicatorLegend, name, metric.color || COLORS.DEFAULT_INDICATOR);
+            // Determine series type
+            let indicatorSeries;
 
-          console.log(`Added series for ${name} with ${indicatorData.length} points`);
+            if (metric.style === 'histogram') {
+              indicatorSeries = indicatorChart.addHistogramSeries({
+                color: metric.color || COLORS.DEFAULT_INDICATOR,
+                priceLineVisible: false,
+                lastValueVisible: true, // Show current value
+                priceFormat: {
+                  type: 'price',
+                  precision: 5, // More precision for indicator values
+                  minMove: 0.00001,
+                },
+                base: 0, // This is important for MACD histograms
+              });
+            } else {
+              indicatorSeries = indicatorChart.addLineSeries({
+                color: metric.color || COLORS.DEFAULT_INDICATOR,
+                lineWidth: 1.5, // Slightly thicker for visibility
+                priceLineVisible: false,
+                lastValueVisible: true, // Show current value
+                priceFormat: {
+                  type: 'price',
+                  precision: 5, // More precision for indicator values
+                  minMove: 0.00001,
+                }
+              });
+            }
+
+            indicatorSeries.setData(indicatorData);
+
+            // Add to legend
+            const name = metric.name || indicator.name;
+            addLegendItem(indicatorLegend, name, metric.color || COLORS.DEFAULT_INDICATOR);
+
+            console.log(`Added series for ${name} with ${indicatorData.length} points`);
+          } catch (seriesError) {
+            console.error(`Failed to add series for ${metric.name || 'unnamed'}:`, seriesError);
+          }
         });
 
         // Fit content to the chart
@@ -904,15 +1042,26 @@ class TradingChart {
           indicatorChart.timeScale().fitContent();
         }
 
+        // Make sure price scale is adjusted to show all data
+        try {
+          const rightPriceScale = indicatorChart.priceScale('right');
+          if (rightPriceScale) {
+            rightPriceScale.applyOptions({
+              autoScale: true,
+              scaleMargins: {
+                top: 0.1,
+                bottom: 0.1,
+              },
+            });
+          }
+        } catch (error) {
+          console.error('Failed to adjust price scale:', error);
+        }
+
       } catch (error) {
         console.error(`Failed to add standalone indicator ${indicator.name}:`, error);
       }
     });
-  }
-
-  // Safely check if a method exists on an object
-  methodExists(obj, methodName) {
-    return obj && typeof obj[methodName] === 'function';
   }
 
   // Render all charts
@@ -923,10 +1072,27 @@ class TradingChart {
       graphContainer.innerHTML = '';
       this.additionalCharts = [];
 
+      // Count standalone indicators to adjust layout
+      const standaloneIndicators = data.indicators ? data.indicators.filter(ind => !ind.overlay) : [];
+      const indicatorCount = standaloneIndicators.length;
+
+      // Adjust main chart height based on number of indicators
+      // If we have indicators, make the main chart smaller to give room
+      let mainChartHeight = 400;
+      if (indicatorCount > 0) {
+        // Allocate space based on indicator count
+        const totalHeight = 600; // Total available height
+        mainChartHeight = Math.floor(totalHeight * 0.6); // 60% for main chart
+        console.log(`Adjusting chart layout for ${indicatorCount} indicators. Main chart height: ${mainChartHeight}px`);
+      }
+
       // Create main chart container
       const mainChartContainer = createElement('div', 'chart-container', graphContainer);
       mainChartContainer.id = 'main-chart';
-      mainChartContainer.style.height = '400px'; // Ensure main chart has enough height
+      mainChartContainer.style.height = `${mainChartHeight}px`;
+      mainChartContainer.style.border = `1px solid ${COLORS.BORDER}`;
+      mainChartContainer.style.borderRadius = '8px';
+      mainChartContainer.style.marginBottom = '15px';
 
       // Create legend container
       const legendContainer = createElement('div', 'legend-container', mainChartContainer);
@@ -1048,9 +1214,6 @@ class TradingChart {
         if (!nativeMarkersWorked) {
           console.log("Falling back to custom marker implementation");
           addCustomMarkers(this.mainChart, this.candleSeries, markers);
-
-          // Uncomment the next line if you want text labels at buy/sell points
-          // createTextMarkers(this.mainChart, markers);
         }
 
         // Add legend items for markers
@@ -1067,6 +1230,11 @@ class TradingChart {
       // Setup tooltip
       this.setupTooltip();
 
+      // Create equity chart - use smaller height if we have indicators
+      if (indicatorCount > 0) {
+        data.equityHeight = 120; // Smaller equity chart when we have indicators
+      }
+
       // Create equity chart
       this.createEquityChart(data, graphContainer);
 
@@ -1078,15 +1246,38 @@ class TradingChart {
         this.mainChart.timeScale().fitContent();
       }
 
-      // If we have standalone indicators, make sure they're visible in the UI
-      const standaloneIndicators = data.indicators ? data.indicators.filter(ind => !ind.overlay) : [];
-      if (standaloneIndicators.length > 0) {
-        console.log(`Added ${standaloneIndicators.length} standalone indicator charts`);
+      // Make sure all additional charts are correctly sized and fitted
+      this.additionalCharts.forEach(chart => {
+        if (chart.container && chart.container.clientWidth && chart.container.clientHeight) {
+          chart.applyOptions({
+            width: chart.container.clientWidth,
+            height: chart.container.clientHeight
+          });
 
-        // Adjust the container heights to make room for indicators
-        const containerHeight = Math.max(500, 400 - (standaloneIndicators.length * 50));
-        mainChartContainer.style.height = `${containerHeight}px`;
-      }
+          // Force fit content for each chart
+          if (this.methodExists(chart.timeScale(), 'fitContent')) {
+            chart.timeScale().fitContent();
+          }
+
+          // Make sure price scale shows all data
+          try {
+            const rightPriceScale = chart.priceScale('right');
+            if (rightPriceScale) {
+              rightPriceScale.applyOptions({
+                autoScale: true,
+                scaleMargins: {
+                  top: 0.1,
+                  bottom: 0.1,
+                }
+              });
+            }
+          } catch (error) {
+            console.error('Failed to adjust price scale:', error);
+          }
+        }
+      });
+
+      console.log(`Chart rendering complete with ${this.additionalCharts.length} additional charts`);
 
     } catch (error) {
       console.error("Error rendering charts:", error);
@@ -1097,5 +1288,10 @@ class TradingChart {
         </div>
       `;
     }
+  }
+
+  // Safely check if a method exists on an object
+  methodExists(obj, methodName) {
+    return obj && typeof obj[methodName] === 'function';
   }
 }
