@@ -95,15 +95,15 @@ func NewChart(log logger.Logger, options ...Option) (*Chart, error) {
 
 	// Parse chart HTML template
 	var err error
-	chart.indexHTML, err = template.ParseFS(staticFiles, "assets/chart.html")
+	chart.indexHTML, err = template.ParseFS(staticFiles, "assets/index.html")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse chart template: %w", err)
 	}
 
 	// Read and transpile chart JavaScript
-	chartJS, err := staticFiles.ReadFile("assets/chart.js")
+	chartJS, err := staticFiles.ReadFile("assets/js/main.js")
 	if err != nil {
-		return nil, fmt.Errorf("failed to read chart.js: %w", err)
+		return nil, fmt.Errorf("failed to read main.js: %w", err)
 	}
 
 	transpileChartJS := api.Transform(string(chartJS), api.TransformOptions{
@@ -126,16 +126,9 @@ func NewChart(log logger.Logger, options ...Option) (*Chart, error) {
 // Start initializes the HTTP server for the chart
 func (c *Chart) Start() error {
 	// Set up static file handlers
-	http.Handle(
-		"/assets/",
+	http.Handle("/assets/",
 		http.FileServer(http.FS(staticFiles)),
 	)
-
-	// Set up chart.js handler
-	http.HandleFunc("/assets/chart.js", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/javascript")
-		fmt.Fprint(w, c.scriptContent)
-	})
 
 	// Set up API handlers
 	http.HandleFunc("/health", c.handleHealth)
