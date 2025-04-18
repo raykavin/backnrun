@@ -11,6 +11,7 @@ import { createEquityChart } from './equityChart.js';
 import { addIndicators } from './indicators.js';
 import { applyChartStyles } from '../styles/chartStyles.js';
 import { createElement } from '../utils/helpers.js';
+import { initWebSocket, closeWebSocket, registerMessageHandler, unregisterMessageHandler, isWebSocketConnected } from '../services/websocketService.js';
 
 /**
  * TradingChart class for chart creation and management
@@ -29,6 +30,7 @@ export class TradingChart {
     this.sellMarkers = [];
     this.currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
     this.colors = getCurrentThemeColors();
+    this.wsHandlers = {};
   }
 
   /**
@@ -56,8 +58,114 @@ export class TradingChart {
       return;
     }
 
-    // Fetch data
+    // Setup WebSocket handlers first
+    this.setupWebSocketHandlers();
+    
+    // Then fetch data through WebSocket
     this.fetchData();
+  }
+  
+  /**
+   * Setup WebSocket handlers for real-time updates
+   */
+  setupWebSocketHandlers() {
+    // Handler for initial data
+    this.wsHandlers.initialData = (payload) => {
+      console.log('Received initial data via WebSocket');
+      this.renderCharts(payload);
+    };
+    
+    // Handler for new candle
+    this.wsHandlers.newCandle = (payload) => {
+      console.log('Received new candle via WebSocket', payload);
+      if (payload.pair !== this.pair) return;
+      
+      const candle = payload.candle;
+      
+      // Format the candle for the chart
+      const formattedCandle = {
+        time: new Date(candle.time).getTime() / 1000,
+        open: candle.open,
+        high: candle.high,
+        low: candle.low,
+        close: candle.close,
+        volume: candle.volume
+      };
+      
+      // Update the candlestick series
+      if (this.candleSeries && methodExists(this.candleSeries, 'update')) {
+        this.candleSeries.update(formattedCandle);
+        
+        // If this is a real-time update (not a complete candle), ensure the chart stays scrolled to the right
+        if (!candle.complete) {
+          // Ensure the chart stays scrolled to the right to show the latest data
+          if (methodExists(this.mainChart, 'timeScale') && 
+              methodExists(this.mainChart.timeScale(), 'scrollToRealTime')) {
+            this.mainChart.timeScale().scrollToRealTime();
+          } else if (methodExists(this.mainChart, 'timeScale') && 
+                    methodExists(this.mainChart.timeScale(), 'scrollToPosition')) {
+            // Alternative approach if scrollToRealTime is not available
+            this.mainChart.timeScale().scrollToPosition(0, false);
+          }
+        }
+      }
+    };
+    
+    // Handler for new order
+    this.wsHandlers.newOrder = (payload) => {
+      console.log('Received new order via WebSocket', payload);
+      if (payload.pair !== this.pair) return;
+      
+      const order = payload.order;
+      
+      // Only process filled orders
+      if (order.status !== 'FILLED') return;
+      
+      // Create a marker for the order
+      const marker = {
+        time: new Date(order.updatedAt).getTime() / 1000,
+        position: order.side === 'BUY' ? 'belowBar' : 'aboveBar',
+        color: order.side === 'BUY' ? this.colors.UP : this.colors.DOWN,
+        shape: order.side === 'BUY' ? 'arrowUp' : 'arrowDown',
+        text: order.side === 'BUY' ? 'B' : 'S',
+        size: 2,
+        price: order.price,
+        id: order.id,
+        order: order
+      };
+      
+      // Add the marker to the appropriate array
+      if (order.side === 'BUY') {
+        this.buyMarkers.push(marker);
+      } else {
+        this.sellMarkers.push(marker);
+      }
+      
+      // Update the markers on the chart
+      if (this.candleSeries && methodExists(this.candleSeries, 'setMarkers')) {
+        try {
+          this.candleSeries.setMarkers([...this.buyMarkers, ...this.sellMarkers]);
+        } catch (error) {
+          console.error('Error updating markers:', error);
+          
+          // Fallback to custom markers
+          addCustomMarkers(this.mainChart, this.candleSeries, 
+            [...this.buyMarkers, ...this.sellMarkers], this.colors);
+        }
+      }
+    };
+    
+    // Register the handlers
+    registerMessageHandler('initialData', this.wsHandlers.initialData);
+    registerMessageHandler('newCandle', this.wsHandlers.newCandle);
+    registerMessageHandler('newOrder', this.wsHandlers.newOrder);
+    
+    // Initialize WebSocket connection
+    if (this.pair) {
+      initWebSocket(this.pair).catch(error => {
+        console.error('Failed to initialize WebSocket:', error);
+      });
+    }
   }
 
   /**
@@ -71,22 +179,46 @@ export class TradingChart {
     // Apply updated styles
     applyChartStyles(this.colors);
 
-    // Re-fetch and re-render with new theme colors
+    // Close existing WebSocket connection
+    closeWebSocket();
+    
+    // Setup WebSocket handlers again with new theme
+    this.setupWebSocketHandlers();
+    
+    // Re-fetch data through WebSocket
     this.fetchData();
   }
 
   /**
-   * Fetch data from the server
+   * Fetch data from the server via WebSocket
    */
   async fetchData() {
     try {
+      // Show loading indicator
+      const graphContainer = document.getElementById('graph');
+      graphContainer.innerHTML = `
+        <div class="loading-container">
+          <div class="spinner"></div>
+          <div class="loading-text">Connecting to WebSocket and loading data...</div>
+        </div>
+      `;
+      
+      // Initialize WebSocket connection if not already connected
+      if (!isWebSocketConnected()) {
+        await initWebSocket(this.pair);
+      }
+      
+      // Fetch data through WebSocket
       const data = await fetchChartData(this.pair);
+      
+      // Render charts with the received data
       this.renderCharts(data);
     } catch (error) {
       console.error('Error fetching chart data:', error);
       document.getElementById('graph').innerHTML = `
         <div style="padding: 20px; color: red;">
-          Error loading chart data: ${error.message}
+          Error loading chart data: ${error.message}<br>
+          Please check your connection and try again.
         </div>
       `;
     }
@@ -311,5 +443,33 @@ export class TradingChart {
         </div>
       `;
     }
+  }
+
+  /**
+   * Clean up resources when the chart is destroyed
+   */
+  destroy() {
+    // Unregister WebSocket handlers
+    if (this.wsHandlers) {
+      unregisterMessageHandler('initialData', this.wsHandlers.initialData);
+      unregisterMessageHandler('newCandle', this.wsHandlers.newCandle);
+      unregisterMessageHandler('newOrder', this.wsHandlers.newOrder);
+    }
+    
+    // Close WebSocket connection
+    closeWebSocket();
+    
+    // Clean up chart resources
+    if (this.mainChart) {
+      this.mainChart.remove();
+      this.mainChart = null;
+    }
+    
+    this.additionalCharts.forEach(chart => {
+      if (chart) {
+        chart.remove();
+      }
+    });
+    this.additionalCharts = [];
   }
 }

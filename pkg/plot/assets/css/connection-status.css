@@ -1,0 +1,52 @@
+/* WebSocket Connection Status Styles */
+.connection-status {
+  display: flex;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.connection-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+.connection-indicator.connected {
+  background-color: #4CAF50;
+  box-shadow: 0 0 5px #4CAF50;
+}
+
+.connection-indicator.connecting {
+  background-color: #FFC107;
+  box-shadow: 0 0 5px #FFC107;
+  animation: pulse 1.5s infinite;
+}
+
+.connection-indicator.disconnected {
+  background-color: #F44336;
+  box-shadow: 0 0 5px #F44336;
+}
+
+.connection-text {
+  color: var(--text-color);
+}
+
+/* Pulse animation for connecting state */
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .connection-text {
+  color: var(--text-color);
+}

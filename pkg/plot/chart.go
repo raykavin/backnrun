@@ -24,19 +24,21 @@ var (
 // Chart handles the visualization of trading data
 type Chart struct {
 	sync.Mutex
-	port            int
-	debug           bool
-	candles         map[string][]Candle
-	dataframe       map[string]*core.Dataframe
-	ordersIDsByPair map[string]*set.LinkedHashSetINT64
-	orderByID       map[int64]core.Order
-	indicators      []Indicator
-	paperWallet     *exchange.PaperWallet
-	scriptContent   string
-	indexHTML       *template.Template
-	strategy        core.Strategy
-	lastUpdate      time.Time
-	log             logger.Logger
+	port               int
+	debug              bool
+	candles            map[string][]Candle
+	dataframe          map[string]*core.Dataframe
+	ordersIDsByPair    map[string]*set.LinkedHashSetINT64
+	orderByID          map[int64]core.Order
+	indicators         []Indicator
+	paperWallet        *exchange.PaperWallet
+	scriptContent      string
+	indexHTML          *template.Template
+	strategy           core.Strategy
+	lastUpdate         time.Time
+	log                logger.Logger
+	wsManager          *WebSocketManager
+	simulationInterval time.Duration
 }
 
 // Option defines a function type for configuring a Chart instance
@@ -74,6 +76,13 @@ func WithDebug() Option {
 func WithCustomIndicators(indicators ...Indicator) Option {
 	return func(chart *Chart) {
 		chart.indicators = indicators
+	}
+}
+
+// WithSimulation enables real-time candle simulation for testing
+func WithSimulation(interval time.Duration) Option {
+	return func(chart *Chart) {
+		chart.simulationInterval = interval
 	}
 }
 
@@ -120,6 +129,9 @@ func NewChart(log logger.Logger, options ...Option) (*Chart, error) {
 
 	chart.scriptContent = string(transpileChartJS.Code)
 
+	// Create WebSocket manager
+	chart.wsManager = NewWebSocketManager(log, chart)
+
 	return chart, nil
 }
 
@@ -134,7 +146,28 @@ func (c *Chart) Start() error {
 	http.HandleFunc("/health", c.handleHealth)
 	http.HandleFunc("/history", c.handleTradingHistoryData)
 	http.HandleFunc("/data", c.handleData)
+	http.HandleFunc("/ws", c.wsManager.HandleWebSocket)
 	http.HandleFunc("/", c.handleIndex)
+
+	// Start simulation if enabled
+	if c.simulationInterval > 0 {
+		// Get the first available pair or use a default
+		var pair string
+		c.Lock()
+		for p := range c.candles {
+			pair = p
+			break
+		}
+		c.Unlock()
+		
+		// If no pairs are available, use a default
+		if pair == "" {
+			pair = "BTC/USDT"
+		}
+		
+		c.log.Info("Starting candle simulation for pair ", pair, " with interval ", c.simulationInterval)
+		c.StartCandleSimulation(pair, c.simulationInterval)
+	}
 
 	// Start the server
 	fmt.Printf("Chart available at http://localhost:%d\n", c.port)

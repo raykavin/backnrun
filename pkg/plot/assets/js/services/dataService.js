@@ -69,33 +69,31 @@ export function processOrderMarkers(candles, colors) {
 }
 
 /**
- * Fetch data from the server
+ * Fetch data from the server via WebSocket
  * @param {string} pair - Trading pair
  * @returns {Promise} - Promise resolving to chart data
  */
 export async function fetchChartData(pair) {
-  try {
-    const response = await fetch("/data?pair=" + pair);
-    const data = await response.json();
-
-    // Debug the data to see its structure
-    console.log('Fetched data:', data);
-
-    // Check if data contains indicators and order information
-    if (data.indicators) {
-      console.log('Indicators found:', data.indicators.length);
-    }
-
-    // Check if candles have orders
-    if (data.candles && data.candles.length > 0) {
-      const ordersCount = data.candles.reduce((count, candle) =>
-        count + (candle.orders ? candle.orders.length : 0), 0);
-      console.log('Total orders found:', ordersCount);
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error fetching chart data:', error);
-    throw error;
-  }
+  return new Promise((resolve, reject) => {
+    // This function is now a placeholder since we'll get data via WebSocket
+    // The actual data will be received through the WebSocket 'initialData' message
+    console.log('Waiting for data via WebSocket for pair:', pair);
+    
+    // Set a timeout to reject the promise if no data is received
+    const timeout = setTimeout(() => {
+      reject(new Error('Timeout waiting for WebSocket data'));
+    }, 10000); // 10 seconds timeout
+    
+    // Create a one-time handler for the initialData message
+    const initialDataHandler = (data) => {
+      clearTimeout(timeout);
+      console.log('Received initial data via WebSocket in fetchChartData');
+      resolve(data);
+      
+      // This handler will be removed by the caller after use
+    };
+    
+    // Store the handler in a global variable so it can be accessed by the WebSocket service
+    window.pendingInitialDataHandler = initialDataHandler;
+  });
 }

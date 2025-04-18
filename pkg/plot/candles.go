@@ -18,21 +18,24 @@ func (c *Chart) OnCandle(candle core.Candle) {
 		c.ordersIDsByPair[candle.Pair] = set.NewLinkedHashSetINT64()
 	}
 
-	// Only add completed candles that are newer than our latest candle
+	// Create new candle object
+	newCandle := Candle{
+		Time:   candle.Time,
+		Open:   candle.Open,
+		Close:  candle.Close,
+		High:   candle.High,
+		Low:    candle.Low,
+		Volume: candle.Volume,
+		Orders: make([]core.Order, 0),
+	}
+
+	// For completed candles that are newer than our latest candle, add to collection
 	lastIndex := len(c.candles[candle.Pair]) - 1
 	if candle.Complete && (len(c.candles[candle.Pair]) == 0 ||
 		candle.Time.After(c.candles[candle.Pair][lastIndex].Time)) {
 
 		// Add the candle to our collection
-		c.candles[candle.Pair] = append(c.candles[candle.Pair], Candle{
-			Time:   candle.Time,
-			Open:   candle.Open,
-			Close:  candle.Close,
-			High:   candle.High,
-			Low:    candle.Low,
-			Volume: candle.Volume,
-			Orders: make([]core.Order, 0),
-		})
+		c.candles[candle.Pair] = append(c.candles[candle.Pair], newCandle)
 
 		// Initialize dataframe if needed
 		if c.dataframe[candle.Pair] == nil {
@@ -56,8 +59,40 @@ func (c *Chart) OnCandle(candle core.Candle) {
 		for k, v := range candle.Metadata {
 			df.Metadata[k] = append(df.Metadata[k], v)
 		}
+	} else if !candle.Complete && len(c.candles[candle.Pair]) > 0 {
+		// For incomplete candles, update the last candle in our collection
+		// This is for real-time updates of the current candle
+		lastCandle := &c.candles[candle.Pair][lastIndex]
+		
+		// Only update if this is the same time period
+		if lastCandle.Time.Equal(candle.Time) {
+			lastCandle.Close = candle.Close
+			lastCandle.High = candle.High
+			lastCandle.Low = candle.Low
+			lastCandle.Volume = candle.Volume
+			
+			// Update dataframe if it exists
+			if c.dataframe[candle.Pair] != nil {
+				df := c.dataframe[candle.Pair]
+				if len(df.Close) > 0 {
+					lastIdx := len(df.Close) - 1
+					df.Close[lastIdx] = candle.Close
+					df.High[lastIdx] = candle.High
+					df.Low[lastIdx] = candle.Low
+					df.Volume[lastIdx] = candle.Volume
+					df.LastUpdate = time.Now()
+				}
+			}
+		}
+	}
 
-		c.lastUpdate = time.Now()
+	c.lastUpdate = time.Now()
+
+	// Always broadcast the candle via WebSocket, whether complete or not
+	// This ensures real-time updates for the current candle
+	if c.wsManager != nil {
+		// Use a goroutine to avoid blocking
+		go c.wsManager.BroadcastCandle(candle, candle.Pair)
 	}
 }
 

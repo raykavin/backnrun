@@ -20,6 +20,12 @@ func (c *Chart) OnOrder(order core.Order) {
 
 	c.ordersIDsByPair[order.Pair].Add(order.ID)
 	c.orderByID[order.ID] = order
+	
+	// Broadcast the new order via WebSocket
+	if c.wsManager != nil {
+		// Use a goroutine to avoid blocking
+		go c.wsManager.BroadcastOrder(order)
+	}
 }
 
 // shapesByPair returns shapes for stop-loss and limit orders for a trading pair

@@ -6,6 +6,7 @@ import { TradingChart } from './components/TradingChart.js';
 import { ManualOrderForm } from './components/ManualOrderForm.js';
 import { ChartDrawingTools } from './components/ChartDrawingTools.js';
 import { getCurrentThemeColors } from './config/theme.js';
+import { closeWebSocket } from './services/websocketService.js';
 
 // Initialize when DOM is ready
 document.addEventListener("DOMContentLoaded", function () {
@@ -50,6 +51,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
       // Make chart accessible globally (for debugging and theme toggling)
       window.tradingChart = chart;
+      
+      // Clean up previous chart instance when navigating away
+      window.addEventListener('beforeunload', () => {
+        if (window.tradingChart) {
+          window.tradingChart.destroy();
+        }
+      });
 
       // Initialize manual order form
       initializeOrderForm();
@@ -90,16 +98,21 @@ document.addEventListener("DOMContentLoaded", function () {
     // Make order form accessible globally
     window.manualOrderForm = orderForm;
 
-    // Add event listener to update order form when pair changes
-    const pairButtons = document.querySelectorAll('.pair-btn');
-    pairButtons.forEach(btn => {
-      btn.addEventListener('click', function(e) {
-        const pair = this.textContent.trim();
-        if (window.manualOrderForm) {
-          window.manualOrderForm.updatePair(pair);
-        }
+      // Add event listener to update order form when pair changes
+      const pairButtons = document.querySelectorAll('.pair-btn');
+      pairButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          const pair = this.textContent.trim();
+          if (window.manualOrderForm) {
+            window.manualOrderForm.updatePair(pair);
+          }
+          
+          // Clean up previous WebSocket connection
+          if (window.tradingChart) {
+            window.tradingChart.destroy();
+          }
+        });
       });
-    });
   }
 
   /**

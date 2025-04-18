@@ -14,6 +14,8 @@
   <link rel="stylesheet" href="/assets/css/styles.css">
   <link rel="stylesheet" href="/assets/css/order-form.css">
   <link rel="stylesheet" href="/assets/css/drawing-tools.css">
+  <link rel="stylesheet" href="/assets/css/connection-status.css">
+  <link rel="stylesheet" href="/assets/css/loading.css">
   <!-- Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
   <!-- Import main.js as a module -->
@@ -44,6 +46,10 @@
           </li>
         </ul>
         <div class="d-flex align-items-center">
+          <div class="connection-status me-3" title="WebSocket Connection Status">
+            <span class="connection-indicator disconnected" id="ws-status-indicator"></span>
+            <span class="connection-text" id="ws-status-text">Disconnected</span>
+          </div>
           <div class="theme-toggle" id="theme-toggle" title="Toggle dark/light mode">
             <i class="fas fa-moon" id="theme-icon-dark"></i>
             <i class="fas fa-sun" id="theme-icon-light" style="display: none;"></i>
