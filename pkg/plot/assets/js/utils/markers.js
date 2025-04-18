@@ -1,217 +1,250 @@
 /**
- * Utilities for handling chart markers
+ * Marker utilities for chart
  */
 
-import { createElement } from './helpers.js';
-
 /**
- * Function to check if marker support is available in the chart library
+ * Test if the chart supports native markers
  * @param {Object} chart - Chart instance
- * @returns {boolean} - Whether marker support is available
+ * @returns {boolean} - True if native marker support is available
  */
 export function testMarkerSupport(chart) {
   try {
-    // Create a test series
-    const testSeries = chart.addCandlestickSeries();
-    // Check if setMarkers exists
-    const hasSetMarkers = typeof testSeries.setMarkers === 'function';
-    // Remove the test series if possible
-    if (typeof testSeries.remove === 'function') {
-      testSeries.remove();
-    }
-    return hasSetMarkers;
-  } catch (e) {
-    console.error("Error testing marker support:", e);
+    // Check if the chart has a method to add markers
+    const hasAddMarkerMethod = typeof chart.addMarker === 'function';
+    
+    // Check if the candlestick series has a method to set markers
+    const series = chart.series && chart.series[0];
+    const hasSetMarkersMethod = series && typeof series.setMarkers === 'function';
+    
+    return hasAddMarkerMethod || hasSetMarkersMethod;
+  } catch (error) {
+    console.error('Error testing marker support:', error);
     return false;
   }
 }
 
 /**
- * Add custom markers as separate series when native marker support is unavailable
+ * Add custom markers to the chart
  * @param {Object} chart - Chart instance
- * @param {Object} candleSeries - Candlestick series
- * @param {Array} markers - Markers to add
+ * @param {Object} series - Series instance
+ * @param {Array} markers - Array of marker objects
+ * @param {Object} colors - Theme colors
  */
-export function addCustomMarkers(chart, candleSeries, markers, colors) {
-  // Create separate series for buy and sell markers
-  const buyMarkers = markers.filter(m => m.position === 'belowBar');
-  const sellMarkers = markers.filter(m => m.position === 'aboveBar');
-
-  console.log(`Adding ${buyMarkers.length} buy markers and ${sellMarkers.length} sell markers as separate series`);
-
-  if (buyMarkers.length > 0) {
-    // Format buy markers data for scatter series
-    const buyData = buyMarkers.map(marker => ({
-      time: marker.time,
-      value: marker.price || marker.order.price
-    }));
-
-    try {
-      // Add buy markers as a scatter series
-      const buyMarkerSeries = chart.addLineSeries({
-        color: colors.UP,
-        lineWidth: 0,
-        pointsVisible: true,
-        pointSize: 8,
-        pointShape: 'circle',
-        pointFill: colors.UP,
-        pointBorderColor: colors.UP,
-        pointBorderWidth: 0,
-        priceLineVisible: false,
-        lastValueVisible: false,
-      });
-
-      buyMarkerSeries.setData(buyData);
-      console.log('Buy marker series created successfully');
-    } catch (error) {
-      console.error('Failed to create buy marker series:', error);
-
-      // Fallback to simpler series if the advanced options fail
-      try {
-        const simpleBuyMarkerSeries = chart.addLineSeries({
-          color: colors.UP,
-          lineWidth: 0,
-          priceLineVisible: false,
-          lastValueVisible: false,
-        });
-
-        simpleBuyMarkerSeries.setData(buyData);
-        console.log('Simple buy marker series created as fallback');
-      } catch (fallbackError) {
-        console.error('Fallback buy marker series also failed:', fallbackError);
-      }
+export function addCustomMarkers(chart, series, markers, colors) {
+  if (!chart || !series || !markers || !markers.length) return;
+  
+  try {
+    // Create a custom marker layer if it doesn't exist
+    let markerLayer = document.getElementById('custom-marker-layer');
+    if (!markerLayer) {
+      const chartContainer = chart.container;
+      if (!chartContainer) return;
+      
+      markerLayer = document.createElement('div');
+      markerLayer.id = 'custom-marker-layer';
+      markerLayer.style.position = 'absolute';
+      markerLayer.style.top = '0';
+      markerLayer.style.left = '0';
+      markerLayer.style.width = '100%';
+      markerLayer.style.height = '100%';
+      markerLayer.style.pointerEvents = 'none';
+      markerLayer.style.zIndex = '2';
+      
+      chartContainer.appendChild(markerLayer);
     }
-  }
-
-  if (sellMarkers.length > 0) {
-    // Format sell markers data for scatter series
-    const sellData = sellMarkers.map(marker => ({
-      time: marker.time,
-      value: marker.price || marker.order.price
-    }));
-
-    try {
-      // Add sell markers as a scatter series
-      const sellMarkerSeries = chart.addLineSeries({
-        color: colors.DOWN,
-        lineWidth: 0,
-        pointsVisible: true,
-        pointSize: 8,
-        pointShape: 'circle',
-        pointFill: colors.DOWN,
-        pointBorderColor: colors.DOWN,
-        pointBorderWidth: 0,
-        priceLineVisible: false,
-        lastValueVisible: false,
-      });
-
-      sellMarkerSeries.setData(sellData);
-      console.log('Sell marker series created successfully');
-    } catch (error) {
-      console.error('Failed to create sell marker series:', error);
-
-      // Fallback to simpler series if the advanced options fail
+    
+    // Clear existing markers
+    markerLayer.innerHTML = '';
+    
+    // Get chart dimensions
+    const chartWidth = chart.container.clientWidth;
+    const chartHeight = chart.container.clientHeight;
+    
+    // Add markers
+    markers.forEach(marker => {
       try {
-        const simpleSellMarkerSeries = chart.addLineSeries({
-          color: colors.DOWN,
-          lineWidth: 0,
-          priceLineVisible: false,
-          lastValueVisible: false,
-        });
-
-        simpleSellMarkerSeries.setData(sellData);
-        console.log('Simple sell marker series created as fallback');
-      } catch (fallbackError) {
-        console.error('Fallback sell marker series also failed:', fallbackError);
+        // Get coordinates for the marker
+        const x = getXCoordinate(chart, marker.time);
+        const y = getYCoordinate(series, marker.price);
+        
+        if (x !== null && y !== null) {
+          // Create marker element
+          const markerElement = document.createElement('div');
+          markerElement.className = 'custom-marker';
+          markerElement.style.position = 'absolute';
+          markerElement.style.left = `${x}px`;
+          markerElement.style.top = `${y}px`;
+          markerElement.style.transform = 'translate(-50%, -50%)';
+          markerElement.style.width = '20px';
+          markerElement.style.height = '20px';
+          markerElement.style.borderRadius = '50%';
+          markerElement.style.display = 'flex';
+          markerElement.style.alignItems = 'center';
+          markerElement.style.justifyContent = 'center';
+          markerElement.style.fontSize = '12px';
+          markerElement.style.fontWeight = 'bold';
+          markerElement.style.color = 'white';
+          markerElement.style.zIndex = '3';
+          
+          // Set marker style based on type
+          if (marker.shape === 'arrowUp') {
+            markerElement.style.backgroundColor = colors.UP;
+            markerElement.innerHTML = '▲';
+          } else if (marker.shape === 'arrowDown') {
+            markerElement.style.backgroundColor = colors.DOWN;
+            markerElement.innerHTML = '▼';
+          } else {
+            markerElement.style.backgroundColor = marker.color || colors.DEFAULT_INDICATOR;
+            markerElement.innerHTML = marker.text || '';
+          }
+          
+          // Add tooltip if marker has text
+          if (marker.tooltip) {
+            markerElement.title = marker.tooltip;
+          }
+          
+          // Append marker to layer
+          markerLayer.appendChild(markerElement);
+        }
+      } catch (error) {
+        console.error('Error adding marker:', error);
       }
-    }
+    });
+    
+    // Update markers on chart resize
+    const updateMarkers = () => {
+      // If chart dimensions have changed, reposition markers
+      if (chart.container.clientWidth !== chartWidth || chart.container.clientHeight !== chartHeight) {
+        addCustomMarkers(chart, series, markers, colors);
+      }
+    };
+    
+    // Add resize event listener
+    window.addEventListener('resize', updateMarkers);
+    
+    // Store the event listener on the chart for cleanup
+    chart._markerResizeListener = updateMarkers;
+    
+  } catch (error) {
+    console.error('Error adding custom markers:', error);
   }
 }
 
 /**
- * Create HTML text markers at buy/sell points
+ * Get X coordinate for a time value
  * @param {Object} chart - Chart instance
- * @param {Array} markers - Markers to add
+ * @param {number} time - Time value
+ * @returns {number|null} - X coordinate or null if not found
  */
-export function createTextMarkers(chart, markers) {
-  // Check if the createElement method exists (needed for HTML markers)
-  if (typeof document.createElement !== 'function') {
-    console.error('Document createElement not available, cannot create text markers');
-    return;
+function getXCoordinate(chart, time) {
+  try {
+    if (!chart || !chart.timeScale) return null;
+    
+    const timeScale = chart.timeScale();
+    if (!timeScale || typeof timeScale.timeToCoordinate !== 'function') return null;
+    
+    const coordinate = timeScale.timeToCoordinate(time);
+    return coordinate;
+  } catch (error) {
+    console.error('Error getting X coordinate:', error);
+    return null;
   }
+}
 
-  // Create container for markers if it doesn't exist
-  let markerContainer = document.getElementById('custom-markers-container');
-  if (!markerContainer) {
-    markerContainer = document.createElement('div');
-    markerContainer.id = 'custom-markers-container';
-    markerContainer.style.position = 'absolute';
-    markerContainer.style.top = '0';
-    markerContainer.style.left = '0';
-    markerContainer.style.width = '100%';
-    markerContainer.style.height = '100%';
-    markerContainer.style.pointerEvents = 'none'; // Pass through mouse events
-
-    // Find the chart container and append
-    const chartContainer = document.getElementById('graph');
-    if (chartContainer) {
-      chartContainer.style.position = 'relative'; // Ensure relative positioning
-      chartContainer.appendChild(markerContainer);
-    } else {
-      console.error('Chart container not found, cannot add marker container');
-      return;
-    }
-  } else {
-    // Clear existing markers
-    markerContainer.innerHTML = '';
+/**
+ * Get Y coordinate for a price value
+ * @param {Object} series - Series instance
+ * @param {number} price - Price value
+ * @returns {number|null} - Y coordinate or null if not found
+ */
+function getYCoordinate(series, price) {
+  try {
+    if (!series || !series.priceToCoordinate) return null;
+    
+    const coordinate = series.priceToCoordinate(price);
+    return coordinate;
+  } catch (error) {
+    console.error('Error getting Y coordinate:', error);
+    return null;
   }
+}
 
-  // Create a marker element for each buy/sell point
-  markers.forEach(marker => {
-    try {
-      // Get pixel coordinates from chart
-      const time = marker.time;
-      const price = marker.price || marker.order.price;
-
-      // Skip if we can't get proper coordinates
-      if (!chart.timeScale || !chart.priceScale) {
-        console.warn('Chart scales not available, skipping text marker');
-        return;
-      }
-
-      // Convert time to pixel coordinates
-      const timeScale = chart.timeScale();
-      const priceScale = chart.priceScale('right');
-
-      if (!timeScale || !priceScale) {
-        console.warn('Time or price scale not available');
-        return;
-      }
-
-      const timeCoordinate = timeScale.timeToCoordinate(time);
-      const priceCoordinate = priceScale.priceToCoordinate(price);
-
-      if (timeCoordinate === null || priceCoordinate === null) {
-        console.warn('Could not convert time or price to coordinates');
-        return;
-      }
-
-      // Create marker element
-      const markerEl = document.createElement('div');
-      markerEl.className = 'trade-marker';
-      markerEl.style.position = 'absolute';
-      markerEl.style.left = `${timeCoordinate}px`;
-      markerEl.style.top = `${priceCoordinate}px`;
-      markerEl.style.transform = 'translate(-50%, -50%)';
-      markerEl.style.color = marker.color;
-      markerEl.style.fontSize = '12px';
-      markerEl.style.fontWeight = 'bold';
-      markerEl.style.zIndex = '1000';
-      markerEl.textContent = marker.text;
-
-      markerContainer.appendChild(markerEl);
-    } catch (error) {
-      console.error('Error creating text marker:', error);
+/**
+ * Remove custom markers from the chart
+ * @param {Object} chart - Chart instance
+ */
+export function removeCustomMarkers(chart) {
+  if (!chart) return;
+  
+  try {
+    // Remove marker layer
+    const markerLayer = document.getElementById('custom-marker-layer');
+    if (markerLayer) {
+      markerLayer.remove();
     }
-  });
+    
+    // Remove resize event listener
+    if (chart._markerResizeListener) {
+      window.removeEventListener('resize', chart._markerResizeListener);
+      delete chart._markerResizeListener;
+    }
+  } catch (error) {
+    console.error('Error removing custom markers:', error);
+  }
+}
+
+/**
+ * Create a marker object
+ * @param {number} time - Time value
+ * @param {number} price - Price value
+ * @param {string} shape - Marker shape ('arrowUp', 'arrowDown', 'circle', 'square', etc.)
+ * @param {string} color - Marker color
+ * @param {string} text - Marker text
+ * @param {string} tooltip - Marker tooltip
+ * @returns {Object} - Marker object
+ */
+export function createMarker(time, price, shape, color, text, tooltip) {
+  return {
+    time,
+    price,
+    shape,
+    color,
+    text,
+    tooltip
+  };
+}
+
+/**
+ * Create a buy marker
+ * @param {number} time - Time value
+ * @param {number} price - Price value
+ * @param {string} tooltip - Marker tooltip
+ * @returns {Object} - Buy marker object
+ */
+export function createBuyMarker(time, price, tooltip) {
+  return createMarker(time, price, 'arrowUp', '#4CAF50', '▲', tooltip);
+}
+
+/**
+ * Create a sell marker
+ * @param {number} time - Time value
+ * @param {number} price - Price value
+ * @param {string} tooltip - Marker tooltip
+ * @returns {Object} - Sell marker object
+ */
+export function createSellMarker(time, price, tooltip) {
+  return createMarker(time, price, 'arrowDown', '#F44336', '▼', tooltip);
+}
+
+/**
+ * Create a custom marker
+ * @param {number} time - Time value
+ * @param {number} price - Price value
+ * @param {string} text - Marker text
+ * @param {string} color - Marker color
+ * @param {string} tooltip - Marker tooltip
+ * @returns {Object} - Custom marker object
+ */
+export function createCustomMarker(time, price, text, color, tooltip) {
+  return createMarker(time, price, 'circle', color, text, tooltip);
 }

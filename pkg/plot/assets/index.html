@@ -12,6 +12,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/order-form.css">
+  <link rel="stylesheet" href="/assets/css/drawing-tools.css">
   <!-- Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
   <!-- Import main.js as a module -->
@@ -20,7 +22,7 @@
 
 <body>
   <!-- Navigation Bar -->
-  <nav class="navbar navbar-expand-lg sticky-top mb-4">
+  <nav class="navbar navbar-expand-lg sticky-top">
     <div class="container">
       <a class="navbar-brand" href="/">BackNRun<span>Pro</span></a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -29,16 +31,16 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
-            <a class="nav-link active" href="/"><i class="fas fa-chart-line me-1"></i> Dashboard</a>
+            <a class="nav-link active" href="/"><i class="fas fa-chart-line"></i> Dashboard</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/history"><i class="fas fa-history me-1"></i> Trade History</a>
+            <a class="nav-link" href="/history"><i class="fas fa-history"></i> Trade History</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/analytics"><i class="fas fa-chart-pie me-1"></i> Analytics</a>
+            <a class="nav-link" href="/analytics"><i class="fas fa-chart-pie"></i> Analytics</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/settings"><i class="fas fa-cog me-1"></i> Settings</a>
+            <a class="nav-link" href="/settings"><i class="fas fa-cog"></i> Settings</a>
           </li>
         </ul>
         <div class="d-flex align-items-center">
@@ -52,13 +54,53 @@
   </nav>
 
   <div class="container">
+    <!-- Performance Overview -->
+    <div class="row mb-4 mt-4">
+      <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stat-card">
+          <div class="stat-title">Total Profit</div>
+          <div class="stat-value">$12,458.32</div>
+          <div class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>8.2% this month
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stat-card">
+          <div class="stat-title">Win Rate</div>
+          <div class="stat-value">68.5%</div>
+          <div class="stat-change positive">
+            <i class="fas fa-arrow-up"></i>3.1% this month
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stat-card">
+          <div class="stat-title">Max Drawdown</div>
+          <div class="stat-value">-12.4%</div>
+          <div class="stat-change negative">
+            <i class="fas fa-arrow-down"></i>2.3% this month
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6 mb-3">
+        <div class="stat-card">
+          <div class="stat-title">Active Positions</div>
+          <div class="stat-value">3</div>
+          <div class="stat-change">
+            <i class="fas fa-info-circle"></i>2 profitable
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Trading Pair Selection -->
     <div class="card mb-4">
       <div class="card-header">
-        <h5 class="card-title"><i class="fas fa-exchange-alt me-2"></i>Trading Pairs</h5>
+        <h5 class="card-title"><i class="fas fa-exchange-alt"></i>Trading Pairs</h5>
         <div class="card-actions">
-          <button class="btn btn-sm btn-outline-primary" id="refresh-pairs">
-            <i class="fas fa-sync-alt me-1"></i> Refresh
+          <button class="btn btn-sm btn-outline-secondary" id="refresh-pairs">
+            <i class="fas fa-sync-alt"></i> Refresh
           </button>
         </div>
       </div>
@@ -79,65 +121,25 @@
       </div>
     </div>
 
-    <!-- Performance Overview -->
-    <div class="row">
-      <div class="col-md-3 col-sm-6">
-        <div class="stat-card">
-          <div class="stat-title">Total Profit</div>
-          <div class="stat-value">$12,458.32</div>
-          <div class="stat-change positive">
-            <i class="fas fa-arrow-up me-1"></i>8.2% this month
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6">
-        <div class="stat-card">
-          <div class="stat-title">Win Rate</div>
-          <div class="stat-value">68.5%</div>
-          <div class="stat-change positive">
-            <i class="fas fa-arrow-up me-1"></i>3.1% this month
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6">
-        <div class="stat-card">
-          <div class="stat-title">Max Drawdown</div>
-          <div class="stat-value">-12.4%</div>
-          <div class="stat-change negative">
-            <i class="fas fa-arrow-down me-1"></i>2.3% this month
-          </div>
-        </div>
-      </div>
-      <div class="col-md-3 col-sm-6 mb-3">
-        <div class="stat-card">
-          <div class="stat-title">Active Positions</div>
-          <div class="stat-value">3</div>
-          <div class="stat-change">
-            <i class="fas fa-info-circle me-1"></i>2 profitable
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Main Content -->
     <div class="row">
       <!-- Chart Section -->
-      <div class="col-lg-12">
+      <div class="col-lg-8">
         <div class="card">
           <div class="card-header">
-            <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>BTC/USDT</h5>
+            <h5 class="card-title"><i class="fas fa-chart-line"></i>BTC/USDT</h5>
             <div class="card-actions">
               <div class="btn-group">
-                <button class="btn btn-sm btn-outline-primary active timeframe-btn" data-timeframe="15m">15m</button>
-                <button class="btn btn-sm btn-outline-primary timeframe-btn" data-timeframe="1h">1h</button>
-                <button class="btn btn-sm btn-outline-primary timeframe-btn" data-timeframe="4h">4h</button>
-                <button class="btn btn-sm btn-outline-primary timeframe-btn" data-timeframe="1d">1d</button>
+                <button class="btn btn-sm btn-outline-secondary active timeframe-btn" data-timeframe="15m">15m</button>
+                <button class="btn btn-sm btn-outline-secondary timeframe-btn" data-timeframe="1h">1h</button>
+                <button class="btn btn-sm btn-outline-secondary timeframe-btn" data-timeframe="4h">4h</button>
+                <button class="btn btn-sm btn-outline-secondary timeframe-btn" data-timeframe="1d">1d</button>
               </div>
-              <button class="btn btn-sm btn-outline-primary ms-2" id="toggle-indicators">
-                <i class="fas fa-chart-bar me-1"></i> Indicators
+              <button class="btn btn-sm btn-outline-secondary ms-2" id="toggle-indicators">
+                <i class="fas fa-chart-bar"></i> Indicators
               </button>
-              <button class="btn btn-sm btn-outline-primary ms-2" id="toggle-drawing">
-                <i class="fas fa-pencil-alt me-1"></i> Draw
+              <button class="btn btn-sm btn-outline-secondary ms-2" id="toggle-drawing">
+                <i class="fas fa-pencil-alt"></i> Draw
               </button>
             </div>
           </div>
@@ -150,154 +152,86 @@
           </div>
         </div>
 
-        <!-- Indicator Settings Modal -->
-        <div class="modal fade" id="indicatorSettingsModal" tabindex="-1" aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title">Indicator Settings</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <div class="indicator-settings">
-                  <div class="indicator-item">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="maIndicator" checked>
-                      <label class="form-check-label" for="maIndicator">Moving Average</label>
-                    </div>
-                    <div class="mt-2">
-                      <label for="maPeriod" class="form-label">Period</label>
-                      <input type="number" class="form-control form-control-sm" id="maPeriod" value="20">
-                    </div>
-                  </div>
-                  <div class="indicator-item">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="rsiIndicator" checked>
-                      <label class="form-check-label" for="rsiIndicator">RSI</label>
-                    </div>
-                    <div class="mt-2">
-                      <label for="rsiPeriod" class="form-label">Period</label>
-                      <input type="number" class="form-control form-control-sm" id="rsiPeriod" value="14">
-                    </div>
-                  </div>
-                  <div class="indicator-item">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="macdIndicator">
-                      <label class="form-check-label" for="macdIndicator">MACD</label>
-                    </div>
-                    <div class="row mt-2">
-                      <div class="col-4">
-                        <label for="macdFast" class="form-label">Fast</label>
-                        <input type="number" class="form-control form-control-sm" id="macdFast" value="12">
-                      </div>
-                      <div class="col-4">
-                        <label for="macdSlow" class="form-label">Slow</label>
-                        <input type="number" class="form-control form-control-sm" id="macdSlow" value="26">
-                      </div>
-                      <div class="col-4">
-                        <label for="macdSignal" class="form-label">Signal</label>
-                        <input type="number" class="form-control form-control-sm" id="macdSignal" value="9">
-                      </div>
-                    </div>
-                  </div>
-                  <div class="indicator-item">
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" id="bbIndicator">
-                      <label class="form-check-label" for="bbIndicator">Bollinger Bands</label>
-                    </div>
-                    <div class="row mt-2">
-                      <div class="col-6">
-                        <label for="bbPeriod" class="form-label">Period</label>
-                        <input type="number" class="form-control form-control-sm" id="bbPeriod" value="20">
-                      </div>
-                      <div class="col-6">
-                        <label for="bbDeviation" class="form-label">Deviation</label>
-                        <input type="number" class="form-control form-control-sm" id="bbDeviation" value="2" step="0.1">
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="apply-indicators">Apply</button>
-              </div>
+        <!-- Open Positions -->
+        <div class="card mt-4">
+          <div class="card-header">
+            <h5 class="card-title"><i class="fas fa-wallet"></i>Open Positions</h5>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th>Pair</th>
+                    <th>Side</th>
+                    <th>Entry Price</th>
+                    <th>Current Price</th>
+                    <th>Size</th>
+                    <th>P/L</th>
+                    <th>Duration</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>BTC/USDT</td>
+                    <td><span class="badge bg-success">Long</span></td>
+                    <td>$59,832.40</td>
+                    <td>$61,245.30</td>
+                    <td>0.32 BTC</td>
+                    <td class="text-success">+2.36%</td>
+                    <td>1d 4h</td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-danger">Close</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>ETH/USDT</td>
+                    <td><span class="badge bg-success">Long</span></td>
+                    <td>$2,932.78</td>
+                    <td>$3,056.45</td>
+                    <td>2.5 ETH</td>
+                    <td class="text-success">+4.22%</td>
+                    <td>18h 32m</td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-danger">Close</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>SOL/USDT</td>
+                    <td><span class="badge bg-danger">Short</span></td>
+                    <td>$131.45</td>
+                    <td>$128.32</td>
+                    <td>25 SOL</td>
+                    <td class="text-success">+2.38%</td>
+                    <td>6h 15m</td>
+                    <td>
+                      <button class="btn btn-sm btn-outline-danger">Close</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Sidebar -->
-      <div class="col-lg-12">
+      <div class="col-lg-4">
         <!-- Trade Management -->
-        <!-- <div class="card">
+        <div class="card">
           <div class="card-header">
-            <h5 class="card-title"><i class="fas fa-sliders-h me-2"></i>Trade Management</h5>
+            <h5 class="card-title"><i class="fas fa-sliders-h"></i>Nova Ordem</h5>
           </div>
           <div class="card-body">
-            <form id="trade-form">
-              <div class="mb-3">
-                <label for="tradeType" class="form-label">Trade Type</label>
-                <select class="form-select" id="tradeType">
-                  <option value="market">Market</option>
-                  <option value="limit">Limit</option>
-                  <option value="stop">Stop</option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label for="tradeSide" class="form-label">Side</label>
-                <div class="d-flex">
-                  <div class="form-check me-4">
-                    <input class="form-check-input" type="radio" name="tradeSide" id="tradeSideBuy" value="buy" checked>
-                    <label class="form-check-label" for="tradeSideBuy">
-                      <span class="text-success">Buy</span>
-                    </label>
-                  </div>
-                  <div class="form-check">
-                    <input class="form-check-input" type="radio" name="tradeSide" id="tradeSideSell" value="sell">
-                    <label class="form-check-label" for="tradeSideSell">
-                      <span class="text-danger">Sell</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-              <div class="mb-3">
-                <label for="tradeAmount" class="form-label">Amount</label>
-                <div class="input-group">
-                  <input type="number" class="form-control" id="tradeAmount" placeholder="0.00" step="0.001" min="0">
-                  <span class="input-group-text">BTC</span>
-                </div>
-              </div>
-              <div class="mb-3" id="priceField">
-                <label for="tradePrice" class="form-label">Price</label>
-                <div class="input-group">
-                  <input type="number" class="form-control" id="tradePrice" placeholder="0.00" step="0.01" min="0">
-                  <span class="input-group-text">USDT</span>
-                </div>
-              </div>
-              <div class="d-flex justify-content-between mb-3">
-                <div>
-                  <div class="text-muted fs-small">Total</div>
-                  <div class="fs-5 fw-bold" id="tradeTotal">0.00 USDT</div>
-                </div>
-                <div>
-                  <div class="text-muted fs-small">Available</div>
-                  <div class="fs-6">$25,432.18 USDT</div>
-                </div>
-              </div>
-              <div class="d-grid">
-                <button type="submit" class="btn btn-primary" id="submitTradeBtn">
-                  Place Order
-                </button>
-              </div>
-            </form>
+            <div id="manual-order-container"></div>
           </div>
-        </div> -->
+        </div>
 
         <!-- Recent Trades -->
         <div class="card">
           <div class="card-header">
-            <h5 class="card-title"><i class="fas fa-history me-2"></i>Recent Trades</h5>
+            <h5 class="card-title"><i class="fas fa-history"></i>Recent Trades</h5>
           </div>
           <div class="card-body p-0">
             <div class="trade-list">
@@ -362,172 +296,124 @@
       </div>
     </div>
 
-    <!-- Open Positions -->
-    <div class="row">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title"><i class="fas fa-wallet me-2"></i>Open Positions</h5>
-          </div>
-          <div class="card-body p-0">
-            <div class="table-responsive">
-              <table class="table table-hover mb-0">
-                <thead>
-                  <tr>
-                    <th>Pair</th>
-                    <th>Side</th>
-                    <th>Entry Price</th>
-                    <th>Current Price</th>
-                    <th>Size</th>
-                    <th>Value</th>
-                    <th>P/L</th>
-                    <th>Duration</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>BTC/USDT</td>
-                    <td><span class="badge bg-success">Long</span></td>
-                    <td>$59,832.40</td>
-                    <td>$61,245.30</td>
-                    <td>0.32 BTC</td>
-                    <td>$19,598.50</td>
-                    <td class="text-success">+2.36%</td>
-                    <td>1d 4h</td>
-                    <td>
-                      <button class="btn btn-sm btn-outline-danger">Close</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>ETH/USDT</td>
-                    <td><span class="badge bg-success">Long</span></td>
-                    <td>$2,932.78</td>
-                    <td>$3,056.45</td>
-                    <td>2.5 ETH</td>
-                    <td>$7,641.13</td>
-                    <td class="text-success">+4.22%</td>
-                    <td>18h 32m</td>
-                    <td>
-                      <button class="btn btn-sm btn-outline-danger">Close</button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>SOL/USDT</td>
-                    <td><span class="badge bg-danger">Short</span></td>
-                    <td>$131.45</td>
-                    <td>$128.32</td>
-                    <td>25 SOL</td>
-                    <td>$3,208.00</td>
-                    <td class="text-success">+2.38%</td>
-                    <td>6h 15m</td>
-                    <td>
-                      <button class="btn btn-sm btn-outline-danger">Close</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+    <!-- Performance Metrics -->
+    <div class="card mt-4">
+      <div class="card-header">
+        <h5 class="card-title"><i class="fas fa-chart-pie"></i>Performance Metrics</h5>
       </div>
-    </div>
-
-    <!-- Additional Analytics -->
-    <div class="row">
-      <div class="col-12">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="card-title"><i class="fas fa-chart-pie me-2"></i>Performance Metrics</h5>
+      <div class="card-body">
+        <div class="performance-metrics">
+          <div class="metric-card">
+            <div class="metric-title">Profit Factor</div>
+            <div class="metric-value">2.38</div>
           </div>
-          <div class="card-body">
-            <div class="performance-metrics">
-              <div class="metric-card">
-                <div class="metric-title">Profit Factor</div>
-                <div class="metric-value">2.38</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">Average Win</div>
-                <div class="metric-value">$586.42</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">Average Loss</div>
-                <div class="metric-value">$248.75</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">Win/Loss Ratio</div>
-                <div class="metric-value">2.36</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">Total Trades</div>
-                <div class="metric-value">143</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">ROI</div>
-                <div class="metric-value">47.5%</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">Sharpe Ratio</div>
-                <div class="metric-value">1.82</div>
-              </div>
-              <div class="metric-card">
-                <div class="metric-title">Avg. Trade Duration</div>
-                <div class="metric-value">3.2h</div>
-              </div>
-            </div>
+          <div class="metric-card">
+            <div class="metric-title">Average Win</div>
+            <div class="metric-value">$586.42</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Average Loss</div>
+            <div class="metric-value">$248.75</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Win/Loss Ratio</div>
+            <div class="metric-value">2.36</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Total Trades</div>
+            <div class="metric-value">143</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">ROI</div>
+            <div class="metric-value">47.5%</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Sharpe Ratio</div>
+            <div class="metric-value">1.82</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-title">Avg. Trade Duration</div>
+            <div class="metric-value">3.2h</div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Drawing Tools Modal -->
-  <div class="modal fade" id="drawingToolsModal" tabindex="-1" aria-hidden="true">
+  <!-- Drawing Tools Container (will be populated by JavaScript) -->
+  <div id="drawing-tools-container" style="display: none;"></div>
+
+  <!-- Indicator Settings Modal -->
+  <div class="modal fade" id="indicatorSettingsModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Drawing Tools</h5>
+          <h5 class="modal-title">Indicator Settings</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-outline-primary" data-tool="line">
-              <i class="fas fa-slash"></i> Line
-            </button>
-            <button class="btn btn-outline-primary" data-tool="horizontalLine">
-              <i class="fas fa-minus"></i> Horizontal
-            </button>
-            <button class="btn btn-outline-primary" data-tool="verticalLine">
-              <i class="fas fa-grip-lines-vertical"></i> Vertical
-            </button>
-            <button class="btn btn-outline-primary" data-tool="rectangle">
-              <i class="far fa-square"></i> Rectangle
-            </button>
-            <button class="btn btn-outline-primary" data-tool="circle">
-              <i class="far fa-circle"></i> Circle
-            </button>
-            <button class="btn btn-outline-primary" data-tool="triangle">
-              <i class="fas fa-play"></i> Triangle
-            </button>
-            <button class="btn btn-outline-primary" data-tool="text">
-              <i class="fas fa-font"></i> Text
-            </button>
-            <button class="btn btn-outline-primary" data-tool="fibonacciRetracement">
-              <i class="fas fa-wave-square"></i> Fibonacci
-            </button>
-          </div>
-          <div class="mt-3">
-            <label for="drawingColor" class="form-label">Color</label>
-            <input type="color" class="form-control form-control-color" id="drawingColor" value="#2962FF">
-          </div>
-          <div class="mt-3">
-            <label for="drawingWidth" class="form-label">Line Width</label>
-            <input type="range" class="form-range" id="drawingWidth" min="1" max="5" value="2">
+          <div class="indicator-settings">
+            <div class="indicator-item">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="maIndicator" checked>
+                <label class="form-check-label" for="maIndicator">Moving Average</label>
+              </div>
+              <div class="mt-2">
+                <label for="maPeriod" class="form-label">Period</label>
+                <input type="number" class="form-control form-control-sm" id="maPeriod" value="20">
+              </div>
+            </div>
+            <div class="indicator-item">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="rsiIndicator" checked>
+                <label class="form-check-label" for="rsiIndicator">RSI</label>
+              </div>
+              <div class="mt-2">
+                <label for="rsiPeriod" class="form-label">Period</label>
+                <input type="number" class="form-control form-control-sm" id="rsiPeriod" value="14">
+              </div>
+            </div>
+            <div class="indicator-item">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="macdIndicator">
+                <label class="form-check-label" for="macdIndicator">MACD</label>
+              </div>
+              <div class="row mt-2">
+                <div class="col-4">
+                  <label for="macdFast" class="form-label">Fast</label>
+                  <input type="number" class="form-control form-control-sm" id="macdFast" value="12">
+                </div>
+                <div class="col-4">
+                  <label for="macdSlow" class="form-label">Slow</label>
+                  <input type="number" class="form-control form-control-sm" id="macdSlow" value="26">
+                </div>
+                <div class="col-4">
+                  <label for="macdSignal" class="form-label">Signal</label>
+                  <input type="number" class="form-control form-control-sm" id="macdSignal" value="9">
+                </div>
+              </div>
+            </div>
+            <div class="indicator-item">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="bbIndicator">
+                <label class="form-check-label" for="bbIndicator">Bollinger Bands</label>
+              </div>
+              <div class="row mt-2">
+                <div class="col-6">
+                  <label for="bbPeriod" class="form-label">Period</label>
+                  <input type="number" class="form-control form-control-sm" id="bbPeriod" value="20">
+                </div>
+                <div class="col-6">
+                  <label for="bbDeviation" class="form-label">Deviation</label>
+                  <input type="number" class="form-control form-control-sm" id="bbDeviation" value="2" step="0.1">
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-danger" id="clearDrawings">Clear All</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" id="apply-indicators">Apply</button>
         </div>
       </div>
     </div>
@@ -541,9 +427,9 @@
           <p>&copy; 2025 BackNRun Pro. All rights reserved.</p>
         </div>
         <div class="col-md-6 text-md-end">
-          <a href="/terms" class="text-muted me-3">Terms of Service</a>
-          <a href="/privacy" class="text-muted me-3">Privacy Policy</a>
-          <a href="/support" class="text-muted">Support</a>
+          <a href="/terms" class="me-3">Terms of Service</a>
+          <a href="/privacy" class="me-3">Privacy Policy</a>
+          <a href="/support">Support</a>
         </div>
       </div>
     </div>
@@ -574,49 +460,6 @@
           darkIcon.style.display = 'block';
           lightIcon.style.display = 'none';
         }
-      }
-
-      // Handle trade type change
-      const tradeType = document.getElementById('tradeType');
-      const priceField = document.getElementById('priceField');
-
-      if (tradeType && priceField) {
-        tradeType.addEventListener('change', function () {
-          if (this.value === 'market') {
-            priceField.style.display = 'none';
-          } else {
-            priceField.style.display = 'block';
-          }
-        });
-      }
-
-      // Calculate total on amount/price change
-      const tradeAmount = document.getElementById('tradeAmount');
-      const tradePrice = document.getElementById('tradePrice');
-      const tradeTotal = document.getElementById('tradeTotal');
-
-      if (tradeAmount && tradePrice && tradeTotal) {
-        const updateTotal = function () {
-          const amount = parseFloat(tradeAmount.value) || 0;
-          const price = parseFloat(tradePrice.value) || 0;
-          const total = amount * price;
-          tradeTotal.textContent = total.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          }) + ' USDT';
-        };
-
-        tradeAmount.addEventListener('input', updateTotal);
-        tradePrice.addEventListener('input', updateTotal);
-      }
-
-      // Toggle drawing tools modal
-      const toggleDrawingBtn = document.getElementById('toggle-drawing');
-      if (toggleDrawingBtn) {
-        toggleDrawingBtn.addEventListener('click', function () {
-          const modal = new bootstrap.Modal(document.getElementById('drawingToolsModal'));
-          modal.show();
-        });
       }
     });
   </script>

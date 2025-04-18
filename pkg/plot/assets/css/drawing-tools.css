@@ -1,0 +1,388 @@
+/* Modern Drawing Tools Styles */
+
+.drawing-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.drawing-tools-container {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: var(--color-bg-card);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  z-index: 20;
+  padding: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition: all var(--transition-normal);
+  border: 1px solid var(--color-border);
+  max-width: 280px;
+}
+
+.drawing-tools-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-2);
+}
+
+.drawing-tools-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+}
+
+.drawing-tools-close {
+  cursor: pointer;
+  color: var(--color-text-muted);
+  transition: color var(--transition-fast);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-full);
+}
+
+.drawing-tools-close:hover {
+  color: var(--color-danger);
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.drawing-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+}
+
+.drawing-tool-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  position: relative;
+}
+
+.drawing-tool-btn:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.drawing-tool-btn.active {
+  background-color: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+.drawing-tool-btn i {
+  font-size: 0.875rem;
+}
+
+.drawing-properties {
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-2);
+}
+
+.drawing-property {
+  margin-bottom: var(--space-4);
+}
+
+.drawing-property:last-child {
+  margin-bottom: 0;
+}
+
+.drawing-property-label {
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+  font-weight: 500;
+}
+
+.color-picker-container {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.color-option {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--border-radius-full);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  border: 2px solid transparent;
+  box-shadow: var(--shadow-sm);
+}
+
+.color-option:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-md);
+}
+
+.color-option.active {
+  border-color: var(--color-text-primary);
+  transform: scale(1.1);
+}
+
+.line-width-slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--border-radius-full);
+  outline: none;
+}
+
+.line-width-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.line-width-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: var(--shadow-md);
+}
+
+.line-width-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  border: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.line-width-slider::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: var(--shadow-md);
+}
+
+.drawing-actions {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-2);
+}
+
+.drawing-action-btn {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--border-radius-md);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.drawing-action-btn:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  transform: translateY(-1px);
+}
+
+.drawing-action-btn.clear {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+.drawing-action-btn.clear:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.drawing-action-btn.save {
+  color: var(--color-success);
+  border-color: var(--color-success);
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+.drawing-action-btn.save:hover {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.drawing-text-input {
+  position: absolute;
+  z-index: 1000;
+  background-color: transparent;
+  border: 1px dashed var(--color-primary);
+  color: var(--color-text-primary);
+  padding: var(--space-2);
+  min-width: 100px;
+  min-height: 24px;
+  resize: both;
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  border-radius: var(--border-radius-sm);
+}
+
+.drawing-text-input:focus {
+  outline: none;
+  border: 1px solid var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(58, 123, 213, 0.15);
+}
+
+/* Drawing Tools Toggle Button */
+.drawing-tools-toggle {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--border-radius-md);
+  background-color: var(--color-bg-card);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  z-index: 15;
+  transition: all var(--transition-fast);
+  border: 1px solid var(--color-border);
+}
+
+.drawing-tools-toggle:hover {
+  background-color: var(--color-primary);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.drawing-tools-toggle i {
+  font-size: 0.875rem;
+}
+
+/* Tooltip for drawing tools */
+.drawing-tool-tooltip {
+  position: absolute;
+  background-color: var(--color-bg-card);
+  color: var(--color-text-primary);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 1000;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  border: 1px solid var(--color-border);
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+.drawing-tool-tooltip:after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: var(--color-bg-card) transparent transparent transparent;
+}
+
+.drawing-tool-btn:hover .drawing-tool-tooltip {
+  opacity: 1;
+}
+
+/* Drawing objects styling */
+.drawing-object {
+  position: absolute;
+  pointer-events: all;
+  cursor: move;
+}
+
+.drawing-object.selected {
+  outline: 2px solid var(--color-primary);
+}
+
+.drawing-object-handle {
+  width: 8px;
+  height: 8px;
+  background-color: var(--color-primary);
+  border: 1px solid white;
+  position: absolute;
+  border-radius: 50%;
+  cursor: nwse-resize;
+}
+
+.drawing-object-handle.top-left {
+  top: -4px;
+  left: -4px;
+}
+
+.drawing-object-handle.top-right {
+  top: -4px;
+  right: -4px;
+}
+
+.drawing-object-handle.bottom-left {
+  bottom: -4px;
+  left: -4px;
+}
+
+.drawing-object-handle.bottom-right {
+  bottom: -4px;
+  right: -4px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .drawing-tools-container {
+    top: auto;
+    bottom: 10px;
+    right: 10px;
+    left: 10px;
+    width: calc(100% - 20px);
+    max-width: none;
+  }
+
+  .drawing-tools-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .drawing-actions {
+    flex-wrap: wrap;
+  }
+  
+  .drawing-action-btn {
+    flex: 0 0 calc(50% - var(--space-2));
+  }
+}
