@@ -164,16 +164,16 @@ function updateConnectionStatus(status) {
   
   switch (status) {
     case 'connected':
-      statusText.textContent = 'Connected';
+      statusText.textContent = 'Conectado';
       break;
     case 'connecting':
-      statusText.textContent = 'Connecting...';
+      statusText.textContent = 'Conectando...';
       break;
     case 'disconnected':
-      statusText.textContent = 'Disconnected';
+      statusText.textContent = 'Desconectado';
       break;
     default:
-      statusText.textContent = 'Unknown';
+      statusText.textContent = 'Desconhecido';
   }
 }
 
