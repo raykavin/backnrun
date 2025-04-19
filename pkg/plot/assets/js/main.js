@@ -49,9 +49,11 @@ document.addEventListener("DOMContentLoaded", function () {
       const chart = new TradingChart();
       chart.init();
 
+      updateAssetNameElements();
+
       // Make chart accessible globally (for debugging and theme toggling)
       window.tradingChart = chart;
-      
+
       // Clean up previous chart instance when navigating away
       window.addEventListener('beforeunload', () => {
         if (window.tradingChart) {
@@ -98,21 +100,43 @@ document.addEventListener("DOMContentLoaded", function () {
     // Make order form accessible globally
     window.manualOrderForm = orderForm;
 
-      // Add event listener to update order form when pair changes
-      const pairButtons = document.querySelectorAll('.pair-btn');
-      pairButtons.forEach(btn => {
-        btn.addEventListener('click', function(e) {
-          const pair = this.textContent.trim();
-          if (window.manualOrderForm) {
-            window.manualOrderForm.updatePair(pair);
-          }
-          
-          // Clean up previous WebSocket connection
-          if (window.tradingChart) {
-            window.tradingChart.destroy();
-          }
-        });
+    // Add event listener to update order form when pair changes
+    const pairButtons = document.querySelectorAll('.pair-btn');
+    pairButtons.forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        const pair = this.textContent.trim();
+        if (window.manualOrderForm) {
+          window.manualOrderForm.updatePair(pair);
+        }
+
+        // Update asset name elements with the new pair
+        updateAssetNameElements(pair);
+
+        // Clean up previous WebSocket connection
+        if (window.tradingChart) {
+          window.tradingChart.destroy();
+        }
       });
+    });
+  }
+
+  /**
+ * Updates any elements with id="asset-name" to show the current trading pair
+ * @param {string} [customPair] - Optional custom pair to use instead of getting from URL
+ */
+  function updateAssetNameElements(customPair) {
+    // Get current pair from URL or use provided custom pair
+    const pair = customPair || (new URLSearchParams(window.location.search).get("pair") || "BTC/USDT");
+
+    // Find all elements with id="asset-name"
+    const assetNameElements = document.querySelectorAll('#asset-name');
+
+    // Update each element's text content
+    assetNameElements.forEach(element => {
+      element.textContent = pair;
+    });
+
+    return pair; // Return the pair in case needed by caller
   }
 
   /**
@@ -121,7 +145,7 @@ document.addEventListener("DOMContentLoaded", function () {
    */
   function handleOrderSubmit(orderData) {
     console.log('Order submitted:', orderData);
-    
+
     // In a real app, you would send this to your backend
     // For now, we'll just add it to the recent trades list
     addOrderToRecentTrades(orderData);
@@ -199,10 +223,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // Set up toggle drawing button
     const toggleDrawingBtn = document.getElementById('toggle-drawing');
     if (toggleDrawingBtn) {
-      toggleDrawingBtn.addEventListener('click', function() {
+      toggleDrawingBtn.addEventListener('click', function () {
         const isVisible = drawingToolsContainer.style.display === 'block';
         drawingToolsContainer.style.display = isVisible ? 'none' : 'block';
-        
+
         // Deactivate drawing tool when hiding the container
         if (isVisible && window.drawingTools) {
           window.drawingTools.setTool(null);
@@ -230,9 +254,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Add close button event listener
     const closeBtn = header.querySelector('.drawing-tools-close');
-    closeBtn.addEventListener('click', function() {
+    closeBtn.addEventListener('click', function () {
       container.style.display = 'none';
-      
+
       // Deactivate drawing tool
       if (window.drawingTools) {
         window.drawingTools.setTool(null);
@@ -262,14 +286,14 @@ document.addEventListener("DOMContentLoaded", function () {
       toolBtn.dataset.tool = tool.id;
       toolBtn.innerHTML = `<i class="fas ${tool.icon}"></i>`;
       toolBtn.title = tool.tooltip;
-      
-      toolBtn.addEventListener('click', function() {
+
+      toolBtn.addEventListener('click', function () {
         if (window.drawingTools) {
           const isActive = this.classList.contains('active');
           window.drawingTools.setTool(isActive ? null : tool.id);
         }
       });
-      
+
       toolsGrid.appendChild(toolBtn);
     });
 
@@ -315,13 +339,13 @@ document.addEventListener("DOMContentLoaded", function () {
     // Add event listeners for color picker
     const colorOptions = colorProperty.querySelectorAll('.color-option');
     colorOptions.forEach(option => {
-      option.addEventListener('click', function() {
+      option.addEventListener('click', function () {
         // Remove active class from all options
         colorOptions.forEach(opt => opt.classList.remove('active'));
-        
+
         // Add active class to clicked option
         this.classList.add('active');
-        
+
         // Set drawing color
         if (window.drawingTools) {
           window.drawingTools.setDrawingProps({
@@ -333,7 +357,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Add event listener for line width slider
     const lineWidthSlider = lineWidthProperty.querySelector('.line-width-slider');
-    lineWidthSlider.addEventListener('input', function() {
+    lineWidthSlider.addEventListener('input', function () {
       if (window.drawingTools) {
         window.drawingTools.setDrawingProps({
           lineWidth: parseInt(this.value)
@@ -343,14 +367,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Add event listeners for action buttons
     const clearBtn = actionsSection.querySelector('.clear');
-    clearBtn.addEventListener('click', function() {
+    clearBtn.addEventListener('click', function () {
       if (window.drawingTools) {
         window.drawingTools.clearAllDrawings();
       }
     });
 
     const saveBtn = actionsSection.querySelector('.save');
-    saveBtn.addEventListener('click', function() {
+    saveBtn.addEventListener('click', function () {
       if (window.drawingTools) {
         const drawings = window.drawingTools.exportDrawings();
         localStorage.setItem('savedDrawings', drawings);
@@ -399,7 +423,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (window.tradingChart) {
         window.tradingChart.updateChartTheme(newTheme);
       }
-      
+
       // If drawing tools exist, update them with the new theme
       if (window.drawingTools) {
         window.drawingTools.updateTheme(newTheme);

@@ -241,18 +241,18 @@ export class TradingChart {
 
       // Adjust main chart height based on number of indicators
       // If we have indicators, make the main chart smaller to give room
-      let mainChartHeight = 400;
+      let mainChartHeight = '100%';
       if (indicatorCount > 0) {
         // Allocate space based on indicator count
         const totalHeight = 600; // Total available height
-        mainChartHeight = Math.floor(totalHeight * 0.6); // 60% for main chart
-        console.log(`Adjusting chart layout for ${indicatorCount} indicators. Main chart height: ${mainChartHeight}px`);
+        mainChartHeight = Math.floor(totalHeight * 0.6) + 'px'; // 60% for main chart
+        console.log(`Adjusting chart layout for ${indicatorCount} indicators. Main chart height: ${mainChartHeight}`);
       }
 
       // Create main chart container
       const mainChartContainer = createElement('div', 'chart-container', graphContainer);
       mainChartContainer.id = 'main-chart';
-      mainChartContainer.style.height = `${mainChartHeight}px`;
+      mainChartContainer.style.height = mainChartHeight;
       mainChartContainer.style.border = `1px solid ${this.colors.BORDER}`;
       mainChartContainer.style.borderRadius = '8px';
       mainChartContainer.style.marginBottom = '15px';

@@ -1,0 +1,134 @@
+/* Card Size Fixes - Ensuring symmetrical and fixed sizes */
+
+/* General Card Styles */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  height: 100%; /* Make all cards take full height of their container */
+  overflow: hidden; /* Prevent content overflow */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Card header and body alignment */
+.card-header {
+  flex-shrink: 0; /* Prevent header from shrinking */
+}
+
+.card-body {
+  flex: 1; /* Take remaining space */
+  display: flex;
+  flex-direction: column;
+  height: 100%; /* Ensure full height */
+}
+
+/* Fix for card containers to ensure equal heights */
+.row > [class*="col-"] {
+  display: flex;
+  flex-direction: column;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+/* Ensure consistent spacing between rows */
+.row {
+  margin-left: -10px;
+  margin-right: -10px;
+}
+
+/* Stat Cards in Performance Overview */
+.stat-card {
+  height: 140px; /* Fixed height */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-4);
+  min-width: 200px; /* Minimum width */
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Performance Metrics Cards */
+.performance-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* Fixed 4 columns for desktop */
+  gap: var(--space-4);
+}
+
+.metric-card {
+  height: 100px; /* Fixed height */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.metric-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+/* Sidebar Cards */
+.col-lg-4 .card {
+  min-height: 200px; /* Minimum height for sidebar cards */
+}
+
+/* Trade Management Card */
+#manual-order-container {
+  min-height: 150px; /* Minimum height for order container */
+}
+
+/* Recent Trades Card */
+.trade-list {
+  max-height: 350px; /* Fixed height */
+  min-height: 300px; /* Minimum height */
+}
+
+.trade-item {
+  padding: var(--space-3) var(--space-4);
+  height: 70px; /* Fixed height for each trade item */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .performance-metrics {
+    grid-template-columns: repeat(4, 1fr); /* Keep 4 columns on large screens */
+  }
+}
+
+@media (max-width: 992px) {
+  .performance-metrics {
+    grid-template-columns: repeat(3, 1fr); /* 3 columns on medium-large screens */
+  }
+}
+
+@media (max-width: 768px) {
+  .performance-metrics {
+    grid-template-columns: repeat(2, 1fr); /* Two columns on medium screens */
+  }
+  
+  .stat-card, .metric-card {
+    height: auto; /* Allow height to adjust on smaller screens */
+    min-height: 100px; /* Minimum height */
+  }
+  
+  .trade-item {
+    height: auto; /* Allow height to adjust on smaller screens */
+    min-height: 70px;
+  }
+}
+
+@media (max-width: 576px) {
+  .performance-metrics {
+    grid-template-columns: repeat(2, 1fr); /* Keep two columns on small screens */
+  }
+}

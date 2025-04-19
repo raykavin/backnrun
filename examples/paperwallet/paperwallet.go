@@ -28,9 +28,10 @@ func main() {
 	settings := &core.Settings{
 		Pairs: []string{
 			"BTCUSDT",
-			// "ETHUSDT",
-			// "BNBUSDT",
-			// "LTCUSDT",
+			"ETHUSDT",
+			"BNBUSDT",
+			"LTCUSDT",
+			"BELUSDT",
 		},
 		Telegram: core.TelegramSettings{
 			Enabled: telegramToken != "" && telegramUser != 0,

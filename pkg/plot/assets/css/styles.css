@@ -36,9 +36,9 @@
   
   /* UI Elements */
   --border-radius-sm: 6px;
-  --border-radius-md: 8px;
-  --border-radius-lg: 12px;
-  --border-radius-xl: 16px;
+  --border-radius-md: 6px;
+  --border-radius-lg: 6px;
+  --border-radius-xl: 6px;
   --border-radius-full: 9999px;
   
   --transition-fast: 150ms ease;
@@ -68,17 +68,17 @@
   --color-primary-dark: #3b82f6;
   --color-secondary: #94a3b8;
   
-  --color-bg-primary: #0f172a;
+  --color-bg-primary: #100c14;
   --color-bg-secondary: #1e293b;
   --color-bg-tertiary: #334155;
-  --color-bg-card: #1e293b;
+  --color-bg-card: #201c24;
   
   --color-text-primary: #f1f5f9;
   --color-text-secondary: #cbd5e1;
   --color-text-muted: #94a3b8;
   --color-text-light: #f8fafc;
   
-  --color-border: #334155;
+  --color-border: #474747;
   --color-shadow: rgba(0, 0, 0, 0.2);
   
   /* Chart Colors */
@@ -237,7 +237,7 @@ a:hover {
 .card-header {
   background-color: transparent;
   border-bottom: 1px solid var(--color-border);
-  padding: var(--space-4) var(--space-5);
+  /* padding: var(--space-4) var(--space-5); */
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -380,12 +380,18 @@ a:hover {
 .chart-wrapper {
   position: relative;
   width: 100%;
-  height: 500px;
+  height: 100%;
   min-height: 500px;
   background-color: var(--color-bg-card);
   border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
   overflow: hidden;
   transition: background-color var(--transition-normal);
+}
+
+.chart-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
 }
 
 #graph {
@@ -396,10 +402,12 @@ a:hover {
   bottom: 0;
   display: flex;
   flex-direction: column;
+  height: 100%;
+  width: 100%;
 }
 
-/* Timeframe Buttons */
-.timeframe-btn {
+/* Grouped Buttons */
+.grouped-btn {
   padding: var(--space-1) var(--space-2);
   font-size: 0.75rem;
   border-radius: var(--border-radius-sm);
@@ -409,12 +417,12 @@ a:hover {
   transition: all var(--transition-fast);
 }
 
-.timeframe-btn:hover {
+.grouped-btn:hover {
   background-color: var(--color-bg-secondary);
   color: var(--color-text-primary);
 }
 
-.timeframe-btn.active {
+.grouped-btn.active {
   background-color: var(--color-primary);
   color: white;
   border-color: var(--color-primary);

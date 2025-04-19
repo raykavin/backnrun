@@ -1,0 +1,72 @@
+/* Chart Height Fixes */
+
+/* Ensure the chart wrapper takes full height of its container */
+.chart-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100% !important; /* Force full height */
+  min-height: 500px;
+  background-color: var(--color-bg-card);
+  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+  overflow: hidden;
+  transition: background-color var(--transition-normal);
+}
+
+/* Ensure the chart container takes full height */
+.chart-container {
+  width: 100%;
+  height: 100% !important; /* Force full height */
+  position: relative;
+}
+
+/* Ensure the graph element takes full height */
+#graph {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100% !important; /* Force full height */
+  width: 100%;
+}
+
+/* Ensure the card body takes full height */
+.card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100% !important; /* Force full height */
+}
+
+/* Ensure the card takes full height of its container */
+.card.h-100 {
+  height: 100% !important; /* Force full height */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure the main chart container takes full height when no indicators */
+#main-chart {
+  height: 100% !important; /* Force full height */
+}
+
+/* Fix for responsive heights */
+@media (max-width: 992px) {
+  .chart-wrapper {
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-wrapper {
+    min-height: 350px;
+  }
+}
+
+@media (max-width: 576px) {
+  .chart-wrapper {
+    min-height: 300px;
+  }
+}
