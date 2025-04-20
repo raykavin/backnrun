@@ -27,10 +27,7 @@ func main() {
 
 	settings := &core.Settings{
 		Pairs: []string{
-			"BTCUSDT",
-			"ETHUSDT",
-			"BNBUSDT",
-			"LTCUSDT",
+			"OMUSDT",
 			"BELUSDT",
 		},
 		Telegram: core.TelegramSettings{
