@@ -47,7 +47,7 @@ BackNRun is built with a modular architecture that separates concerns and allows
 
 ```bash
 # Clone the repository
-git clone https://github.com/raykavin/backnrun.git
+git clone https://github.com/raykavin/bot.git
 cd backnrun
 
 # Build the application
@@ -73,20 +73,20 @@ package main
 import (
 	"context"
 
-	"github.com/raykavin/backnrun"
-	"github.com/raykavin/backnrun/examples/strategies"
-	"github.com/raykavin/backnrun/pkg/core"
-	"github.com/raykavin/backnrun/pkg/exchange"
-	"github.com/raykavin/backnrun/pkg/logger"
-	"github.com/raykavin/backnrun/pkg/plot"
-	"github.com/raykavin/backnrun/pkg/storage"
+	"github.com/raykavin/backnrun/bot"
+	"github.com/raykavin/backnrun/strategies"
+	"github.com/raykavin/backnrun/core"
+	"github.com/raykavin/backnrun/exchange"
+	
+	"github.com/raykavin/backnrun/plot"
+	"github.com/raykavin/backnrun/storage"
 )
 
 func main() {
 	// Set up context and logging
 	ctx := context.Background()
-	log := backnrun.DefaultLog
-	log.SetLevel(logger.DebugLevel)
+	log :=bot.DefaultLog
+	log.SetLevel(core.DebugLevel)
 
 	// Initialize trading strategy
 	strategy := strategies.NewCrossEMA(9, 21, 10.0)
@@ -135,16 +135,16 @@ func main() {
 	}
 
 	// Set up the trading bot
-	bot, err := backnrun.NewBot(
+	bot, err :=bot.NewBot(
 		ctx,
 		settings,
 		wallet,
 		strategy,
 		log,
-		backnrun.WithBacktest(wallet),
-		backnrun.WithStorage(db),
-		backnrun.WithCandleSubscription(chart),
-		backnrun.WithOrderSubscription(chart),
+		bot.WithBacktest(wallet),
+		bot.WithStorage(db),
+		bot.WithCandleSubscription(chart),
+		bot.WithOrderSubscription(chart),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -256,7 +256,7 @@ func (s *MyStrategy) Indicators(df *core.Dataframe) []core.ChartIndicator {
 	}
 }
 
-func (s *MyStrategy) OnCandle(df *core.Dataframe, broker core.Broker) {
+func (s *MyStrategy) OnCandle(ctx context.Context, df *core.Dataframe, broker core.Broker) {
 	// Get current position
 	assetPosition, quotePosition, err := broker.Position(df.Pair)
 	if err != nil {
@@ -317,19 +317,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/raykavin/backnrun"
-	"github.com/raykavin/backnrun/examples/strategies"
-	"github.com/raykavin/backnrun/pkg/core"
-	"github.com/raykavin/backnrun/pkg/exchange"
-	"github.com/raykavin/backnrun/pkg/logger"
-	"github.com/raykavin/backnrun/pkg/optimizer"
+	"github.com/raykavin/backnrun/bot"
+	"github.com/raykavin/backnrun/strategies"
+	"github.com/raykavin/backnrun/core"
+	"github.com/raykavin/backnrun/exchange"
+	
+	"github.com/raykavin/backnrun/optimizer"
 )
 
 func main() {
 	// Set up context and logging
 	ctx := context.Background()
-	log := backnrun.DefaultLog
-	log.SetLevel(logger.InfoLevel)
+	log :=bot.DefaultLog
+	log.SetLevel(core.InfoLevel)
 
 	// Initialize data feed for backtesting
 	dataFeed, err := exchange.NewCSVFeed(
@@ -466,19 +466,19 @@ package main
 import (
 	"context"
 
-	"github.com/raykavin/backnrun"
-	"github.com/raykavin/backnrun/examples/strategies"
-	"github.com/raykavin/backnrun/pkg/core"
-	"github.com/raykavin/backnrun/pkg/exchange/binance"
-	"github.com/raykavin/backnrun/pkg/logger"
-	"github.com/raykavin/backnrun/pkg/notification"
+	"github.com/raykavin/backnrun/bot"
+	"github.com/raykavin/backnrun/strategies"
+	"github.com/raykavin/backnrun/core"
+	"github.com/raykavin/backnrun/exchange/binance"
+	
+	"github.com/raykavin/backnrun/notification"
 )
 
 func main() {
 	// Set up context and logging
 	ctx := context.Background()
-	log := backnrun.DefaultLog
-	log.SetLevel(logger.InfoLevel)
+	log :=bot.DefaultLog
+	log.SetLevel(core.InfoLevel)
 
 	// Initialize trading strategy
 	strategy := strategies.NewCrossEMA(9, 21, 10.0)
@@ -509,13 +509,13 @@ func main() {
 	}
 
 	// Set up the trading bot
-	bot, err := backnrun.NewBot(
+	bot, err :=bot.NewBot(
 		ctx,
 		settings,
 		exchange,
 		strategy,
 		log,
-		backnrun.WithTelegram(telegramNotifier),
+		bot.WithTelegram(telegramNotifier),
 	)
 	if err != nil {
 		log.Fatal(err)

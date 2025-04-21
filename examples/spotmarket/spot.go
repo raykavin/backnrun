@@ -6,10 +6,10 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/raykavin/backnrun"
-	"github.com/raykavin/backnrun/examples/strategies"
-	"github.com/raykavin/backnrun/pkg/core"
-	"github.com/raykavin/backnrun/pkg/exchange/binance"
+	"github.com/raykavin/backnrun/bot"
+	"github.com/raykavin/backnrun/core"
+	"github.com/raykavin/backnrun/exchange/binance"
+	"github.com/raykavin/backnrun/strategies"
 )
 
 // This example shows how to use spot market with BackNRun in Binance
@@ -35,7 +35,7 @@ func main() {
 	}
 
 	// Initialize your binance
-	binance, err := binance.NewExchange(ctx, backnrun.DefaultLog, binance.Config{
+	binance, err := binance.NewExchange(ctx, bot.DefaultLog, binance.Config{
 		Type:          binance.MarketTypeSpot,
 		APIKey:        apiKey,
 		APISecret:     secretKey,
@@ -49,7 +49,7 @@ func main() {
 
 	// Initialize your strategy and bot
 	strategy := new(strategies.CrossEMA)
-	bot, err := backnrun.NewBot(ctx, settings, binance, strategy, backnrun.DefaultLog)
+	bot, err := bot.NewBot(ctx, settings, binance, strategy, bot.DefaultLog)
 	if err != nil {
 		log.Fatalln(err)
 	}

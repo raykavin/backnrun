@@ -6,19 +6,140 @@ import (
 	"os"
 	"time"
 
-	"github.com/raykavin/backnrun"
-	"github.com/raykavin/backnrun/examples/strategies"
-	"github.com/raykavin/backnrun/pkg/core"
-	"github.com/raykavin/backnrun/pkg/exchange"
-	"github.com/raykavin/backnrun/pkg/logger"
-	"github.com/raykavin/backnrun/pkg/optimizer"
+	"github.com/raykavin/backnrun/bot"
+	"github.com/raykavin/backnrun/core"
+	"github.com/raykavin/backnrun/exchange"
+	"github.com/raykavin/backnrun/strategies"
+
+	"github.com/raykavin/backnrun/optimizer"
 )
+
+// CreateMACDStrategyFactory creates a factory function for MACD strategies
+// This uses the strategies package from examples
+func CreateMACDStrategyFactory() optimizer.StrategyFactory {
+	return func(params core.ParameterSet) (core.Strategy, error) {
+		// Create a new MACD strategy with default parameters
+		strategy := strategies.NewMACDDivergenceStrategy()
+
+		// Since the strategy methods for setting parameters might not be exported,
+		// we would need to modify the strategy implementation to support parameter changes
+		// For now, we'll return the strategy with default parameters
+
+		// Note: In a real implementation, you would need to ensure the strategy
+		// has proper setters for these parameters or modify the strategy to accept
+		// parameters in its constructor
+
+		return strategy, nil
+	}
+}
+
+// GetEMAStrategyParameters returns the parameters that can be optimized for EMA cross strategy
+func GetEMAStrategyParameters() []core.Parameter {
+	return []core.Parameter{
+		{
+			Name:        "emaLength",
+			Description: "Length of the EMA indicator",
+			Default:     9,
+			Min:         3,
+			Max:         50,
+			Step:        1,
+			Type:        core.TypeInt,
+		},
+		{
+			Name:        "smaLength",
+			Description: "Length of the SMA indicator",
+			Default:     21,
+			Min:         5,
+			Max:         100,
+			Step:        1,
+			Type:        core.TypeInt,
+		},
+		{
+			Name:        "minQuoteAmount",
+			Description: "Minimum quote currency amount for trades",
+			Default:     10.0,
+			Min:         1.0,
+			Max:         100.0,
+			Step:        5.0,
+			Type:        core.TypeFloat,
+		},
+	}
+}
+
+// GetMACDStrategyParameters returns the parameters that can be optimized for MACD strategy
+func GetMACDStrategyParameters() []core.Parameter {
+	return []core.Parameter{
+		{
+			Name:        "fastPeriod",
+			Description: "Fast period for MACD calculation",
+			Default:     12,
+			Min:         5,
+			Max:         30,
+			Step:        1,
+			Type:        core.TypeInt,
+		},
+		{
+			Name:        "slowPeriod",
+			Description: "Slow period for MACD calculation",
+			Default:     26,
+			Min:         10,
+			Max:         50,
+			Step:        2,
+			Type:        core.TypeInt,
+		},
+		{
+			Name:        "signalPeriod",
+			Description: "Signal period for MACD calculation",
+			Default:     9,
+			Min:         3,
+			Max:         20,
+			Step:        1,
+			Type:        core.TypeInt,
+		},
+		{
+			Name:        "lookbackPeriod",
+			Description: "Lookback period for divergence detection",
+			Default:     14,
+			Min:         5,
+			Max:         30,
+			Step:        1,
+			Type:        core.TypeInt,
+		},
+		{
+			Name:        "positionSize",
+			Description: "Position size as a fraction of available capital",
+			Default:     0.5,
+			Min:         0.1,
+			Max:         1.0,
+			Step:        0.1,
+			Type:        core.TypeFloat,
+		},
+		{
+			Name:        "stopLoss",
+			Description: "Stop loss percentage",
+			Default:     0.03,
+			Min:         0.01,
+			Max:         0.1,
+			Step:        0.01,
+			Type:        core.TypeFloat,
+		},
+		{
+			Name:        "takeProfit",
+			Description: "Take profit percentage",
+			Default:     0.06,
+			Min:         0.02,
+			Max:         0.2,
+			Step:        0.01,
+			Type:        core.TypeFloat,
+		},
+	}
+}
 
 func main() {
 	// Set up context and logging
 	ctx := context.Background()
-	log := backnrun.DefaultLog
-	log.SetLevel(logger.InfoLevel)
+	log := bot.DefaultLog
+	log.SetLevel(core.InfoLevel)
 
 	// Initialize data feed for backtesting
 	dataFeed, err := initializeDataFeed("15m")
@@ -46,11 +167,11 @@ func main() {
 
 	// Configure optimizer
 	config := optimizer.NewConfig().
-		WithParameters(optimizer.GetEMAStrategyParameters()...).
+		WithParameters(GetEMAStrategyParameters()...).
 		WithMaxIterations(50).
 		WithParallelism(4).
 		WithLogger(log).
-		WithTargetMetric(optimizer.MetricProfit, true).
+		WithTargetMetric(core.MetricProfit, true).
 		WithTopN(5)
 
 	// Create grid search optimizer
@@ -66,7 +187,7 @@ func main() {
 	results, err := gridSearch.Optimize(
 		ctx,
 		evaluator,
-		optimizer.MetricProfit,
+		core.MetricProfit,
 		true,
 	)
 	if err != nil {
@@ -77,11 +198,11 @@ func main() {
 	fmt.Printf("Optimization completed in %s\n", duration.Round(time.Second))
 
 	// Print results
-	optimizer.PrintResults(results, optimizer.MetricProfit, 5)
+	optimizer.PrintResults(results, core.MetricProfit, 5)
 
 	// Save results to CSV
 	outputFile := "ema_optimization_results.csv"
-	if err := optimizer.SaveResultsToCSV(results, optimizer.MetricProfit, outputFile); err != nil {
+	if err := optimizer.SaveResultsToCSV(results, core.MetricProfit, outputFile); err != nil {
 		log.Errorf("Failed to save results: %v", err)
 	} else {
 		fmt.Printf("Results saved to %s\n", outputFile)
@@ -101,7 +222,7 @@ func main() {
 	randomResults, err := randomSearch.Optimize(
 		ctx,
 		evaluator,
-		optimizer.MetricProfit,
+		core.MetricProfit,
 		true,
 	)
 	if err != nil {
@@ -112,7 +233,7 @@ func main() {
 	fmt.Printf("Random search completed in %s\n", duration.Round(time.Second))
 
 	// Print random search results
-	optimizer.PrintResults(randomResults, optimizer.MetricProfit, 5)
+	optimizer.PrintResults(randomResults, core.MetricProfit, 5)
 }
 
 // initializeDataFeed sets up the historical data source from CSV files
@@ -135,7 +256,7 @@ func initializeDataFeed(timeframe string) (*exchange.CSVFeed, error) {
 
 // createEMAStrategyFactory creates a factory function for EMA cross strategies
 func createEMAStrategyFactory() optimizer.StrategyFactory {
-	return func(params optimizer.ParameterSet) (core.Strategy, error) {
+	return func(params core.ParameterSet) (core.Strategy, error) {
 		// Extract parameters with validation
 		emaLength, ok := params["emaLength"].(int)
 		if !ok {
@@ -159,7 +280,7 @@ func createEMAStrategyFactory() optimizer.StrategyFactory {
 
 // createMACDStrategyFactory creates a factory function for MACD strategies
 func createMACDStrategyFactory() optimizer.StrategyFactory {
-	return func(params optimizer.ParameterSet) (core.Strategy, error) {
+	return func(params core.ParameterSet) (core.Strategy, error) {
 		// Create a new MACD strategy with default parameters
 		return strategies.NewMACDDivergenceStrategy(), nil
 	}

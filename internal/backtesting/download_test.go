@@ -6,15 +6,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/raykavin/backnrun/pkg/core"
-	"github.com/raykavin/backnrun/pkg/exchange"
-	"github.com/raykavin/backnrun/pkg/logger"
-	"github.com/raykavin/backnrun/pkg/logger/zerolog"
+	"github.com/raykavin/backnrun/core"
+	"github.com/raykavin/backnrun/exchange"
+	"github.com/raykavin/backnrun/logger/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func getLog() logger.Logger {
+func getLog() core.Logger {
 	l, err := zerolog.New("debug", "2006-01-02 15:04:05", true, false)
 	if err != nil {
 		panic(err)

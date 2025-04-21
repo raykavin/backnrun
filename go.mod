@@ -8,6 +8,8 @@ require (
 	github.com/aybabtme/uniplot v0.0.0-20151203143629-039c559e5e7e
 	github.com/evanw/esbuild v0.21.4
 	github.com/google/goterm v0.0.0-20200907032337-555d40f16ae2
+	github.com/gorilla/websocket v1.5.3
+	github.com/joho/godotenv v1.5.1
 	github.com/jpillora/backoff v1.0.0
 	github.com/markcheno/go-talib v0.0.0-20250114000313-ec55a20c902f
 	github.com/olekukonko/tablewriter v0.0.5
@@ -21,13 +23,13 @@ require (
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0
 	gonum.org/v1/gonum v0.15.0
 	gopkg.in/tucnak/telebot.v2 v2.5.0
+	gorm.io/driver/sqlite v1.5.7
 	gorm.io/gorm v1.25.10
 )
 
 require (
 	github.com/bitly/go-simplejson v0.5.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
@@ -36,6 +38,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
+	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

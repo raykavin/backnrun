@@ -6,14 +6,14 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/raykavin/backnrun"
-	"github.com/raykavin/backnrun/examples/strategies"
-	"github.com/raykavin/backnrun/pkg/core"
-	"github.com/raykavin/backnrun/pkg/exchange"
-	"github.com/raykavin/backnrun/pkg/exchange/binance"
-	"github.com/raykavin/backnrun/pkg/plot"
-	"github.com/raykavin/backnrun/pkg/plot/indicator"
-	"github.com/raykavin/backnrun/pkg/storage"
+	"github.com/raykavin/backnrun/bot"
+	"github.com/raykavin/backnrun/core"
+	"github.com/raykavin/backnrun/exchange"
+	"github.com/raykavin/backnrun/exchange/binance"
+	"github.com/raykavin/backnrun/plot"
+	"github.com/raykavin/backnrun/plot/indicator"
+	"github.com/raykavin/backnrun/storage"
+	"github.com/raykavin/backnrun/strategies"
 )
 
 // This example shows how to use BackNRun with a simulation with a fake exchange
@@ -38,7 +38,7 @@ func main() {
 	}
 
 	// Use binance for realtime data feed
-	binanceEx, err := binance.NewExchange(ctx, backnrun.DefaultLog, binance.Config{Type: binance.MarketTypeSpot})
+	binanceEx, err := binance.NewExchange(ctx, bot.DefaultLog, binance.Config{Type: binance.MarketTypeSpot})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func main() {
 	paperWallet := exchange.NewPaperWallet(
 		ctx,
 		"USDT",
-		backnrun.DefaultLog,
+		bot.DefaultLog,
 		exchange.WithPaperFee(0.001, 0.001),
 		exchange.WithPaperAsset("USDT", 10000),
 		exchange.WithDataFeed(binanceEx),
@@ -64,35 +64,37 @@ func main() {
 	strategy := strategies.NewCrossEMA(9, 21, 10.0)
 
 	chart, err := plot.NewChart(
-		backnrun.DefaultLog,
+		bot.DefaultLog,
 		plot.WithCustomIndicators(
-			indicator.EMA(8, "red"),
-			indicator.SMA(21, "blue"),
+			indicator.EMA(8, "red", indicator.Close),
+			indicator.SMA(21, "blue", indicator.Close),
 		),
 	)
+
+	chartServer := plot.NewChartServer(chart, plot.NewStandardHTTPServer(), bot.DefaultLog)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// initializer core
-	bot, err := backnrun.NewBot(
+	bot, err := bot.NewBot(
 		ctx,
 		settings,
 		paperWallet,
 		strategy,
-		backnrun.DefaultLog,
-		backnrun.WithStorage(storage),
-		backnrun.WithPaperWallet(paperWallet),
-		backnrun.WithCandleSubscription(chart),
-		backnrun.WithOrderSubscription(chart),
+		bot.DefaultLog,
+		bot.WithStorage(storage),
+		bot.WithPaperWallet(paperWallet),
+		bot.WithCandleSubscription(chart),
+		bot.WithOrderSubscription(chart),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	go func() {
-		err := chart.Start()
+		err := chartServer.Start()
 		if err != nil {
 			log.Fatal(err)
 		}

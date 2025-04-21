@@ -5,10 +5,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/raykavin/backnrun"
+	"github.com/raykavin/backnrun/bot"
+	"github.com/raykavin/backnrun/core"
+	"github.com/raykavin/backnrun/exchange/binance"
 	"github.com/raykavin/backnrun/internal/backtesting"
-	"github.com/raykavin/backnrun/pkg/core"
-	"github.com/raykavin/backnrun/pkg/exchange/binance"
 	"github.com/spf13/cobra"
 )
 
@@ -84,7 +84,7 @@ func runDownload(cmd *cobra.Command, args []string) error {
 	}
 
 	// Run the download
-	return backtesting.NewDownloader(exc, backnrun.DefaultLog).Download(
+	return backtesting.NewDownloader(exc, bot.DefaultLog).Download(
 		cmd.Context(),
 		pair,
 		timeframe,
@@ -99,7 +99,7 @@ func initializeExchange(cmd *cobra.Command) (core.Feeder, error) {
 		exchangeType = binance.MarketTypeFutures
 	}
 
-	return binance.NewExchange(cmd.Context(), backnrun.DefaultLog, binance.Config{
+	return binance.NewExchange(cmd.Context(), bot.DefaultLog, binance.Config{
 		Type: exchangeType,
 	})
 

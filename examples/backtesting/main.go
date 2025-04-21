@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 
-	"github.com/raykavin/backnrun"
-	"github.com/raykavin/backnrun/examples/strategies"
-	"github.com/raykavin/backnrun/pkg/core"
-	"github.com/raykavin/backnrun/pkg/exchange"
-	"github.com/raykavin/backnrun/pkg/logger"
-	"github.com/raykavin/backnrun/pkg/plot"
-	"github.com/raykavin/backnrun/pkg/storage"
+	"github.com/raykavin/backnrun/bot"
+	"github.com/raykavin/backnrun/core"
+	"github.com/raykavin/backnrun/exchange"
+	"github.com/raykavin/backnrun/strategies"
+
+	"github.com/raykavin/backnrun/plot"
+	"github.com/raykavin/backnrun/storage"
 )
 
 // main demonstrates how to use BackNRun for backtesting a trading strategy
@@ -18,8 +18,8 @@ func main() {
 
 	// Set up context and logging
 	ctx := context.Background()
-	log := backnrun.DefaultLog
-	log.SetLevel(logger.DebugLevel)
+	log := bot.DefaultLog
+	log.SetLevel(core.DebugLevel)
 
 	// Initialize trading strategy
 	strategy := strategies.NewAdaptiveMomentumStrategy()
@@ -42,7 +42,7 @@ func main() {
 
 	wallet := initializeWallet(ctx, log, dataFeed)
 
-	chart, err := initializeChart(log, strategy, wallet)
+	chartServer, chart, err := initializeChartServer(log, strategy, wallet)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,6 +55,7 @@ func main() {
 		strategy,
 		db,
 		chart,
+		chartServer,
 		log,
 	)
 
@@ -71,7 +72,7 @@ func main() {
 	bot.Summary()
 
 	// Show interactive chart
-	if err := chart.Start(); err != nil {
+	if err := chartServer.Start(); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -94,7 +95,7 @@ func initializeDataFeed(timeframe string) (*exchange.CSVFeed, error) {
 }
 
 // initializeWallet creates a paper trading wallet with initial funds
-func initializeWallet(ctx context.Context, log logger.Logger, feed *exchange.CSVFeed) *exchange.PaperWallet {
+func initializeWallet(ctx context.Context, log core.Logger, feed *exchange.CSVFeed) *exchange.PaperWallet {
 	return exchange.NewPaperWallet(
 		ctx,
 		"USDT",
@@ -104,13 +105,19 @@ func initializeWallet(ctx context.Context, log logger.Logger, feed *exchange.CSV
 	)
 }
 
-// initializeChart sets up visualization with strategy indicators
-func initializeChart(log logger.Logger, strategy core.Strategy, wallet *exchange.PaperWallet) (*plot.Chart, error) {
-	return plot.NewChart(
+// initializeChartServer sets up visualization with strategy indicators
+func initializeChartServer(log core.Logger, strategy core.Strategy, wallet *exchange.PaperWallet) (*plot.ChartServer, *plot.Chart, error) {
+	chart, err := plot.NewChart(
 		log,
 		plot.WithStrategyIndicators(strategy),
 		plot.WithPaperWallet(wallet),
 	)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return plot.NewChartServer(chart, plot.NewStandardHTTPServer(), log), chart, nil
 }
 
 // initializeBot sets up the BackNRun trading bot with all required components
@@ -119,19 +126,20 @@ func initializeBot(
 	settings *core.Settings,
 	wallet *exchange.PaperWallet,
 	strategy core.Strategy,
-	db core.OrderStorage,
+	db core.Storage,
 	chart *plot.Chart,
-	log logger.Logger,
-) (*backnrun.Bot, error) {
-	return backnrun.NewBot(
+	chartServer *plot.ChartServer,
+	log core.Logger,
+) (*bot.Bot, error) {
+	return bot.NewBot(
 		ctx,
 		settings,
 		wallet,
 		strategy,
 		log,
-		backnrun.WithBacktest(wallet), // Required for Backtest mode
-		backnrun.WithStorage(db),
-		backnrun.WithCandleSubscription(chart),
-		backnrun.WithOrderSubscription(chart),
+		bot.WithBacktest(wallet), // Required for Backtest mode
+		bot.WithStorage(db),
+		bot.WithCandleSubscription(chart),
+		bot.WithOrderSubscription(chart),
 	)
 }
