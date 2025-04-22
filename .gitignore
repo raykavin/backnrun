@@ -2,3 +2,4 @@
 .docker
 *__debug*
 *.csv
+*.env
