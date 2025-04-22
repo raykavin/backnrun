@@ -2,7 +2,7 @@
  * Service for fetching and processing chart data
  */
 
-import { SIDES, STATUS } from '../config/constants.js';
+import { SIDES, STATUS } from '../config/Constants.js';
 
 /**
  * Format candle data for TradingView

@@ -84,6 +84,11 @@ export function createSecondaryChart(container, colors, LightweightCharts, showT
  * @param {Object} mainChart - Main chart instance
  * @param {Object} chart - Chart to sync
  */
+/**
+ * Sync a chart's time scale with the main chart
+ * @param {Object} mainChart - Main chart instance
+ * @param {Object} chart - Chart to sync
+ */
 export function syncChartWithMain(mainChart, chart) {
   try {
     // Make sure main chart exists and has a timeScale method
@@ -99,8 +104,13 @@ export function syncChartWithMain(mainChart, chart) {
     if (typeof mainTimeScale.getVisibleRange === 'function' &&
       typeof chartTimeScale.setVisibleRange === 'function') {
       const visibleRange = mainTimeScale.getVisibleRange();
+      // Add null check here
       if (visibleRange) {
-        chartTimeScale.setVisibleRange(visibleRange);
+        try {
+          chartTimeScale.setVisibleRange(visibleRange);
+        } catch (e) {
+          console.warn('Could not set visible range:', e.message);
+        }
       }
     }
 
@@ -108,7 +118,11 @@ export function syncChartWithMain(mainChart, chart) {
     if (typeof mainTimeScale.subscribeVisibleTimeRangeChange === 'function') {
       mainTimeScale.subscribeVisibleTimeRangeChange(timeRange => {
         if (timeRange && typeof chartTimeScale.setVisibleRange === 'function') {
-          chartTimeScale.setVisibleRange(timeRange);
+          try {
+            chartTimeScale.setVisibleRange(timeRange);
+          } catch (e) {
+            console.warn('Could not update visible range:', e.message);
+          }
         }
       });
     }
@@ -117,7 +131,11 @@ export function syncChartWithMain(mainChart, chart) {
     if (mainChart.subscribeCrosshairMove && chart.setCrosshairPosition) {
       mainChart.subscribeCrosshairMove(param => {
         if (param && param.time && param.point) {
-          chart.setCrosshairPosition(param.time, param.point.x);
+          try {
+            chart.setCrosshairPosition(param.time, param.point.x);
+          } catch (e) {
+            console.warn('Could not set crosshair position:', e.message);
+          }
         }
       });
     }

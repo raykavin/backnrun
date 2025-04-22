@@ -3,8 +3,8 @@
  * Handles the creation and submission of manual orders
  */
 
-import { getCurrentThemeColors } from '../config/theme.js';
-import { createElement } from '../utils/helpers.js';
+import { getCurrentThemeColors } from '../config/Theme.js';
+import { createElement } from '../utils/Helpers.js';
 
 export class ManualOrderForm {
   /**

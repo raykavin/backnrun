@@ -1,0 +1,249 @@
+/* Main container with indicators */
+.main-chart-with-indicators {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: visible !important;
+    position: relative;
+}
+
+/* Price chart container (top part) */
+.price-chart-container {
+    flex: 1;
+    min-height: 350px;
+    position: relative;
+}
+
+/* Container for all embedded indicators */
+.embedded-indicators-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--color-border);
+}
+
+/* Individual embedded indicator container */
+.embedded-indicator-container {
+    width: 100%;
+    position: relative;
+    min-height: 120px;
+    max-height: 150px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+/* Last indicator has no bottom border */
+.embedded-indicator-container:last-child {
+    border-bottom: none;
+}
+
+/* Header for embedded indicators */
+.embedded-indicator-container .indicator-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    color: var(--color-text-primary);
+    background-color: var(--color-bg-card);
+    border-right: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    border-bottom-right-radius: var(--border-radius-md);
+    z-index: 5;
+}
+
+
+/* Make sure individual legend items don't wrap */
+.embedded-indicator-container .legend-item {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Create visual connection between indicators */
+.embedded-indicator-container::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background-color: var(--color-border);
+    z-index: 4;
+}
+
+/* Adjustments for the time scale on the last indicator */
+.embedded-indicator-container:last-child {
+    padding-bottom: 20px;
+    /* Add padding for time scale */
+}
+
+/* Ensure the chart contents fill the containers */
+.embedded-indicator-container .tv-lightweight-charts {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+
+
+/* Handle for resizing the entire indicators section */
+.indicators-section-handle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background-color: rgba(58, 123, 213, 0.1);
+    cursor: ns-resize;
+    z-index: 15;
+    transition: background-color 0.2s ease;
+}
+
+.indicators-section-handle:hover,
+.indicators-section-handle.active {
+    background-color: rgba(58, 123, 213, 0.4);
+}
+
+/* Add a handle bar icon to indicate resizability */
+.indicators-section-handle::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background-color: var(--color-primary);
+    margin: 2px auto;
+    border-radius: 2px;
+    opacity: 0.7;
+}
+
+.indicators-section-handle:hover::before,
+.indicators-section-handle.active::before {
+    opacity: 1;
+}
+
+/* Handle for resizing individual indicator panes */
+.indicator-resize-handle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background-color: transparent;
+    cursor: ns-resize;
+    z-index: 10;
+    transition: background-color 0.2s ease;
+}
+
+.indicator-resize-handle:hover,
+.indicator-resize-handle.active {
+    background-color: rgba(58, 123, 213, 0.3);
+}
+
+/* Add a handle bar icon to indicate resizability */
+.indicator-resize-handle::before {
+    content: '';
+    display: block;
+    width: 30px;
+    height: 2px;
+    background-color: var(--color-border);
+    margin: 2px auto;
+    border-radius: 1px;
+}
+
+.indicator-resize-handle:hover::before,
+.indicator-resize-handle.active::before {
+    background-color: var(--color-primary);
+}
+
+/* Add some spacing to the indicator header to avoid overlap with resize handle */
+.embedded-indicator-container .indicator-header {
+    z-index: 11;
+    margin-top: 8px;
+}
+
+/* Give extra padding to the embedded indicators container to accommodate handle */
+#embedded-indicators-container {
+    position: relative;
+    padding-top: 8px;
+}
+
+/* Give extra padding to individual indicator containers */
+.embedded-indicator-container {
+    padding-top: 6px;
+}
+
+/* Legend for embedded indicators */
+.embedded-indicator-container .legend-container {
+    top: 2px;
+    right: 5px;
+    max-width: 50%;
+    font-size: 0.7rem;
+    z-index: 5;
+}
+
+/* Add visual feedback during resizing */
+body.resizing .price-chart-container,
+body.resizing .embedded-indicators-container,
+body.resizing .embedded-indicator-container {
+    transition: none !important;
+    /* Disable transitions during resize for smooth dragging */
+}
+
+/* Disable text selection during resize */
+body.resizing {
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: ns-resize;
+}
+
+/* Allow handle to extend slightly outside container for better grabbing */
+.embedded-indicators-container {
+    overflow: visible !important;
+}
+
+/* Initial flex settings for containers */
+.price-chart-container {
+    flex: 0.7;
+    /* Start with 70% of height for price chart */
+}
+
+.embedded-indicators-container {
+    flex: 0.3;
+    /* Start with 30% of height for indicators */
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .price-chart-container {
+        min-height: 300px;
+    }
+
+    .embedded-indicator-container {
+        min-height: 100px;
+    }
+}
+
+@media (max-width: 768px) {
+    .price-chart-container {
+        min-height: 250px;
+    }
+
+    .embedded-indicator-container {
+        min-height: 80px;
+    }
+}
+
+@media (max-width: 576px) {
+    .price-chart-container {
+        min-height: 200px;
+    }
+
+    .embedded-indicator-container {
+        min-height: 70px;
+        max-height: 100px;
+    }
+
+    .embedded-indicator-container .indicator-header {
+        font-size: 0.7rem;
+        padding: 2px 4px;
+    }
+}

@@ -2,9 +2,9 @@
  * Equity chart component
  */
 
-import { addLegendItem, createElement } from '../utils/helpers.js';
-import { syncChartWithMain } from './chartCreator.js';
-import { methodExists } from './chartCreator.js';
+import { addLegendItem, createElement } from '../utils/Helpers.js';
+import { syncChartWithMain } from './ChartCreator.js';
+// import { methodExists } from './chartCreator.js';
 
 /**
  * Create equity chart

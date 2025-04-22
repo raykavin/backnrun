@@ -2,6 +2,9 @@
 
 BackNRun is a powerful, flexible trading bot framework written in Go. It provides a comprehensive set of tools for developing, backtesting, and optimizing trading strategies for cryptocurrency markets.
 
+![Preview of BackNRun 1](images/1.png)
+
+![Preview of BackNRun 2](images/2.png)
 
 ## 📌 Roadmap & Features
 
@@ -20,20 +23,23 @@ BackNRun is built with a modular architecture that separates concerns and allows
 ```
 📁 backnrun/
 ├── 📁 cmd/                  # Command-line application
-├── 📁 examples/             # Example strategies and usage
+├── 📁 examples/             # Examples of usage
+├── 📁 images/               # Preview images
 ├── 📁 internal/             # Internal packages
-├── 📁 pkg/                  # Core packages
-│   ├──📁 core/             # Core interfaces and types
-│   ├──📁 exchange/         # Exchange implementations
-│   ├──📁 indicator/        # Technical indicators
-│   ├──📁 logger/           # Logging utilities
-│   ├──📁 metric/           # Performance metrics
-│   ├──📁 notification/     # Notification systems
-│   ├──📁 optimizer/        # Strategy parameter optimization
-│   ├──📁 order/            # Order management
-│   ├──📁 plot/             # Visualization tools
-│   ├──📁 storage/          # Data storage
-│   └──📁 strategy/         # Strategy implementations
+├── 📁 core/                 # Core interfaces and types
+├── 📁 exchange/             # Exchange implementations
+├── 📁 indicator/            # Technical indicators
+├── 📁 logger/               # Logging utilities
+├── 📁 metric/               # Performance metrics
+├── 📁 notification/         # Notification systems
+├── 📁 optimizer/            # Strategy parameter optimization
+├── 📁 order/                # Order management
+├── 📁 plot/                 # Visualization tools
+├── 📁 storage/              # Data storage
+├── 📁 scripts/              # Scripts utilities
+├── 📁 strategies/           # Presets strategies
+├── 📁 bot/                  # Bot implementations
+└── 📁 strategy/             # Strategy implementations
 ```
 
 ## 📦 Installation

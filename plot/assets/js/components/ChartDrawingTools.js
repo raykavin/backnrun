@@ -3,7 +3,7 @@
  * Provides drawing tools functionality for the trading chart
  */
 
-import { getCurrentThemeColors } from '../config/theme.js';
+import { getCurrentThemeColors } from '../config/Theme.js';
 
 export class ChartDrawingTools {
   /**

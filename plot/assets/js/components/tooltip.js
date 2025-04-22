@@ -2,8 +2,8 @@
  * Tooltip component for displaying information on hover
  */
 
-import { formatDate } from '../utils/helpers.js';
-import { createElement } from '../utils/helpers.js';
+import { formatDate } from '../utils/Helpers.js';
+import { createElement } from '../utils/Helpers.js';
 
 /**
  * Create tooltip element

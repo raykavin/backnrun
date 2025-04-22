@@ -4,10 +4,10 @@
 .chart-wrapper {
   position: relative;
   width: 100%;
-  height: 100% !important; /* Force full height */
+  height: 100% !important;
   min-height: 500px;
   background-color: var(--color-bg-card);
-  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+  border-radius: 0 0 var(--border-radius-lg);
   overflow: hidden;
   transition: background-color var(--transition-normal);
 }
@@ -15,7 +15,7 @@
 /* Ensure the chart container takes full height */
 .chart-container {
   width: 100%;
-  height: 100% !important; /* Force full height */
+  height: 100% !important; 
   position: relative;
 }
 
@@ -28,7 +28,7 @@
   bottom: 0;
   display: flex;
   flex-direction: column;
-  height: 100% !important; /* Force full height */
+  height: 100% !important; 
   width: 100%;
 }
 
@@ -37,19 +37,19 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100% !important; /* Force full height */
+  height: 100% !important; 
 }
 
 /* Ensure the card takes full height of its container */
 .card.h-100 {
-  height: 100% !important; /* Force full height */
+  height: 100% !important; 
   display: flex;
   flex-direction: column;
 }
 
 /* Ensure the main chart container takes full height when no indicators */
 #main-chart {
-  height: 100% !important; /* Force full height */
+  height: 100% !important; 
 }
 
 /* Fix for responsive heights */

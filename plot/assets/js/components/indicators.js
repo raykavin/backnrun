@@ -2,8 +2,8 @@
  * Indicators component for handling technical indicators
  */
 
-import { addLegendItem, createElement } from '../utils/helpers.js';
-import { syncChartWithMain, methodExists } from './chartCreator.js';
+import { addLegendItem, createElement } from '../utils/Helpers.js';
+import { syncChartWithMain, methodExists } from './ChartCreator.js';
 
 /**
  * Add indicators to charts
@@ -31,8 +31,8 @@ export function addIndicators(data, graphContainer, mainChart, colors, createSec
   // Add overlay indicators to main chart
   addOverlayIndicators(overlayIndicators, mainChart, colors);
 
-  // Add standalone indicators as separate charts
-  const indicatorCharts = addStandaloneIndicators(standaloneIndicators, graphContainer, mainChart, colors, createSecondaryChart);
+  // Add standalone indicators as embedded sub-panels
+  const indicatorCharts = addEmbeddedIndicators(standaloneIndicators, mainChartContainer, mainChart, colors, createSecondaryChart);
 
   return indicatorCharts;
 }
@@ -103,33 +103,41 @@ function addOverlayIndicators(indicators, mainChart, colors) {
 }
 
 /**
- * Add standalone indicators as separate charts
+ * Add standalone indicators as embedded sub-panels within the main chart container
  * @param {Array} indicators - Standalone indicators
- * @param {HTMLElement} graphContainer - Graph container
+ * @param {HTMLElement} mainChartContainer - Main chart container
  * @param {Object} mainChart - Main chart instance
  * @param {Object} colors - Theme colors
  * @param {Function} createSecondaryChart - Function to create secondary chart
  * @returns {Array} - Array of created indicator charts
  */
-function addStandaloneIndicators(indicators, graphContainer, mainChart, colors, createSecondaryChart) {
-  console.log(`Setting up ${indicators.length} standalone indicators`);
+function addEmbeddedIndicators(indicators, mainChart, colors, createSecondaryChart) {
+  console.log(`Setting up ${indicators.length} embedded indicators`);
   const indicatorCharts = [];
+
+  // Find or create the main chart container
+  const mainChartContainer = document.getElementById('main-chart');
+  if (!mainChartContainer) {
+    console.error('Main chart container not found, cannot add embedded indicators');
+    return indicatorCharts;
+  }
+
+  // Create embedded indicators container if it doesn't exist
+  let embeddedContainer = document.getElementById('embedded-indicators-container');
+  if (!embeddedContainer) {
+    embeddedContainer = createElement('div', 'embedded-indicators-container', mainChartContainer);
+  }
 
   indicators.forEach((indicator, index) => {
     try {
-      console.log(`Creating container for indicator: ${indicator.name}`);
+      console.log(`Creating embedded panel for indicator: ${indicator.name}`);
 
-      // Create container with specific height to ensure visibility
-      const indicatorContainer = createElement('div', 'chart-container', graphContainer);
-      indicatorContainer.style.height = '150px';
-      indicatorContainer.style.minHeight = '150px'; // Force minimum height
-      indicatorContainer.style.margin = '10px 0'; // Add margin for visual separation
-      indicatorContainer.style.position = 'relative'; // Ensure positioning context for legend
-
-      // Add a visible border for better separation
-      indicatorContainer.style.border = `1px solid ${colors.BORDER}`;
-      indicatorContainer.style.borderRadius = '8px';
-      indicatorContainer.style.overflow = 'visible'; // Ensure content isn't clipped
+      // Create container for this indicator
+      const indicatorContainer = createElement('div', 'embedded-indicator-container', embeddedContainer);
+      indicatorContainer.style.height = '150px';  // Fixed height for each indicator panel
+      indicatorContainer.style.minHeight = '150px';
+      indicatorContainer.style.position = 'relative';
+      indicatorContainer.style.borderTop = `1px solid ${colors.BORDER}`;
 
       // Add title header
       const indicatorHeader = createElement('div', 'indicator-header', indicatorContainer);
@@ -226,8 +234,8 @@ function addStandaloneIndicators(indicators, graphContainer, mainChart, colors, 
       });
 
       // Fit content to the chart
-      if (methodExists(indicatorChart, 'timeScale') && 
-          methodExists(indicatorChart.timeScale(), 'fitContent')) {
+      if (methodExists(indicatorChart, 'timeScale') &&
+        methodExists(indicatorChart.timeScale(), 'fitContent')) {
         indicatorChart.timeScale().fitContent();
       }
 
@@ -248,7 +256,7 @@ function addStandaloneIndicators(indicators, graphContainer, mainChart, colors, 
       }
 
     } catch (error) {
-      console.error(`Failed to add standalone indicator ${indicator.name}:`, error);
+      console.error(`Failed to add embedded indicator ${indicator.name}:`, error);
     }
   });
 

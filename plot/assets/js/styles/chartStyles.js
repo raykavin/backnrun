@@ -40,16 +40,29 @@ export function applyChartStyles(colors) {
     
     .legend-container {
       position: absolute;
-      top: 10px;
-      right: 10px;
-      background-color: ${colors.BACKGROUND}E6;
+      bottom: 30px;
+      left: 10px;
+      background-color: transparent;
       padding: 5px;
-      border-radius: 4px;
       font-size: 11px;
       z-index: 5;
       max-height: 200px;
       overflow-y: auto;
-      border: 1px solid ${colors.BORDER};
+    }
+
+    .tv-lightweight-charts .legend-container {
+      top: 10px !important;
+      right: 10px !important;
+      left: auto !important; /* Override the left value */
+      bottom: auto !important; /* Override the bottom value */
+      background-color: rgba(255, 255, 255, 0.85);
+      border-radius: 4px;
+      border: 1px solid var(--color-border);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+  
+    [data-theme="dark"] .tv-lightweight-charts .legend-container {
+      background-color: rgba(32, 33, 36, 0.85);
     }
     
     .indicator-header {
@@ -57,6 +70,7 @@ export function applyChartStyles(colors) {
       align-items: center;
       justify-content: space-between;
       padding: 5px;
+      color: ${colors.TEXT};
       background-color: ${colors.BACKGROUND};
       border-bottom: 1px solid ${colors.BORDER};
       font-weight: bold;
@@ -66,7 +80,11 @@ export function applyChartStyles(colors) {
       display: flex;
       align-items: center;
       margin-bottom: 5px;
+      margin: 2px 0;
+      white-space: nowrap;
+      color: ${colors.TEXT};
     }
+
     
     .legend-marker {
       width: 10px;

@@ -382,18 +382,6 @@ a:hover {
   box-shadow: 0 2px 8px rgba(58, 123, 213, 0.25);
 }
 
-/* Chart Styles */
-.chart-wrapper {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  min-height: 500px;
-  background-color: var(--color-bg-card);
-  border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
-  overflow: hidden;
-  transition: background-color var(--transition-normal);
-}
-
 .chart-container {
   width: 100%;
   height: 100%;
@@ -724,17 +712,9 @@ a:hover {
 }
 
 /* Responsive Adjustments */
-@media (max-width: 992px) {
-  .chart-wrapper {
-    height: 400px;
-  }
-}
+
 
 @media (max-width: 768px) {
-  .chart-wrapper {
-    height: 350px;
-  }
-
   .performance-metrics {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -750,10 +730,6 @@ a:hover {
 }
 
 @media (max-width: 576px) {
-  .chart-wrapper {
-    height: 300px;
-  }
-
   .performance-metrics {
     grid-template-columns: 1fr;
   }

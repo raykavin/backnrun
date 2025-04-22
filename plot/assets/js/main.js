@@ -5,8 +5,8 @@
 import { TradingChart } from './components/TradingChart.js';
 import { ManualOrderForm } from './components/ManualOrderForm.js';
 import { ChartDrawingTools } from './components/ChartDrawingTools.js';
-import { getCurrentThemeColors } from './config/theme.js';
-import { closeWebSocket } from './services/websocketService.js';
+// import { getCurrentThemeColors } from './config/Theme.js';
+// import { closeWebSocket } from './services/WebsocketService.js';
 
 // Initialize when DOM is ready
 document.addEventListener("DOMContentLoaded", function () {
