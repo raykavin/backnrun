@@ -53,7 +53,7 @@ BackNRun is built with a modular architecture that separates concerns and allows
 
 ```bash
 # Clone the repository
-git clone https://github.com/raykavin/bot.git
+git clone https://github.com/raykavin/backnrun.git
 cd backnrun
 
 # Build the application
@@ -141,7 +141,7 @@ func main() {
 	}
 
 	// Set up the trading bot
-	bot, err :=bot.NewBot(
+	bot, err := bot.NewBot(
 		ctx,
 		settings,
 		wallet,
@@ -334,7 +334,7 @@ import (
 func main() {
 	// Set up context and logging
 	ctx := context.Background()
-	log :=bot.DefaultLog
+	log := bot.DefaultLog
 	log.SetLevel(core.InfoLevel)
 
 	// Initialize data feed for backtesting
@@ -515,7 +515,7 @@ func main() {
 	}
 
 	// Set up the trading bot
-	bot, err :=bot.NewBot(
+	bot, err := bot.NewBot(
 		ctx,
 		settings,
 		exchange,
