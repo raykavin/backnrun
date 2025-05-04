@@ -74,8 +74,8 @@ func (e *BacktestStrategyEvaluator) Evaluate(ctx context.Context, params core.Pa
 		ctx,
 		e.settings,
 		wallet,
-		strategy,
 		e.logger,
+		strategy,
 		bot.WithBacktest(wallet),
 		bot.WithStorage(db),
 	)

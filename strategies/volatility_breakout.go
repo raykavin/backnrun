@@ -89,7 +89,7 @@ func NewVolatilityBreakoutStrategy() *VolatilityBreakoutStrategy {
 
 // Timeframe returns the required timeframe for this strategy
 func (s VolatilityBreakoutStrategy) Timeframe() string {
-	return "15m" // 15-minute timeframe
+	return "5m"
 }
 
 // WarmupPeriod returns the number of candles needed before the strategy is ready

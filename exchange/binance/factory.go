@@ -1,3 +1,4 @@
+// Package binance provides interfaces to interact with Binance exchange
 package binance
 
 import (
@@ -7,122 +8,92 @@ import (
 	"github.com/raykavin/backnrun/core"
 )
 
-// MarketType represents the type of market (spot or futures)
-type MarketType string
+// ---------------------
+// Exchange Factory
+// ---------------------
 
-const (
-	// MarketTypeSpot represents the spot market
-	MarketTypeSpot MarketType = "spot"
-
-	// MarketTypeFutures represents the futures market
-	MarketTypeFutures MarketType = "futures"
-)
-
-// Config represents the common configuration for Binance clients
-type Config struct {
-	// Market type (spot or futures)
-	Type MarketType
-
-	// API credentials
-	APIKey    string
-	APISecret string
-
-	// Use testnet
-	UseTestnet bool
-
-	// Use Heikin Ashi candles
-	UseHeikinAshi bool
-
-	// Custom endpoints (if needed)
-	CustomMainAPI    CustomEndpoint
-	CustomTestnetAPI CustomEndpoint
-
-	// Future-specific configuration
-	FuturesPairOptions []PairOption
-
-	// Common metadata fetchers
-	MetadataFetchers []MetadataFetcher
-}
-
-// CustomEndpoint represents custom API endpoints
-type CustomEndpoint struct {
-	API       string
-	WebSocket string
-	Combined  string
-}
-
-// NewExchange creates a new exchange client based on the provided configuration
+// NewExchange creates and returns a BinanceExchangeType based on the market type
 func NewExchange(ctx context.Context, log core.Logger, config Config) (BinanceExchangeType, error) {
 	switch config.Type {
 	case MarketTypeSpot:
-		return newSpotExchange(ctx, log, config)
+		return createSpotExchange(ctx, config)
 	case MarketTypeFutures:
-		return newFuturesExchange(ctx, log, config)
+		return createFuturesExchange(ctx, config)
 	default:
-		return nil, fmt.Errorf("unknown market type: %s", config.Type)
+		return nil, fmt.Errorf("unsupported market type: %s", config.Type)
 	}
 }
 
-// newSpotExchange creates a new spot exchange client
-func newSpotExchange(ctx context.Context, log core.Logger, config Config) (BinanceExchangeType, error) {
+// ---------------------
+// Exchange Creation Functions
+// ---------------------
+
+// createSpotExchange initializes a spot exchange client with the given configuration
+func createSpotExchange(ctx context.Context, config Config) (BinanceExchangeType, error) {
+	options := buildSpotOptions(config)
+	return NewSpot(ctx, options...)
+}
+
+// createFuturesExchange initializes a futures exchange client with the given configuration
+func createFuturesExchange(ctx context.Context, config Config) (BinanceExchangeType, error) {
+	options := buildFuturesOptions(config)
+	return NewFutures(ctx, options...)
+}
+
+// ---------------------
+// Option Builders
+// ---------------------
+
+// buildSpotOptions constructs option list for spot exchange configuration
+func buildSpotOptions(config Config) []SpotOption {
 	options := []SpotOption{}
 
-	// Add credentials if provided
-	if config.APIKey != "" && config.APISecret != "" {
+	// Add credentials if both key and secret are provided
+	if hasValidCredentials(config.APIKey, config.APISecret) {
 		options = append(options, WithSpotCredentials(config.APIKey, config.APISecret))
 	}
 
-	// Configure Heikin Ashi if requested
+	// Add feature options
 	if config.UseHeikinAshi {
 		options = append(options, WithSpotHeikinAshiCandles())
 	}
 
-	// Configure testnet if requested
 	if config.UseTestnet {
 		options = append(options, WithSpotTestNet())
 	}
 
-	// Configure custom endpoints if provided
-	if config.CustomMainAPI.API != "" {
-		options = append(options, WithSpotCustomMainAPIEndpoint(
-			config.CustomMainAPI.API,
-			config.CustomMainAPI.WebSocket,
-			config.CustomMainAPI.Combined,
-		))
-	}
-
-	if config.CustomTestnetAPI.API != "" {
-		options = append(options, WithSpotCustomTestnetAPIEndpoint(
-			config.CustomTestnetAPI.API,
-			config.CustomTestnetAPI.WebSocket,
-			config.CustomTestnetAPI.Combined,
-		))
-	}
+	// Configure custom endpoints when provided
+	addSpotCustomEndpoints(&options, config)
 
 	// Add metadata fetchers
-	for _, fetcher := range config.MetadataFetchers {
-		options = append(options, WithSpotMetadataFetcher(fetcher))
-	}
+	addMetadataFetchers(&options, config.MetadataFetchers, WithSpotMetadataFetcher)
 
-	// Create and return the spot client
-	return NewSpot(ctx, options...)
+	return options
 }
 
-// newFuturesExchange creates a new futures exchange client
-func newFuturesExchange(ctx context.Context, log core.Logger, config Config) (BinanceExchangeType, error) {
+// buildFuturesOptions constructs option list for futures exchange configuration
+func buildFuturesOptions(config Config) []FuturesOption {
 	options := []FuturesOption{}
 
-	// Add credentials if provided
-	if config.APIKey != "" && config.APISecret != "" {
+	// Add credentials if both key and secret are provided
+	if hasValidCredentials(config.APIKey, config.APISecret) {
 		options = append(options, WithFuturesCredentials(config.APIKey, config.APISecret))
 	}
 
-	// Configure Heikin Ashi if requested
+	// Add feature options
 	if config.UseHeikinAshi {
 		options = append(options, WithFuturesHeikinAshiCandles())
 	}
 
-	// Add pair options (leverage and margin type)
+	if config.UseTestnet {
+		options = append(options, WithFuturesTestNet())
+	}
+
+	if config.Debug {
+		options = append(options, WithFuturesClientDebug())
+	}
+
+	// Add pair-specific options like leverage and margin type
 	for _, pairOption := range config.FuturesPairOptions {
 		options = append(options, WithFuturesLeverage(
 			pairOption.Pair,
@@ -132,10 +103,44 @@ func newFuturesExchange(ctx context.Context, log core.Logger, config Config) (Bi
 	}
 
 	// Add metadata fetchers
-	for _, fetcher := range config.MetadataFetchers {
-		options = append(options, WithFuturesMetadataFetcher(fetcher))
+	addMetadataFetchers(&options, config.MetadataFetchers, WithFuturesMetadataFetcher)
+
+	return options
+}
+
+// ---------------------
+// Helper Functions
+// ---------------------
+
+// hasValidCredentials checks if both API key and secret are non-empty
+func hasValidCredentials(key, secret string) bool {
+	return key != "" && secret != ""
+}
+
+// addSpotCustomEndpoints adds custom endpoint options when configured
+func addSpotCustomEndpoints(options *[]SpotOption, config Config) {
+	if config.CustomMainAPI.API != "" {
+		*options = append(*options, WithSpotCustomMainAPIEndpoint(
+			config.CustomMainAPI.API,
+			config.CustomMainAPI.WebSocket,
+			config.CustomMainAPI.Combined,
+		))
 	}
 
-	// Create and return the futures client
-	return NewFutures(ctx, options...)
+	if config.CustomTestnetAPI.API != "" {
+		*options = append(*options, WithSpotCustomTestnetAPIEndpoint(
+			config.CustomTestnetAPI.API,
+			config.CustomTestnetAPI.WebSocket,
+			config.CustomTestnetAPI.Combined,
+		))
+	}
+}
+
+// addMetadataFetchers adds metadata fetchers to the options
+// The fetcher function parameter uses a type parameter to handle both spot and futures fetchers
+func addMetadataFetchers[T any](options *[]T, fetchers []MetadataFetcher,
+	fetcherFunc func(MetadataFetcher) T) {
+	for _, fetcher := range fetchers {
+		*options = append(*options, fetcherFunc(fetcher))
+	}
 }

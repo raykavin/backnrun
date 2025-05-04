@@ -1,3 +1,5 @@
+// Package exchange provides functionality for interacting with cryptocurrency exchanges
+// and managing trading pair information.
 package exchange
 
 import (
@@ -12,6 +14,10 @@ import (
 	"github.com/adshao/go-binance/v2/futures"
 )
 
+// ---------------------
+// Types
+// ---------------------
+
 // AssetQuote represents a trading pair (base asset and quote currency)
 type AssetQuote struct {
 	Quote string `json:"quote"`
@@ -24,11 +30,19 @@ type PairService struct {
 	mu      sync.RWMutex
 }
 
+// ---------------------
+// Embedded Data
+// ---------------------
+
 //go:embed assets/pairs.json
 var embeddedPairs []byte
 
 // defaultPairService is the default instance of the pair service
 var defaultPairService *PairService
+
+// ---------------------
+// Initialization
+// ---------------------
 
 // init initializes the pair service with data from the embedded file
 func init() {
@@ -54,6 +68,10 @@ func NewPairService(pairsData []byte) (*PairService, error) {
 	return service, nil
 }
 
+// ---------------------
+// Pair Lookup Methods
+// ---------------------
+
 // SplitAssetQuote splits a pair into its asset and quote components
 func SplitAssetQuote(pair string) (asset string, quote string) {
 	defaultPairService.mu.RLock()
@@ -75,6 +93,10 @@ func GetPair(pair string) (AssetQuote, bool) {
 	data, exists := defaultPairService.pairMap[pair]
 	return data, exists
 }
+
+// ---------------------
+// Pair Update Methods
+// ---------------------
 
 // UpdatePairs updates the pair map from the Binance API
 func UpdatePairs(ctx context.Context) error {

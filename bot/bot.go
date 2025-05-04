@@ -39,8 +39,8 @@ func NewBot(
 	ctx context.Context,
 	settings *core.Settings,
 	exch core.Exchange,
-	strategy core.Strategy,
 	log core.Logger,
+	strategy core.Strategy,
 	options ...Option,
 ) (*Bot, error) {
 	// Validate parameters

@@ -13,12 +13,20 @@ import (
 	"github.com/raykavin/backnrun/core"
 )
 
+// ---------------------
+// Errors
+// ---------------------
+
 // Common errors that can occur during exchange operations
 var (
 	ErrInvalidQuantity   = errors.New("invalid quantity")
 	ErrInsufficientFunds = errors.New("insufficient funds or locked")
 	ErrInvalidAsset      = errors.New("invalid asset")
 )
+
+// ---------------------
+// Types
+// ---------------------
 
 // DataFeedConsumer is a function type that processes candle data
 type DataFeedConsumer func(core.Candle)
@@ -57,6 +65,10 @@ type DataFeedSubscription struct {
 	mu                      sync.RWMutex
 }
 
+// ---------------------
+// Constructor
+// ---------------------
+
 // NewDataFeed creates a new instance of DataFeedSubscription
 func NewDataFeed(exchange core.Exchange, log core.Logger) *DataFeedSubscription {
 	return &DataFeedSubscription{
@@ -67,6 +79,10 @@ func NewDataFeed(exchange core.Exchange, log core.Logger) *DataFeedSubscription 
 		subscriptionsByDataFeed: make(map[string][]Subscription),
 	}
 }
+
+// ---------------------
+// Public Methods
+// ---------------------
 
 // Subscribe adds a new subscription for a pair and timeframe
 func (d *DataFeedSubscription) Subscribe(pair, timeframe string, consumer DataFeedConsumer, onCandleClose bool) {
@@ -141,6 +157,10 @@ func (d *DataFeedSubscription) Start(ctx context.Context, waitForCompletion bool
 	}
 }
 
+// ---------------------
+// Private Methods
+// ---------------------
+
 // processFeed processes candles received from a feed
 func (d *DataFeedSubscription) processFeed(ctx context.Context, key string, feed *DataFeed, wg *sync.WaitGroup) {
 	defer wg.Done()
@@ -184,7 +204,9 @@ func (d *DataFeedSubscription) processCandle(key string, candle core.Candle) {
 	}
 }
 
-// Helper methods for key management
+// ---------------------
+// Helper Methods
+// ---------------------
 
 // createFeedKey generates a unique key for a pair and timeframe
 func (d *DataFeedSubscription) createFeedKey(pair, timeframe string) string {

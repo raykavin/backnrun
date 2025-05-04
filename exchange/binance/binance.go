@@ -1,3 +1,4 @@
+// Package binance provides interfaces to interact with Binance exchange
 package binance
 
 import (
@@ -12,18 +13,17 @@ import (
 	"github.com/jpillora/backoff"
 )
 
+// ---------------------
+// Constants and Errors
+// ---------------------
+
 // Common errors
 var (
 	ErrInvalidAsset    = fmt.Errorf("invalid asset")
 	ErrInvalidQuantity = fmt.Errorf("invalid quantity")
 )
 
-// BinanceExchangeType defines the common interface for all Binance exchange types
-type BinanceExchangeType interface {
-	core.Feeder
-	core.Broker
-}
-
+// Known quote currencies for pair splitting
 var pairs = []string{
 	"USDT",
 	"BTC",
@@ -40,6 +40,16 @@ var pairs = []string{
 	"NGN",
 }
 
+// ---------------------
+// Types
+// ---------------------
+
+// BinanceExchangeType defines the common interface for all Binance exchange types
+type BinanceExchangeType interface {
+	core.Feeder
+	core.Broker
+}
+
 // OrderError represents an error that occurred during order creation or execution
 type OrderError struct {
 	Err      error
@@ -47,12 +57,49 @@ type OrderError struct {
 	Quantity float64
 }
 
+// Error implements the error interface for OrderError
 func (e *OrderError) Error() string {
 	return fmt.Sprintf("order error: %v, pair: %s, quantity: %f", e.Err, e.Pair, e.Quantity)
 }
 
 // MetadataFetcher is a function type for fetching additional candle metadata
 type MetadataFetcher func(pair string, t time.Time) (string, float64)
+
+// MarketType defines the trading market category
+type MarketType string
+
+const (
+	// MarketTypeSpot represents the spot trading market
+	MarketTypeSpot MarketType = "spot"
+
+	// MarketTypeFutures represents the futures trading market
+	MarketTypeFutures MarketType = "futures"
+)
+
+// Config holds configuration parameters for Binance clients
+type Config struct {
+	Type               MarketType
+	APIKey             string
+	APISecret          string
+	UseTestnet         bool
+	UseHeikinAshi      bool
+	Debug              bool
+	CustomMainAPI      Endpoint
+	CustomTestnetAPI   Endpoint
+	FuturesPairOptions []PairOption
+	MetadataFetchers   []MetadataFetcher
+}
+
+// Endpoint represents API endpoint URLs
+type Endpoint struct {
+	API       string
+	WebSocket string
+	Combined  string
+}
+
+// ---------------------
+// Pair Handling
+// ---------------------
 
 // SplitAssetQuote splits a trading pair into base asset and quote asset
 func SplitAssetQuote(pair string) (asset, quote string) {
@@ -65,6 +112,10 @@ func SplitAssetQuote(pair string) (asset, quote string) {
 	}
 	return pair[:len(pair)/2], pair[len(pair)/2:]
 }
+
+// ---------------------
+// Formatting Functions
+// ---------------------
 
 // formatQuantity formats a quantity according to the pair's precision
 func formatQuantity(assetsInfo map[string]core.AssetInfo, pair string, value float64) string {
@@ -104,6 +155,10 @@ func formatPrice(assetsInfo map[string]core.AssetInfo, pair string, value float6
 	return strconv.FormatFloat(value, 'f', precision, 64)
 }
 
+// ---------------------
+// Validation Functions
+// ---------------------
+
 // validateOrder checks if an order quantity is valid for a pair
 func validateOrder(assetsInfo map[string]core.AssetInfo, pair string, quantity float64) error {
 	info, ok := assetsInfo[pair]
@@ -132,6 +187,10 @@ func validateOrder(assetsInfo map[string]core.AssetInfo, pair string, quantity f
 	return nil
 }
 
+// ---------------------
+// Utility Functions
+// ---------------------
+
 // setupBackoffRetry creates a backoff with sensible defaults
 func setupBackoffRetry() *backoff.Backoff {
 	return &backoff.Backoff{
@@ -159,6 +218,10 @@ func parseFilterFloat(filter map[string]any, key string) (float64, error) {
 
 	return floatValue, nil
 }
+
+// ---------------------
+// Asset Info Management
+// ---------------------
 
 // updateAssetInfoQuantity applies quantity-related parameters to an asset info
 func updateAssetInfoQuantity(assetInfo *core.AssetInfo, minQuantity, maxQuantity, stepSize float64) error {
@@ -193,6 +256,10 @@ func updateAssetInfoPrice(assetInfo *core.AssetInfo, minPrice, maxPrice, tickSiz
 
 	return nil
 }
+
+// ---------------------
+// Filter Processing
+// ---------------------
 
 // processFilter extracts trading limits from symbol filters
 func processFilter(filterType string, filter map[string]any, assetInfo *core.AssetInfo) error {
@@ -245,6 +312,10 @@ func processPriceFilter(filter map[string]any, assetInfo *core.AssetInfo) error 
 
 	return updateAssetInfoPrice(assetInfo, minPrice, maxPrice, tickSize)
 }
+
+// ---------------------
+// Conversion Functions
+// ---------------------
 
 // createAssetInfo creates an AssetInfo object from symbol information
 func createAssetInfo[T binance.Symbol | futures.Symbol](info T) (core.AssetInfo, error) {
@@ -319,7 +390,7 @@ func convertOrder[T *futures.Order | *binance.Order](order T) core.Order {
 		status = string(v.Status)
 		side = string(v.Side)
 
-		// Extract data from binance.Order
+	// Extract data from binance.Order
 	case *binance.Order:
 		cost, _ = strconv.ParseFloat(v.CummulativeQuoteQuantity, 64)
 		quantity, _ = strconv.ParseFloat(v.ExecutedQuantity, 64)

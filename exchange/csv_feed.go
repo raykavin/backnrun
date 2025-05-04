@@ -1,3 +1,4 @@
+// Package exchange provides implementations for various data exchange mechanisms
 package exchange
 
 import (
@@ -15,14 +16,25 @@ import (
 	"github.com/xhit/go-str2duration/v2"
 )
 
+// ---------------------
+// Constants and Errors
+// ---------------------
+
 var (
+	// ErrInsufficientData is returned when there is not enough data to fulfill a request
 	ErrInsufficientData = errors.New("insufficient data")
-	defaultHeaderMap    = map[string]int{
+
+	// defaultHeaderMap defines the standard CSV column mapping
+	defaultHeaderMap = map[string]int{
 		"time": 0, "open": 1, "close": 2, "low": 3, "high": 4, "volume": 5,
 	}
 )
 
-// PairFeed representa os dados de um par no feed de dados
+// ---------------------
+// Types
+// ---------------------
+
+// PairFeed represents data for a specific trading pair
 type PairFeed struct {
 	Pair       string
 	File       string
@@ -30,53 +42,20 @@ type PairFeed struct {
 	HeikinAshi bool
 }
 
-// CSVFeed representa um feed de dados de CSV
+// CSVFeed represents a data feed from CSV files
 type CSVFeed struct {
 	Feeds               map[string]PairFeed
 	CandlePairTimeFrame map[string][]core.Candle
 }
 
-// AssetsInfo retorna informações sobre os ativos de um par
-func (c CSVFeed) AssetsInfo(pair string) (core.AssetInfo, error) {
-	asset, quote := SplitAssetQuote(pair)
-	return core.NewAssetInfo(
-		asset,
-		quote,
-		0,
-		math.MaxFloat64,
-		0,
-		math.MaxFloat64,
-		0.00000001,
-		0.00000001,
-		8,
-		8,
-	)
-}
+// PeriodBoundaryCheck defines an interface for checking period boundaries
+type PeriodBoundaryCheck func(t time.Time, fromTimeframe, targetTimeframe string) (bool, error)
 
-// parseHeaders analisa os cabeçalhos do CSV e retorna um mapa de índices
-func parseHeaders(headers []string) (headerMap map[string]int, additional []string, hasCustomHeaders bool) {
-	// Verifica se o primeiro elemento é um número (não é cabeçalho)
-	if _, err := strconv.Atoi(headers[0]); err == nil {
-		return defaultHeaderMap, nil, false
-	}
+// ---------------------
+// Constructor
+// ---------------------
 
-	// Inicializa o mapa de cabeçalhos
-	headerMap = make(map[string]int)
-
-	// Processa cada cabeçalho
-	for index, header := range headers {
-		headerMap[header] = index
-
-		// Verifica se é um cabeçalho adicional que não está nos padrões
-		if _, exists := defaultHeaderMap[header]; !exists {
-			additional = append(additional, header)
-		}
-	}
-
-	return headerMap, additional, true
-}
-
-// NewCSVFeed cria um novo feed de dados de CSV e faz o resample para o timeframe alvo
+// NewCSVFeed creates a new CSV feed and resamples data to the target timeframe
 func NewCSVFeed(targetTimeframe string, feeds ...PairFeed) (*CSVFeed, error) {
 	csvFeed := &CSVFeed{
 		Feeds:               make(map[string]PairFeed),
@@ -86,17 +65,17 @@ func NewCSVFeed(targetTimeframe string, feeds ...PairFeed) (*CSVFeed, error) {
 	for _, feed := range feeds {
 		csvFeed.Feeds[feed.Pair] = feed
 
-		// Lê o arquivo CSV
+		// Read candles from CSV file
 		candles, err := readCandlesFromCSV(feed)
 		if err != nil {
 			return nil, err
 		}
 
-		// Armazena os candles no mapa
+		// Store the original candles
 		sourceKey := csvFeed.feedTimeframeKey(feed.Pair, feed.Timeframe)
 		csvFeed.CandlePairTimeFrame[sourceKey] = candles
 
-		// Faz o resample para o timeframe alvo
+		// Resample to target timeframe if different
 		if err := csvFeed.resample(feed.Pair, feed.Timeframe, targetTimeframe); err != nil {
 			return nil, err
 		}
@@ -105,31 +84,35 @@ func NewCSVFeed(targetTimeframe string, feeds ...PairFeed) (*CSVFeed, error) {
 	return csvFeed, nil
 }
 
-// readCandlesFromCSV lê e processa o arquivo CSV para criar candles
+// ---------------------
+// CSV Processing
+// ---------------------
+
+// readCandlesFromCSV reads and processes a CSV file to create candles
 func readCandlesFromCSV(feed PairFeed) ([]core.Candle, error) {
-	// Abre o arquivo CSV
+	// Open CSV file
 	csvFile, err := os.Open(feed.File)
 	if err != nil {
 		return nil, err
 	}
 	defer csvFile.Close()
 
-	// Lê todas as linhas do CSV
+	// Read all lines from the CSV
 	csvLines, err := csv.NewReader(csvFile).ReadAll()
 	if err != nil {
 		return nil, err
 	}
 
-	// Analisa os cabeçalhos
+	// Parse headers
 	headerMap, additionalHeaders, hasCustomHeaders := parseHeaders(csvLines[0])
 	if hasCustomHeaders {
-		csvLines = csvLines[1:] // Remove a linha de cabeçalho
+		csvLines = csvLines[1:] // Remove header row
 	}
 
-	// Inicializa o objeto HeikinAshi se necessário
+	// Initialize HeikinAshi if needed
 	ha := core.NewHeikinAshi()
 
-	// Processa cada linha do CSV
+	// Process each CSV line
 	candles := make([]core.Candle, 0, len(csvLines))
 	for _, line := range csvLines {
 		candle, err := parseCandleFromLine(line, headerMap, additionalHeaders, hasCustomHeaders, feed.Pair)
@@ -137,7 +120,7 @@ func readCandlesFromCSV(feed PairFeed) ([]core.Candle, error) {
 			return nil, err
 		}
 
-		// Converte para HeikinAshi se necessário
+		// Convert to HeikinAshi if needed
 		if feed.HeikinAshi {
 			candle = candle.ToHeikinAshi(ha)
 		}
@@ -148,15 +131,38 @@ func readCandlesFromCSV(feed PairFeed) ([]core.Candle, error) {
 	return candles, nil
 }
 
-// parseCandleFromLine analisa uma linha do CSV e cria um candle
+// parseHeaders analyzes CSV headers and returns an index map
+func parseHeaders(headers []string) (headerMap map[string]int, additional []string, hasCustomHeaders bool) {
+	// Check if first element is a number (not a header)
+	if _, err := strconv.Atoi(headers[0]); err == nil {
+		return defaultHeaderMap, nil, false
+	}
+
+	// Initialize header map
+	headerMap = make(map[string]int)
+
+	// Process each header
+	for index, header := range headers {
+		headerMap[header] = index
+
+		// Check if it's an additional header not in defaults
+		if _, exists := defaultHeaderMap[header]; !exists {
+			additional = append(additional, header)
+		}
+	}
+
+	return headerMap, additional, true
+}
+
+// parseCandleFromLine parses a CSV line and creates a candle
 func parseCandleFromLine(line []string, headerMap map[string]int, additionalHeaders []string, hasCustomHeaders bool, pair string) (core.Candle, error) {
-	// Processa o timestamp
+	// Process timestamp
 	timestamp, err := strconv.Atoi(line[headerMap["time"]])
 	if err != nil {
 		return core.Candle{}, err
 	}
 
-	// Cria o candle básico
+	// Create basic candle
 	candle := core.Candle{
 		Time:      time.Unix(int64(timestamp), 0).UTC(),
 		UpdatedAt: time.Unix(int64(timestamp), 0).UTC(),
@@ -164,7 +170,7 @@ func parseCandleFromLine(line []string, headerMap map[string]int, additionalHead
 		Complete:  true,
 	}
 
-	// Processa os valores OHLCV
+	// Process OHLCV values
 	if candle.Open, err = strconv.ParseFloat(line[headerMap["open"]], 64); err != nil {
 		return core.Candle{}, err
 	}
@@ -185,7 +191,7 @@ func parseCandleFromLine(line []string, headerMap map[string]int, additionalHead
 		return core.Candle{}, err
 	}
 
-	// Processa metadados adicionais se existirem
+	// Process additional metadata if present
 	if hasCustomHeaders {
 		candle.Metadata = make(map[string]float64, len(additionalHeaders))
 		for _, header := range additionalHeaders {
@@ -200,38 +206,11 @@ func parseCandleFromLine(line []string, headerMap map[string]int, additionalHead
 	return candle, nil
 }
 
-// feedTimeframeKey gera uma chave única para cada par e timeframe
-func (c CSVFeed) feedTimeframeKey(pair, timeframe string) string {
-	return fmt.Sprintf("%s--%s", pair, timeframe)
-}
+// ---------------------
+// Timeframe Handling
+// ---------------------
 
-// LastQuote retorna a última cotação (não implementada para CSVFeed)
-func (c CSVFeed) LastQuote(_ context.Context, _ string) (float64, error) {
-	return 0, errors.New("invalid operation")
-}
-
-// Limit limita os candles a um período de tempo específico
-func (c *CSVFeed) Limit(duration time.Duration) *CSVFeed {
-	for pair, candles := range c.CandlePairTimeFrame {
-		if len(candles) == 0 {
-			continue
-		}
-
-		// Calcula o início do período
-		start := candles[len(candles)-1].Time.Add(-duration)
-
-		// Filtra os candles para manter apenas os que estão dentro do período
-		c.CandlePairTimeFrame[pair] = lo.Filter(candles, func(candle core.Candle, _ int) bool {
-			return candle.Time.After(start)
-		})
-	}
-	return c
-}
-
-// PeriodBoundaryCheck define uma interface para verificar limites de períodos
-type PeriodBoundaryCheck func(t time.Time, fromTimeframe, targetTimeframe string) (bool, error)
-
-// isFistCandlePeriod verifica se um candle é o primeiro de um período
+// isFistCandlePeriod checks if a candle is the first in a period
 func isFistCandlePeriod(t time.Time, fromTimeframe, targetTimeframe string) (bool, error) {
 	fromDuration, err := str2duration.ParseDuration(fromTimeframe)
 	if err != nil {
@@ -242,7 +221,7 @@ func isFistCandlePeriod(t time.Time, fromTimeframe, targetTimeframe string) (boo
 	return isLastCandlePeriod(prev, fromTimeframe, targetTimeframe)
 }
 
-// isLastCandlePeriod verifica se um candle é o último de um período
+// isLastCandlePeriod checks if a candle is the last in a period
 func isLastCandlePeriod(t time.Time, fromTimeframe, targetTimeframe string) (bool, error) {
 	if fromTimeframe == targetTimeframe {
 		return true, nil
@@ -257,7 +236,7 @@ func isLastCandlePeriod(t time.Time, fromTimeframe, targetTimeframe string) (boo
 	return isTimeOnPeriodBoundary(next, targetTimeframe)
 }
 
-// isTimeOnPeriodBoundary verifica se um timestamp está na fronteira de um período
+// isTimeOnPeriodBoundary checks if a timestamp is on a period boundary
 func isTimeOnPeriodBoundary(t time.Time, targetTimeframe string) (bool, error) {
 	switch targetTimeframe {
 	case "1m":
@@ -287,7 +266,11 @@ func isTimeOnPeriodBoundary(t time.Time, targetTimeframe string) (bool, error) {
 	}
 }
 
-// resample faz o resampling dos candles de um timeframe para outro
+// ---------------------
+// Resampling
+// ---------------------
+
+// resample resamples candles from source timeframe to target timeframe
 func (c *CSVFeed) resample(pair, sourceTimeframe, targetTimeframe string) error {
 	sourceKey := c.feedTimeframeKey(pair, sourceTimeframe)
 	targetKey := c.feedTimeframeKey(pair, targetTimeframe)
@@ -297,13 +280,13 @@ func (c *CSVFeed) resample(pair, sourceTimeframe, targetTimeframe string) error 
 		return nil
 	}
 
-	// Encontra o índice do primeiro candle que inicia um período
+	// Find the index of the first candle that starts a period
 	startIdx, err := c.findFirstPeriodCandle(sourceCandles, sourceTimeframe, targetTimeframe)
 	if err != nil {
 		return err
 	}
 
-	// Faz o resampling
+	// Perform resampling
 	targetCandles, err := c.resampleCandles(sourceCandles[startIdx:], sourceTimeframe, targetTimeframe)
 	if err != nil {
 		return err
@@ -313,7 +296,7 @@ func (c *CSVFeed) resample(pair, sourceTimeframe, targetTimeframe string) error 
 	return nil
 }
 
-// findFirstPeriodCandle encontra o índice do primeiro candle que inicia um período
+// findFirstPeriodCandle finds the index of the first candle that starts a period
 func (c *CSVFeed) findFirstPeriodCandle(candles []core.Candle, sourceTimeframe, targetTimeframe string) (int, error) {
 	for i := range candles {
 		isFirst, err := isFistCandlePeriod(candles[i].Time, sourceTimeframe, targetTimeframe)
@@ -324,16 +307,16 @@ func (c *CSVFeed) findFirstPeriodCandle(candles []core.Candle, sourceTimeframe, 
 			return i, nil
 		}
 	}
-	return 0, nil // Se não encontrar, começa do início
+	return 0, nil // If not found, start from beginning
 }
 
-// resampleCandles faz o resampling dos candles, agrupando-os por período
+// resampleCandles resamples candles by grouping them by period
 func (c *CSVFeed) resampleCandles(sourceCandles []core.Candle, sourceTimeframe, targetTimeframe string) ([]core.Candle, error) {
 	if len(sourceCandles) == 0 {
 		return nil, nil
 	}
 
-	targetCandles := make([]core.Candle, 0, len(sourceCandles)/4) // Estimativa inicial de tamanho
+	targetCandles := make([]core.Candle, 0, len(sourceCandles)/4) // Initial size estimate
 
 	var currentCandle core.Candle
 	inPeriod := false
@@ -344,20 +327,20 @@ func (c *CSVFeed) resampleCandles(sourceCandles []core.Candle, sourceTimeframe, 
 			return nil, err
 		}
 
-		// Se não estivermos em um período, começa um novo
+		// If not in a period, start a new one
 		if !inPeriod {
 			currentCandle = candle
 			inPeriod = true
 			continue
 		}
 
-		// Atualiza o candle atual com os dados do candle corrente
+		// Update current candle with data from current candle
 		currentCandle.High = math.Max(currentCandle.High, candle.High)
 		currentCandle.Low = math.Min(currentCandle.Low, candle.Low)
 		currentCandle.Close = candle.Close
 		currentCandle.Volume += candle.Volume
 
-		// Se este for o último candle do período, finaliza e adiciona à lista
+		// If this is the last candle of the period, finalize and add to list
 		if isLast {
 			currentCandle.Complete = true
 			targetCandles = append(targetCandles, currentCandle)
@@ -365,9 +348,9 @@ func (c *CSVFeed) resampleCandles(sourceCandles []core.Candle, sourceTimeframe, 
 		}
 	}
 
-	// Se o último período não foi completo, não o inclui
+	// If the last period wasn't complete, only include if it's marked complete
 	if inPeriod && !currentCandle.Complete {
-		// Não adiciona
+		// Don't add
 	} else if inPeriod {
 		targetCandles = append(targetCandles, currentCandle)
 	}
@@ -375,12 +358,65 @@ func (c *CSVFeed) resampleCandles(sourceCandles []core.Candle, sourceTimeframe, 
 	return targetCandles, nil
 }
 
-// CandlesByPeriod retorna os candles dentro de um período específico
+// ---------------------
+// Utility Methods
+// ---------------------
+
+// feedTimeframeKey generates a unique key for each pair and timeframe
+func (c CSVFeed) feedTimeframeKey(pair, timeframe string) string {
+	return fmt.Sprintf("%s--%s", pair, timeframe)
+}
+
+// Limit limits candles to a specific time duration
+func (c *CSVFeed) Limit(duration time.Duration) *CSVFeed {
+	for pair, candles := range c.CandlePairTimeFrame {
+		if len(candles) == 0 {
+			continue
+		}
+
+		// Calculate period start
+		start := candles[len(candles)-1].Time.Add(-duration)
+
+		// Filter candles to keep only those within the period
+		c.CandlePairTimeFrame[pair] = lo.Filter(candles, func(candle core.Candle, _ int) bool {
+			return candle.Time.After(start)
+		})
+	}
+	return c
+}
+
+// ---------------------
+// API Methods
+// ---------------------
+
+// AssetsInfo returns information about a trading pair's assets
+func (c CSVFeed) AssetsInfo(pair string) (core.AssetInfo, error) {
+	asset, quote := SplitAssetQuote(pair)
+	return core.NewAssetInfo(
+		asset,
+		quote,
+		0,
+		math.MaxFloat64,
+		0,
+		math.MaxFloat64,
+		0.00000001,
+		0.00000001,
+		8,
+		8,
+	)
+}
+
+// LastQuote returns the last quote (not implemented for CSVFeed)
+func (c CSVFeed) LastQuote(_ context.Context, _ string) (float64, error) {
+	return 0, errors.New("invalid operation")
+}
+
+// CandlesByPeriod returns candles within a specific time period
 func (c CSVFeed) CandlesByPeriod(_ context.Context, pair, timeframe string, start, end time.Time) ([]core.Candle, error) {
 	key := c.feedTimeframeKey(pair, timeframe)
 	result := make([]core.Candle, 0)
 
-	// Filtra os candles pelo período
+	// Filter candles by period
 	for _, candle := range c.CandlePairTimeFrame[key] {
 		if candle.Time.Before(start) || candle.Time.After(end) {
 			continue
@@ -391,7 +427,7 @@ func (c CSVFeed) CandlesByPeriod(_ context.Context, pair, timeframe string, star
 	return result, nil
 }
 
-// CandlesByLimit retorna um número limitado de candles e os remove do feed
+// CandlesByLimit returns a limited number of candles and removes them from the feed
 func (c *CSVFeed) CandlesByLimit(_ context.Context, pair, timeframe string, limit int) ([]core.Candle, error) {
 	key := c.feedTimeframeKey(pair, timeframe)
 
@@ -399,14 +435,14 @@ func (c *CSVFeed) CandlesByLimit(_ context.Context, pair, timeframe string, limi
 		return nil, fmt.Errorf("%w: %s", ErrInsufficientData, pair)
 	}
 
-	// Obtém os candles e atualiza o feed
+	// Get candles and update feed
 	result := c.CandlePairTimeFrame[key][:limit]
 	c.CandlePairTimeFrame[key] = c.CandlePairTimeFrame[key][limit:]
 
 	return result, nil
 }
 
-// CandlesSubscription retorna um canal para receber candles
+// CandlesSubscription returns a channel to receive candles
 func (c CSVFeed) CandlesSubscription(_ context.Context, pair, timeframe string) (chan core.Candle, chan error) {
 	ccandle := make(chan core.Candle)
 	cerr := make(chan error)
@@ -416,7 +452,7 @@ func (c CSVFeed) CandlesSubscription(_ context.Context, pair, timeframe string) 
 		defer close(ccandle)
 		defer close(cerr)
 
-		// Envia todos os candles pelo canal
+		// Send all candles through the channel
 		for _, candle := range c.CandlePairTimeFrame[key] {
 			ccandle <- candle
 		}

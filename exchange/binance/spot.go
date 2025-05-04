@@ -1,3 +1,4 @@
+// Package binance provides interfaces to interact with Binance exchange
 package binance
 
 import (
@@ -11,7 +12,9 @@ import (
 	"github.com/adshao/go-binance/v2"
 )
 
+// ---------------------
 // Types
+// ---------------------
 
 // Spot represents the Binance spot market client
 type Spot struct {
@@ -24,7 +27,9 @@ type Spot struct {
 // SpotOption is a function that configures a Spot client
 type SpotOption func(*Spot)
 
+// ---------------------
 // Option Functions
+// ---------------------
 
 // WithSpotCredentials sets the API credentials for the Spot client
 func WithSpotCredentials(key, secret string) SpotOption {
@@ -80,7 +85,9 @@ func WithSpotCustomTestnetAPIEndpoint(apiURL, wsURL, combinedURL string) SpotOpt
 	}
 }
 
+// ---------------------
 // Constructor Function
+// ---------------------
 
 // NewSpot creates a new Binance spot exchange client
 func NewSpot(ctx context.Context, options ...SpotOption) (*Spot, error) {
@@ -111,7 +118,9 @@ func NewSpot(ctx context.Context, options ...SpotOption) (*Spot, error) {
 	return spot, nil
 }
 
-// Initialization Functions
+// ---------------------
+// Initialization Methods
+// ---------------------
 
 // validateConnection tests the connection to the Binance Spot API
 func (s *Spot) validateConnection(ctx context.Context) error {
@@ -142,7 +151,9 @@ func (s *Spot) initializeAssetInfo(ctx context.Context) error {
 	return nil
 }
 
+// ---------------------
 // Utility Methods
+// ---------------------
 
 // formatQuantity formats a quantity according to the pair's precision
 func (s *Spot) formatQuantity(pair string, value float64) string {
@@ -159,7 +170,9 @@ func (s *Spot) validate(pair string, quantity float64) error {
 	return validateOrder(s.assetsInfo, pair, quantity)
 }
 
-// API Methods
+// ---------------------
+// API Methods - Market Data
+// ---------------------
 
 // LastQuote gets the latest price for a pair
 func (s *Spot) LastQuote(ctx context.Context, pair string) (float64, error) {
@@ -179,7 +192,9 @@ func (s *Spot) AssetsInfo(pair string) (core.AssetInfo, error) {
 	return core.AssetInfo{}, fmt.Errorf("asset info not found in binance spot")
 }
 
-// Order Management Methods
+// ---------------------
+// API Methods - Order Management
+// ---------------------
 
 // CreateOrderOCO creates an OCO (One-Cancels-the-Other) order
 func (s *Spot) CreateOrderOCO(ctx context.Context, side core.SideType, pair string,
@@ -397,7 +412,9 @@ func (s *Spot) CreateOrderMarketQuote(ctx context.Context, side core.SideType, p
 	}, nil
 }
 
-// Order Query Methods
+// ---------------------
+// API Methods - Order Query
+// ---------------------
 
 // Cancel cancels an order
 func (s *Spot) Cancel(ctx context.Context, order core.Order) error {
@@ -440,7 +457,9 @@ func (s *Spot) Order(ctx context.Context, pair string, id int64) (core.Order, er
 	return convertOrder(order), nil
 }
 
-// Account Information Methods
+// ---------------------
+// API Methods - Account Information
+// ---------------------
 
 // Account gets the account information
 func (s *Spot) Account(ctx context.Context) (core.Account, error) {
@@ -490,7 +509,9 @@ func (s *Spot) Position(ctx context.Context, pair string) (asset, quote float64,
 	return assetBalance.Free + assetBalance.Lock, quoteBalance.Free + quoteBalance.Lock, nil
 }
 
-// Candle Methods
+// ---------------------
+// API Methods - Candles
+// ---------------------
 
 // CandlesSubscription subscribes to candle updates for a pair
 func (s *Spot) CandlesSubscription(ctx context.Context, pair, period string) (chan core.Candle, chan error) {
@@ -608,7 +629,9 @@ func (s *Spot) CandlesByPeriod(ctx context.Context, pair, period string,
 	return candles, nil
 }
 
-// Candle Conversion Functions
+// ---------------------
+// Helper Functions
+// ---------------------
 
 // convertSpotKlineToCandle converts a Binance kline to a core.Candle
 func convertSpotKlineToCandle(pair string, k binance.Kline) core.Candle {

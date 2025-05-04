@@ -1,3 +1,5 @@
+// Package exchange provides functionality for interacting with cryptocurrency exchanges
+// and simulating trading activities.
 package exchange
 
 import (
@@ -14,6 +16,10 @@ import (
 
 	"github.com/adshao/go-binance/v2/common"
 )
+
+// ---------------------
+// Types
+// ---------------------
 
 // AssetValue represents the value of an asset at a specific time
 type AssetValue struct {
@@ -61,6 +67,10 @@ type PaperWallet struct {
 // PaperWalletOption defines an option function to configure PaperWallet
 type PaperWalletOption func(*PaperWallet)
 
+// ---------------------
+// Configuration Options
+// ---------------------
+
 // WithPaperAsset adds an initial asset to the wallet
 func WithPaperAsset(pair string, amount float64) PaperWalletOption {
 	return func(wallet *PaperWallet) {
@@ -85,6 +95,10 @@ func WithDataFeed(feeder core.Feeder) PaperWalletOption {
 		wallet.feeder = feeder
 	}
 }
+
+// ---------------------
+// Constructor
+// ---------------------
 
 // NewPaperWallet creates a new simulated wallet
 func NewPaperWallet(ctx context.Context, baseCoin string, log core.Logger, options ...PaperWalletOption) *PaperWallet {
@@ -116,6 +130,10 @@ func NewPaperWallet(ctx context.Context, baseCoin string, log core.Logger, optio
 
 	return &wallet
 }
+
+// ---------------------
+// Basic Methods
+// ---------------------
 
 // ID generates a unique ID for orders
 func (p *PaperWallet) ID() int64 {
@@ -156,6 +174,10 @@ func (p *PaperWallet) LastQuote(ctx context.Context, pair string) (float64, erro
 	return p.feeder.LastQuote(ctx, pair)
 }
 
+// ---------------------
+// Asset Management
+// ---------------------
+
 // AssetValues returns the value history of an asset
 func (p *PaperWallet) AssetValues(pair string) []AssetValue {
 	p.mu.RLock()
@@ -169,6 +191,35 @@ func (p *PaperWallet) EquityValues() []AssetValue {
 	defer p.mu.RUnlock()
 	return p.equityValues
 }
+
+// getAssetFreeAmount returns the free balance of an asset
+func (p *PaperWallet) getAssetFreeAmount(asset string) float64 {
+	assetInfo, ok := p.assets[asset]
+	if !ok {
+		return 0
+	}
+	return assetInfo.Free
+}
+
+// getAssetTotalAmount returns the total balance (free + locked) of an asset
+func (p *PaperWallet) getAssetTotalAmount(asset string) float64 {
+	assetInfo, ok := p.assets[asset]
+	if !ok {
+		return 0
+	}
+	return assetInfo.Free + assetInfo.Lock
+}
+
+// ensureAssetExists ensures that an asset exists in the wallet
+func (p *PaperWallet) ensureAssetExists(asset string) {
+	if _, ok := p.assets[asset]; !ok {
+		p.assets[asset] = &assetInfo{}
+	}
+}
+
+// ---------------------
+// Performance Analysis
+// ---------------------
 
 // MaxDrawdown calculates the maximum drawdown of the wallet
 func (p *PaperWallet) MaxDrawdown() (float64, time.Time, time.Time) {
@@ -309,30 +360,9 @@ func (p *PaperWallet) calculateMarketChange(pair string) float64 {
 	return (lastPrice - firstPrice) / firstPrice
 }
 
-// getAssetFreeAmount returns the free balance of an asset
-func (p *PaperWallet) getAssetFreeAmount(asset string) float64 {
-	assetInfo, ok := p.assets[asset]
-	if !ok {
-		return 0
-	}
-	return assetInfo.Free
-}
-
-// getAssetTotalAmount returns the total balance (free + locked) of an asset
-func (p *PaperWallet) getAssetTotalAmount(asset string) float64 {
-	assetInfo, ok := p.assets[asset]
-	if !ok {
-		return 0
-	}
-	return assetInfo.Free + assetInfo.Lock
-}
-
-// ensureAssetExists ensures that an asset exists in the wallet
-func (p *PaperWallet) ensureAssetExists(asset string) {
-	if _, ok := p.assets[asset]; !ok {
-		p.assets[asset] = &assetInfo{}
-	}
-}
+// ---------------------
+// Fund Validation
+// ---------------------
 
 // validateFunds verifies if there are sufficient funds for an operation
 // Note: This function assumes the mutex is already locked by the caller
@@ -534,6 +564,10 @@ func (p *PaperWallet) updateAveragePrice(side core.SideType, pair string, amount
 	}
 }
 
+// ---------------------
+// Candle Processing
+// ---------------------
+
 // OnCandle processes a new candle
 func (p *PaperWallet) OnCandle(candle core.Candle) {
 	p.mu.Lock()
@@ -730,6 +764,10 @@ func (p *PaperWallet) updatePortfolioValues(candle core.Candle) {
 	})
 }
 
+// ---------------------
+// Account Management
+// ---------------------
+
 // Account returns account information
 func (p *PaperWallet) Account(_ context.Context) (core.Account, error) {
 	p.mu.RLock()
@@ -761,6 +799,10 @@ func (p *PaperWallet) Position(ctx context.Context, pair string) (asset, quote f
 	assetBalance, quoteBalance := acc.GetBalance(assetTick, quoteTick)
 	return assetBalance.Free + assetBalance.Lock, quoteBalance.Free + quoteBalance.Lock, nil
 }
+
+// ---------------------
+// Order Management
+// ---------------------
 
 // CreateOrderOCO creates an OCO (One-Cancels-the-Other) order
 func (p *PaperWallet) CreateOrderOCO(_ context.Context, side core.SideType, pair string,
@@ -999,6 +1041,10 @@ func (p *PaperWallet) Order(_ context.Context, _ string, id int64) (core.Order, 
 
 	return core.Order{}, errors.New("order not found")
 }
+
+// ---------------------
+// Data Feed Methods
+// ---------------------
 
 // CandlesByPeriod returns candles within a period
 func (p *PaperWallet) CandlesByPeriod(ctx context.Context, pair, period string,

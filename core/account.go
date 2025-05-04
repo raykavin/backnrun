@@ -1,6 +1,13 @@
 package core
 
-import "fmt"
+import (
+	"errors"
+)
+
+// Errs
+var (
+	ErrOutOfMoneyInAccounts = errors.New("out of money in accounts")
+)
 
 // Account represents a trading account with multiple asset balances
 type Account struct {
@@ -9,7 +16,7 @@ type Account struct {
 
 func NewAccount(balances []Balance) (Account, error) {
 	if len(balances) == 0 {
-		return Account{}, fmt.Errorf("invalid account balances")
+		return Account{}, ErrOutOfMoneyInAccounts
 	}
 
 	return Account{Balances: balances}, nil

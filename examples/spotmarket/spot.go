@@ -49,7 +49,13 @@ func main() {
 
 	// Initialize your strategy and bot
 	strategy := new(strategies.CrossEMA)
-	bot, err := bot.NewBot(ctx, settings, binance, strategy, bot.DefaultLog)
+	bot, err := bot.NewBot(
+		ctx,
+		settings,
+		binance,
+		bot.DefaultLog,
+		strategy,
+	)
 	if err != nil {
 		log.Fatalln(err)
 	}

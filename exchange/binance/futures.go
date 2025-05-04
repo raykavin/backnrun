@@ -1,7 +1,9 @@
+// Package binance provides interfaces to interact with Binance exchange
 package binance
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -14,7 +16,9 @@ import (
 	"github.com/adshao/go-binance/v2/futures"
 )
 
-// Constants
+// ---------------------
+// Constants and Types
+// ---------------------
 
 // MarginType represents the margin type for futures
 type MarginType = futures.MarginType
@@ -29,8 +33,6 @@ const (
 	// ErrNoNeedChangeMarginType is returned when margin type change is not needed
 	ErrNoNeedChangeMarginType int64 = -4046
 )
-
-// Types
 
 // PairOption represents configuration for a specific trading pair
 type PairOption struct {
@@ -51,7 +53,9 @@ type Futures struct {
 // FuturesOption is a function that configures a Futures client
 type FuturesOption func(*Futures)
 
+// ---------------------
 // Option Functions
+// ---------------------
 
 // WithFuturesHeikinAshiCandles enables Heikin Ashi candle conversion for futures
 func WithFuturesHeikinAshiCandles() FuturesOption {
@@ -60,10 +64,23 @@ func WithFuturesHeikinAshiCandles() FuturesOption {
 	}
 }
 
+// WithFuturesTestNet enables the Binance TestNet
+func WithFuturesTestNet() FuturesOption {
+	futures.UseTestnet = true
+	return func(_ *Futures) {}
+}
+
 // WithFuturesCredentials sets the API credentials for the Futures client
 func WithFuturesCredentials(key, secret string) FuturesOption {
 	return func(f *Futures) {
 		f.client = futures.NewClient(key, secret)
+	}
+}
+
+// WithFuturesClientDebug sets the client instance in debug mode
+func WithFuturesClientDebug() FuturesOption {
+	return func(f *Futures) {
+		f.client.Debug = true
 	}
 }
 
@@ -85,7 +102,9 @@ func WithFuturesMetadataFetcher(fetcher MetadataFetcher) FuturesOption {
 	}
 }
 
-// Constructor Functions
+// ---------------------
+// Constructor Function
+// ---------------------
 
 // NewFutures creates a new Binance futures exchange client
 func NewFutures(ctx context.Context, options ...FuturesOption) (*Futures, error) {
@@ -104,17 +123,15 @@ func NewFutures(ctx context.Context, options ...FuturesOption) (*Futures, error)
 		option(futures)
 	}
 
-	// Validate connection and initialize exchange data
+	// Initialize the client with three sequential steps
 	if err := futures.validateConnection(ctx); err != nil {
 		return nil, err
 	}
 
-	// Configure pairs with leverage and margin settings
 	if err := futures.configurePairs(ctx); err != nil {
 		return nil, err
 	}
 
-	// Load exchange information and initialize asset data
 	if err := futures.initializeAssetInfo(ctx); err != nil {
 		return nil, err
 	}
@@ -122,24 +139,9 @@ func NewFutures(ctx context.Context, options ...FuturesOption) (*Futures, error)
 	return futures, nil
 }
 
-// Utility Functions
-
-// formatQuantity formats a quantity according to the pair's precision
-func (f *Futures) formatQuantity(pair string, value float64) string {
-	return formatQuantity(f.assetsInfo, pair, value)
-}
-
-// formatPrice formats a price according to the pair's precision
-func (f *Futures) formatPrice(pair string, value float64) string {
-	return formatPrice(f.assetsInfo, pair, value)
-}
-
-// validate checks if an order quantity is valid for a pair
-func (f *Futures) validate(pair string, quantity float64) error {
-	return validateOrder(f.assetsInfo, pair, quantity)
-}
-
+// ---------------------
 // Initialization Methods
+// ---------------------
 
 // validateConnection tests the connection to the Binance Futures API
 func (f *Futures) validateConnection(ctx context.Context) error {
@@ -198,7 +200,28 @@ func (f *Futures) initializeAssetInfo(ctx context.Context) error {
 	return nil
 }
 
-// API Methods
+// ---------------------
+// Utility Functions
+// ---------------------
+
+// formatQuantity formats a quantity according to the pair's precision
+func (f *Futures) formatQuantity(pair string, value float64) string {
+	return formatQuantity(f.assetsInfo, pair, value)
+}
+
+// formatPrice formats a price according to the pair's precision
+func (f *Futures) formatPrice(pair string, value float64) string {
+	return formatPrice(f.assetsInfo, pair, value)
+}
+
+// validate checks if an order quantity is valid for a pair
+func (f *Futures) validate(pair string, quantity float64) error {
+	return validateOrder(f.assetsInfo, pair, quantity)
+}
+
+// ---------------------
+// API Methods - Market Data
+// ---------------------
 
 // LastQuote gets the latest price for a pair
 func (f *Futures) LastQuote(ctx context.Context, pair string) (float64, error) {
@@ -218,7 +241,9 @@ func (f *Futures) AssetsInfo(pair string) (core.AssetInfo, error) {
 	return core.AssetInfo{}, fmt.Errorf("asset info not found in binance futures")
 }
 
-// Order Management Methods
+// ---------------------
+// API Methods - Order Management
+// ---------------------
 
 // CreateOrderOCO creates an OCO (One-Cancels-the-Other) order
 // This is not implemented in futures
@@ -395,7 +420,9 @@ func (f *Futures) Order(ctx context.Context, pair string, id int64) (core.Order,
 	return convertOrder(order), nil
 }
 
-// Account Information Methods
+// ---------------------
+// API Methods - Account Information
+// ---------------------
 
 // Account gets the account information
 func (f *Futures) Account(ctx context.Context) (core.Account, error) {
@@ -462,7 +489,7 @@ func (f *Futures) Account(ctx context.Context) (core.Account, error) {
 func (f *Futures) Position(ctx context.Context, pair string) (asset, quote float64, err error) {
 	assetTick, quoteTick := SplitAssetQuote(pair)
 	acc, err := f.Account(ctx)
-	if err != nil {
+	if err != nil && !errors.Is(err, core.ErrOutOfMoneyInAccounts) {
 		return 0, 0, err
 	}
 
@@ -471,7 +498,9 @@ func (f *Futures) Position(ctx context.Context, pair string) (asset, quote float
 	return assetBalance.Free + assetBalance.Lock, quoteBalance.Free + quoteBalance.Lock, nil
 }
 
-// Candle Methods
+// ---------------------
+// API Methods - Candles
+// ---------------------
 
 // CandlesSubscription subscribes to candle updates for a pair
 func (f *Futures) CandlesSubscription(ctx context.Context, pair, period string) (chan core.Candle, chan error) {
@@ -588,6 +617,10 @@ func (f *Futures) CandlesByPeriod(ctx context.Context, pair, period string,
 
 	return candles, nil
 }
+
+// ---------------------
+// Helper Functions
+// ---------------------
 
 // convertFuturesKlineToCandle converts a Binance futures kline to a core.Candle
 func convertFuturesKlineToCandle(pair string, k futures.Kline) core.Candle {
