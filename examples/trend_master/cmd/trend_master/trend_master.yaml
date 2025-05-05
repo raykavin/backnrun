@@ -1,0 +1,125 @@
+# TrendMaster - Configuração Avançada
+
+# Configurações gerais
+general:
+  timeframe: "15m"              # Timeframe base para a estratégia (m: minutos, h: horas)
+  higher_timeframe: "1h"        # Timeframe superior para filtro de tendência
+  warmup_period: 400            # Período de aquecimento para cálculos históricos
+  max_trades_per_day: 6         # Máximo de operações por dia
+  trading_hours:                # Horários de trading ativos (UTC)
+    enabled: true
+    start_hour: 9               # Hora de início
+    end_hour: 22                # Hora de fim
+    avoid_news_times: true      # Evitar operações durante anúncios importantes (Não implementado)
+  pairs:
+    - BTCUSDT
+    - ETHUSDT
+    - BNBUSDT
+    - ADAUSDT
+    - BCHUSDT
+
+# Indicadores principais
+indicators:
+  ema:
+    fast_period: 8              # Período da EMA rápida
+    slow_period: 20             # Período da EMA lenta
+    long_period: 50             # Período da EMA longa
+  
+  macd:
+    fast_period: 12             # Período rápido do MACD
+    slow_period: 26             # Período lento do MACD
+    signal_period: 9            # Período da linha de sinal
+  
+  adx:
+    period: 14                  # Período do ADX
+    threshold: 25               # Limite para considerar tendência forte
+    minimum_di_spread: 5        # Diferença mínima entre +DI e -DI
+  
+  rsi:
+    enabled: true               # Usar filtro RSI
+    period: 14                  # Período do RSI
+    overbought: 70              # Nível de sobrecompra
+    oversold: 30                # Nível de sobrevenda
+    extreme_overbought: 80      # Nível extremo de sobrecompra para saída
+  
+  atr:
+    period: 14                  # Período do ATR
+    multiplier: 2.0             # Multiplicador para stop loss baseado em ATR
+    volatility_threshold: 0.015 # Limite máximo de volatilidade (% do preço)
+
+  volume:
+    enabled: true               # Usar filtro de volume
+    avg_period: 20              # Período da média de volume
+    min_ratio: 1.1              # Volume mínimo em relação à média
+
+# Gestão de entradas
+entry:
+  higher_tf_confirmation: true  # Exigir confirmação do timeframe superior
+  sentiment_filter:
+    enabled: true               # Usar filtro de sentimento de mercado
+    threshold: 40               # Limite do índice de medo e ganância (abaixo deste valor, mais seletivo)
+  market_correlation:
+    enabled: true               # Verificar correlação com mercado global
+    reference_symbol: "BTC"     # Símbolo de referência para correlação
+    correlation_period: 20      # Período para cálculo da correlação
+    negative_correlation_threshold: -0.5  # Limite para correlação negativa
+
+# Gestão de posição
+position:
+  size: 0.3                     # Tamanho padrão da posição (% do capital disponível)
+  max_risk_per_trade: 0.01      # Risco máximo por operação (% do capital total)
+  trailing_stop_percent: 0.03   # Percentual do trailing stop
+  adaptive_size:
+    enabled: true               # Ajustar tamanho da posição com base no desempenho
+    win_increase_factor: 0.1    # Aumento do tamanho após vitória (10%)
+    loss_reduction_factor: 0.2  # Redução do tamanho após perda (20%)
+    min_size_factor: 0.4        # Tamanho mínimo da posição (% do tamanho padrão)
+    max_size_factor: 1.5        # Tamanho máximo da posição (% do tamanho padrão)
+
+# Gestão de saídas
+exit:
+  partial_take_profit:
+    enabled: true               # Usar saída parcial
+    levels:
+      - percentage: 0.5         # Porcentagem da posição
+        target: 0.06            # Alvo de lucro (6%)
+      - percentage: 0.25        # Porcentagem da posição
+        target: 0.09            # Alvo de lucro estendido (9%)
+      - percentage: 0.25        # Porcentagem da posição
+        trailing_only: true     # Apenas trailing stop
+  
+  dynamic_targets:
+    enabled: true               # Usar alvos dinâmicos baseados em ATR
+    base_target: 0.06           # Alvo base (6%)
+    atr_factor: 3               # Multiplicador de ATR para alvo
+    min_target: 0.04            # Alvo mínimo (4%)
+    max_target: 0.12            # Alvo máximo (12%)
+  
+  quick_exit:
+    macd_reversal: true         # Saída rápida em reversão forte de MACD
+    macd_threshold: 1.5         # Limiar para reversão forte
+    adx_falling: true           # Saída rápida quando ADX começa a cair
+    price_action: true          # Saída baseada em ação do preço
+
+# Adaptação de mercado
+market_specific:
+  crypto:
+    volatility_threshold: 0.02  # Limite de volatilidade para criptomoedas
+    trailing_stop_percent: 0.04 # Trailing stop para criptomoedas
+    atr_multiplier: 2.5         # Multiplicador ATR para criptomoedas
+  
+  forex:
+    volatility_threshold: 0.008 # Limite de volatilidade para forex
+    trailing_stop_percent: 0.02 # Trailing stop para forex
+    atr_multiplier: 1.8         # Multiplicador ATR para forex
+  
+  stocks:
+    volatility_threshold: 0.012 # Limite de volatilidade para ações
+    trailing_stop_percent: 0.03 # Trailing stop para ações
+    atr_multiplier: 2.0         # Multiplicador ATR para ações
+
+# Registro e monitoramento
+logging:
+  level: "info"                 # Nível de log (debug, info, warn, error)
+  trade_statistics: true        # Registrar estatísticas de negociação
+  performance_metrics: true     # Calcular métricas de desempenho
