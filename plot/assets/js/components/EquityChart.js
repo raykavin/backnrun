@@ -4,7 +4,6 @@
 
 import { addLegendItem, createElement } from '../utils/Helpers.js';
 import { syncChartWithMain } from './ChartCreator.js';
-// import { methodExists } from './chartCreator.js';
 
 /**
  * Create equity chart

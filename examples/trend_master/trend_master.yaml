@@ -1,0 +1,98 @@
+entry:
+    highertfconfirmation: true
+    sentimentfilter:
+        enabled: true
+        threshold: 40
+    marketcorrelation:
+        enabled: true
+        referencesymbol: BTC
+        correlationperiod: 20
+        negativecorrelationthreshold: -0.5
+exit:
+    partialtakeprofit:
+        enabled: true
+        levels:
+            - percentage: 0.5
+              target: 0.06
+              trailingonly: false
+            - percentage: 0.25
+              target: 0.09
+              trailingonly: false
+            - percentage: 0.25
+              target: 0
+              trailingonly: true
+    dynamictargets:
+        enabled: true
+        basetarget: 0.06
+        atrfactor: 3
+        mintarget: 0.04
+        maxtarget: 0.12
+    quickexit:
+        macdreversal: true
+        macdthreshold: 1.5
+        adxfalling: true
+        priceaction: true
+general:
+    timeframe: 15m
+    highertimeframe: 1h
+    warmupperiod: 400
+    maxtradesperday: 6
+    tradinghours:
+        enabled: true
+        starthour: 9
+        endhour: 22
+    pairs: []
+indicators:
+    ema:
+        fastperiod: 8
+        slowperiod: 20
+        longperiod: 50
+    macd:
+        fastperiod: 12
+        slowperiod: 26
+        signalperiod: 9
+    adx:
+        period: 14
+        threshold: 25
+        minimumdispread: 5
+    rsi:
+        enabled: true
+        period: 14
+        overbought: 70
+        oversold: 30
+        extremeoverbought: 80
+    atr:
+        period: 14
+        multiplier: 2
+        volatilitythreshold: 0.015
+    volume:
+        enabled: true
+        avgperiod: 20
+        minratio: 1.1
+logging:
+    level: info
+    tradestatistics: true
+    performancemetrics: true
+market_specific:
+    crypto:
+        volatilitythreshold: 0.02
+        trailingstoppercent: 0.04
+        atrmultiplier: 2.5
+    forex:
+        volatilitythreshold: 0.008
+        trailingstoppercent: 0.02
+        atrmultiplier: 1.8
+    stocks:
+        volatilitythreshold: 0.012
+        trailingstoppercent: 0.03
+        atrmultiplier: 2
+position:
+    size: 0.3
+    maxriskpertrade: 0.01
+    trailingstoppercent: 0.03
+    adaptivesize:
+        enabled: true
+        winincreasefactor: 0.1
+        lossreductionfactor: 0.2
+        minsizefactor: 0.4
+        maxsizefactor: 1.5

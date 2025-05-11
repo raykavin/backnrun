@@ -105,6 +105,7 @@ func createPaperWallet(ctx context.Context, dataFeed core.Feeder, logger core.Lo
 func createChart(logger core.Logger) (*plot.Chart, error) {
 	return plot.NewChart(
 		logger,
+		plot.WithDebug(),
 		plot.WithCustomIndicators(
 			indicator.EMA(8, "red", indicator.Close),
 			indicator.SMA(21, "blue", indicator.Close),

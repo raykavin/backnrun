@@ -97,7 +97,12 @@ func mustInitializeChartServer(
 	strategy core.Strategy,
 	wallet *exchange.PaperWallet,
 ) (*plot.ChartServer, *plot.Chart) {
-	chart := must(plot.NewChart(logger, plot.WithStrategyIndicators(strategy), plot.WithPaperWallet(wallet)))
+	chart := must(plot.NewChart(
+		logger,
+		plot.WithDebug(),
+		plot.WithStrategyIndicators(strategy),
+		plot.WithPaperWallet(wallet),
+	))
 	server := plot.NewChartServer(chart, plot.NewStandardHTTPServer(), logger)
 	return server, chart
 }

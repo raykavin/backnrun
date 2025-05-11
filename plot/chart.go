@@ -117,9 +117,9 @@ func NewChart(log core.Logger, options ...Option) (*Chart, error) {
 	transpileChartJS := api.Transform(string(chartJS), api.TransformOptions{
 		Loader:            api.LoaderJS,
 		Target:            api.ES2015,
-		MinifySyntax:      !chart.debug,
-		MinifyIdentifiers: !chart.debug,
-		MinifyWhitespace:  !chart.debug,
+		MinifySyntax:      chart.debug,
+		MinifyIdentifiers: chart.debug,
+		MinifyWhitespace:  chart.debug,
 	})
 
 	if len(transpileChartJS.Errors) > 0 {

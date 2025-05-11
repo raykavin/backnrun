@@ -9,11 +9,13 @@ require (
 	github.com/evanw/esbuild v0.21.4
 	github.com/google/goterm v0.0.0-20200907032337-555d40f16ae2
 	github.com/gorilla/websocket v1.5.3
+	github.com/joho/godotenv v1.5.1
 	github.com/jpillora/backoff v1.0.0
 	github.com/markcheno/go-talib v0.0.0-20250114000313-ec55a20c902f
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/rs/zerolog v1.29.0
 	github.com/samber/lo v1.49.1
+	github.com/sashabaranov/go-openai v1.39.1
 	github.com/schollz/progressbar/v3 v3.14.3
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.20.1
@@ -65,5 +67,6 @@ require (
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/term v0.20.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
