@@ -25,12 +25,8 @@ func SetupChartServer(indicators strategy.IndicatorsConfig) (*plot.ChartServer, 
 		plot.WithCustomIndicators(
 			indicator.EMA(emaPeriods[0], "lime", indicator.Close),
 			indicator.EMA(emaPeriods[1], "red", indicator.Close),
-			indicator.MACD(
-				indicators.MACD.FastPeriod,
-				indicators.MACD.SlowPeriod,
-				indicators.MACD.SignalPeriod,
-				"blue", "red", "green",
-			),
+			indicator.MACD(indicators.MACD.FastPeriod, indicators.MACD.SlowPeriod,
+				indicators.MACD.SignalPeriod, "blue", "red", "green"),
 		),
 	)
 	if err != nil {

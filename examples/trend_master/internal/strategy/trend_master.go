@@ -25,19 +25,19 @@ func ConvertToStrategyImplementation(cfg *TrendMasterConfig) strategies.TrendMas
 		AtrMultiplier:       cfg.MarketSpecific.Crypto.AtrMultiplier,
 	}
 
-	// Convert forex settings
-	marketSpecificSettings["forex"] = strategies.MarketSpecificConfig{
-		VolatilityThreshold: cfg.MarketSpecific.Forex.VolatilityThreshold,
-		TrailingStopPercent: cfg.MarketSpecific.Forex.TrailingStopPercent,
-		AtrMultiplier:       cfg.MarketSpecific.Forex.AtrMultiplier,
-	}
+	// // Convert forex settings
+	// marketSpecificSettings["forex"] = strategies.MarketSpecificConfig{
+	// 	VolatilityThreshold: cfg.MarketSpecific.Forex.VolatilityThreshold,
+	// 	TrailingStopPercent: cfg.MarketSpecific.Forex.TrailingStopPercent,
+	// 	AtrMultiplier:       cfg.MarketSpecific.Forex.AtrMultiplier,
+	// }
 
-	// Convert stock settings
-	marketSpecificSettings["stocks"] = strategies.MarketSpecificConfig{
-		VolatilityThreshold: cfg.MarketSpecific.Stocks.VolatilityThreshold,
-		TrailingStopPercent: cfg.MarketSpecific.Stocks.TrailingStopPercent,
-		AtrMultiplier:       cfg.MarketSpecific.Stocks.AtrMultiplier,
-	}
+	// // Convert stock settings
+	// marketSpecificSettings["stocks"] = strategies.MarketSpecificConfig{
+	// 	VolatilityThreshold: cfg.MarketSpecific.Stocks.VolatilityThreshold,
+	// 	TrailingStopPercent: cfg.MarketSpecific.Stocks.TrailingStopPercent,
+	// 	AtrMultiplier:       cfg.MarketSpecific.Stocks.AtrMultiplier,
+	// }
 
 	// Convert partial exit levels
 	var partialExitLevels []strategies.PartialExitLevel

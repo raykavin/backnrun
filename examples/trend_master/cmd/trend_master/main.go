@@ -12,6 +12,7 @@ import (
 	"github.com/raykavin/backnrun/examples/trend_master/internal/strategy"
 	"github.com/raykavin/backnrun/examples/trend_master/pkg/utils"
 	"github.com/raykavin/backnrun/storage"
+	"github.com/raykavin/backnrun/strategies"
 )
 
 var (
@@ -50,7 +51,7 @@ func main() {
 
 	// Log bot initialization
 	log.WithFields(map[string]any{
-		"timeframe":           strategyConfig.General.Timeframe,
+		"time_frame":          strategyConfig.General.Timeframe,
 		"pairs":               strategyConfig.General.Pairs,
 		"configPath":          appConfig.ConfigPath,
 		"tradingHoursEnabled": strategyConfig.General.TradingHours.Enabled,
@@ -87,7 +88,8 @@ func setupBot(
 	}
 
 	// Create strategy with configuration
-	trendMasterStrategy := strategy.NewTrendMasterStrategy(strategyConfig)
+	// trendMasterStrategy := strategy.NewTrendMasterStrategy(strategyConfig)
+	trendMasterStrategy := strategies.NewCrossEMA(5, 10, 10)
 
 	// Create and configure the bot
 	return bot.NewBot(

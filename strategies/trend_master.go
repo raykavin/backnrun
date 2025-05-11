@@ -12,118 +12,118 @@ import (
 	"github.com/raykavin/backnrun/indicator"
 )
 
-// TrendMasterConfig contém todos os parâmetros configuráveis da estratégia
+// TrendMasterConfig contains all configurable parameters for the strategy
 type TrendMasterConfig struct {
-	// Timeframe base para a estratégia
+	// Base timeframe for the strategy
 	Timeframe string
 
-	// Timeframe superior para filtro de tendência
+	// Higher timeframe for trend filtering
 	HigherTimeframe string
 
-	// Período de aquecimento para cálculos históricos
+	// Warmup period for historical calculations
 	WarmupPeriod int
 
-	// Máximo de operações por dia
+	// Maximum trades per day
 	MaxTradesPerDay int
 
-	// Controle de horário de trading
+	// Trading hours control
 	TradingHoursEnabled bool
 	TradingStartHour    int
 	TradingEndHour      int
 
-	// Parâmetros de indicadores EMA
+	// EMA indicator parameters
 	EmaFastPeriod int
 	EmaSlowPeriod int
 	EmaLongPeriod int
 
-	// Parâmetros MACD
+	// MACD parameters
 	MacdFastPeriod   int
 	MacdSlowPeriod   int
 	MacdSignalPeriod int
 
-	// Parâmetros ADX
+	// ADX parameters
 	AdxPeriod          int
 	AdxThreshold       float64
 	AdxMinimumDiSpread float64
 
-	// Parâmetros RSI
+	// RSI parameters
 	UseRsiFilter         bool
 	RsiPeriod            int
 	RsiOverbought        float64
 	RsiOversold          float64
 	RsiExtremeOverbought float64
 
-	// Parâmetros ATR
+	// ATR parameters
 	AtrPeriod           int
 	AtrMultiplier       float64
 	VolatilityThreshold float64
 
-	// Parâmetros Volume
+	// Volume parameters
 	UseVolFilter bool
 	VolAvgPeriod int
 	VolMinRatio  float64
 
-	// Controle de entrada
+	// Entry control
 	UseHigherTfConfirmation bool
 
-	// Filtro de sentimento
+	// Sentiment filter
 	UseSentimentFilter bool
 	SentimentThreshold float64
 
-	// Correlação de mercado
+	// Market correlation
 	UseMarketCorrelation         bool
 	CorrelationReferenceSymbol   string
 	CorrelationPeriod            int
 	NegativeCorrelationThreshold float64
 
-	// Gestão de posição
+	// Position management
 	PositionSize        float64
 	MaxRiskPerTrade     float64
 	TrailingStopPercent float64
 
-	// Tamanho adaptativo de posição
+	// Adaptive position sizing
 	UseAdaptiveSize       bool
 	WinIncreaseFactor     float64
 	LossReductionFactor   float64
 	MinPositionSizeFactor float64
 	MaxPositionSizeFactor float64
 
-	// Saída parcial
+	// Partial take profit
 	UsePartialTakeProfit bool
 	PartialExitLevels    []PartialExitLevel
 
-	// Alvos dinâmicos
+	// Dynamic targets
 	UseDynamicTargets bool
 	BaseTarget        float64
 	AtrTargetFactor   float64
 	MinTarget         float64
 	MaxTarget         float64
 
-	// Saídas rápidas
+	// Quick exits
 	UseMacdReversalExit   bool
 	MacdReversalThreshold float64
 	UseAdxFallingExit     bool
 	UsePriceActionExit    bool
 
-	// Parâmetros específicos por tipo de mercado
+	// Market-specific settings
 	MarketSpecificSettings map[string]MarketSpecificConfig
 }
 
-// PartialExitLevel define um nível de saída parcial
+// PartialExitLevel defines a partial exit level
 type PartialExitLevel struct {
 	Percentage   float64
 	Target       float64
 	TrailingOnly bool
 }
 
-// MarketSpecificConfig contém configurações específicas para cada tipo de mercado
+// MarketSpecificConfig contains settings specific to each market type
 type MarketSpecificConfig struct {
 	VolatilityThreshold float64
 	TrailingStopPercent float64
 	AtrMultiplier       float64
 }
 
-// PartialPosition armazena detalhes de uma posição parcial
+// PartialPosition stores details of a partial position
 type PartialPosition struct {
 	Quantity   float64
 	EntryPrice float64
@@ -131,13 +131,13 @@ type PartialPosition struct {
 	Level      int
 }
 
-// TrendMaster implementa uma estratégia que combina múltiplos indicadores
-// para identificar tendências fortes e gerar sinais de entrada e saída
+// TrendMaster implements a strategy that combines multiple indicators
+// to identify strong trends and generate entry and exit signals
 type TrendMaster struct {
-	// Configuração da estratégia
+	// Strategy configuration
 	config TrendMasterConfig
 
-	// Estado interno da estratégia
+	// Internal state
 	marketType             map[string]string // "crypto", "forex", "stocks"
 	higherTfCache          map[string]*core.Dataframe
 	higherTfLastUpdate     map[string]time.Time
@@ -162,7 +162,7 @@ type TrendMaster struct {
 	isDataFrameInitialized map[string]bool
 }
 
-// NewTrendMasterStrategy cria uma nova instância da estratégia com parâmetros definidos
+// NewTrendMaster creates a new instance of the strategy with defined parameters
 func NewTrendMaster(config TrendMasterConfig) *TrendMaster {
 	return &TrendMaster{
 		config:                 config,
@@ -185,38 +185,51 @@ func NewTrendMaster(config TrendMasterConfig) *TrendMaster {
 	}
 }
 
-// Timeframe retorna o timeframe requerido para esta estratégia
+// Timeframe returns the required timeframe for this strategy
 func (t TrendMaster) Timeframe() string {
 	return t.config.Timeframe
 }
 
-// WarmupPeriod retorna o número de candles necessários antes da estratégia estar pronta
+// WarmupPeriod returns the number of candles needed before the strategy is ready
 func (t TrendMaster) WarmupPeriod() int {
 	return t.config.WarmupPeriod
 }
 
-// Indicators calcula e retorna os indicadores usados por esta estratégia
+// Indicators calculates and returns the indicators used by this strategy
 func (t TrendMaster) Indicators(df *core.Dataframe) []core.ChartIndicator {
-	// Verificar se já temos dados para este par
+	t.initializeDataFrame(df)
+	t.calculateIndicators(df)
+	t.updateHigherTimeframeCache(df)
+	t.updateCorrelationData(df)
+	t.detectMarketType(df.Pair)
+
+	return t.createChartIndicators(df)
+}
+
+// initializeDataFrame initializes dataframe-specific data structures if needed
+func (t *TrendMaster) initializeDataFrame(df *core.Dataframe) {
 	if !t.isDataFrameInitialized[df.Pair] {
 		t.isDataFrameInitialized[df.Pair] = true
 
-		// Inicializar arrays para correlação
+		// Initialize arrays for correlation
 		t.correlationValues[df.Pair] = make([]float64, 0, t.config.CorrelationPeriod*2)
 
-		// Se estamos usando correlação e este é o par de referência
+		// If we're using correlation and this is the reference pair
 		if t.config.UseMarketCorrelation && strings.Contains(df.Pair, t.config.CorrelationReferenceSymbol) {
 			t.correlationRef[df.Pair] = make([]float64, 0, t.config.CorrelationPeriod*2)
 		}
 	}
+}
 
-	// Calcular EMAs
+// calculateIndicators computes all technical indicators for the dataframe
+func (t *TrendMaster) calculateIndicators(df *core.Dataframe) {
+	// Calculate EMAs
 	df.Metadata["ema_fast"] = indicator.EMA(df.Close, t.config.EmaFastPeriod)
 	df.Metadata["ema_slow"] = indicator.EMA(df.Close, t.config.EmaSlowPeriod)
 	df.Metadata["ema_long_high"] = indicator.EMA(df.High, t.config.EmaLongPeriod)
 	df.Metadata["ema_long_low"] = indicator.EMA(df.Low, t.config.EmaLongPeriod)
 
-	// Calcular MACD
+	// Calculate MACD
 	df.Metadata["macd"], df.Metadata["macd_signal"], df.Metadata["macd_hist"] = indicator.MACD(
 		df.Close,
 		t.config.MacdFastPeriod,
@@ -224,34 +237,27 @@ func (t TrendMaster) Indicators(df *core.Dataframe) []core.ChartIndicator {
 		t.config.MacdSignalPeriod,
 	)
 
-	// Calcular ADX e indicadores direcionais
+	// Calculate ADX and directional indicators
 	df.Metadata["adx"] = indicator.ADX(df.High, df.Low, df.Close, t.config.AdxPeriod)
 	df.Metadata["plus_di"] = talib.PlusDI(df.High, df.Low, df.Close, t.config.AdxPeriod)
 	df.Metadata["minus_di"] = talib.MinusDI(df.High, df.Low, df.Close, t.config.AdxPeriod)
 
-	// Adicionar ATR para cálculo de volatilidade
+	// Add ATR for volatility calculation
 	df.Metadata["atr"] = talib.Atr(df.High, df.Low, df.Close, t.config.AtrPeriod)
 
-	// Calcular RSI para filtragem adicional
+	// Calculate RSI for additional filtering
 	if t.config.UseRsiFilter {
 		df.Metadata["rsi"] = talib.Rsi(df.Close, t.config.RsiPeriod)
 	}
 
-	// Calcular média de volume para filtragem
+	// Calculate volume average for filtering
 	if t.config.UseVolFilter {
 		df.Metadata["vol_avg"] = indicator.SMA(df.Volume, t.config.VolAvgPeriod)
 	}
+}
 
-	// Atualizar cache de dados para timeframe superior
-	t.updateHigherTimeframeCache(df)
-
-	// Atualizar dados para correlação
-	t.updateCorrelationData(df)
-
-	// Detectar tipo de mercado (se ainda não foi detectado)
-	t.detectMarketType(df.Pair)
-
-	// Retornar indicadores para visualização
+// createChartIndicators returns indicators for visualization
+func (t *TrendMaster) createChartIndicators(df *core.Dataframe) []core.ChartIndicator {
 	return []core.ChartIndicator{
 		{
 			Overlay:   true,
@@ -350,21 +356,21 @@ func (t TrendMaster) Indicators(df *core.Dataframe) []core.ChartIndicator {
 	}
 }
 
-// updateHigherTimeframeCache atualiza o cache de dataframe do timeframe superior
+// updateHigherTimeframeCache updates the higher timeframe dataframe cache
 func (t *TrendMaster) updateHigherTimeframeCache(df *core.Dataframe) {
-	// Se não estamos usando filtro de timeframe superior, não precisamos atualizar o cache
+	// If we're not using higher timeframe confirmation, no need to update the cache
 	if !t.config.UseHigherTfConfirmation {
 		return
 	}
 
-	// Verificar se é hora de atualizar o cache (a cada 5 minutos)
+	// Check if it's time to update the cache (every 5 minutes)
 	now := time.Now()
 	lastUpdate, exists := t.higherTfLastUpdate[df.Pair]
 	if exists && now.Sub(lastUpdate) < time.Minute*5 {
 		return
 	}
 
-	// Criar novo dataframe para timeframe superior se não existir
+	// Create new dataframe for higher timeframe if it doesn't exist
 	if _, exists := t.higherTfCache[df.Pair]; !exists {
 		t.higherTfCache[df.Pair] = &core.Dataframe{
 			Pair:     df.Pair,
@@ -372,19 +378,18 @@ func (t *TrendMaster) updateHigherTimeframeCache(df *core.Dataframe) {
 		}
 	}
 
-	// Usar as listas atuais do df para criar um dataframe de timeframe superior
+	// Process data for higher timeframe
 	t.processHigherTimeframeData(df)
 
-	// Atualizar timestamp da última atualização
+	// Update last update timestamp
 	t.higherTfLastUpdate[df.Pair] = now
 }
 
-// processHigherTimeframeData processa dados para o dataframe de timeframe superior
+// processHigherTimeframeData processes data for the higher timeframe dataframe
 func (t *TrendMaster) processHigherTimeframeData(df *core.Dataframe) {
-	// Função para criar candles de timeframe superior a partir de candles menores
 	higherDf := t.higherTfCache[df.Pair]
 
-	// Configuração de períodos para o timeframe superior
+	// Timeframe mapping to minutes
 	timeframeMap := map[string]int{
 		"1m":  1,
 		"3m":  3,
@@ -400,26 +405,26 @@ func (t *TrendMaster) processHigherTimeframeData(df *core.Dataframe) {
 		"1d":  1440,
 	}
 
-	// Obter número de minutos para cada timeframe
+	// Get number of minutes for each timeframe
 	baseMinutes, existsBase := timeframeMap[t.config.Timeframe]
 	higherMinutes, existsHigher := timeframeMap[t.config.HigherTimeframe]
 
 	if !existsBase || !existsHigher {
-		return // Timeframes inválidos
+		return // Invalid timeframes
 	}
 
-	// Número de candles do timeframe base que formam um candle do timeframe superior
+	// Number of base timeframe candles that form one higher timeframe candle
 	candlesPerHigherTf := higherMinutes / baseMinutes
 
-	// Garantir que temos dados suficientes
+	// Ensure we have enough data
 	if len(df.Close) < candlesPerHigherTf {
 		return
 	}
 
-	// Agrupar candles do timeframe base em candles do timeframe superior
+	// Group base timeframe candles into higher timeframe candles
 	numCandles := len(df.Close) / candlesPerHigherTf
 
-	// Inicializar slices para o dataframe de timeframe superior
+	// Initialize slices for the higher timeframe dataframe
 	higherDf.Time = make([]time.Time, numCandles)
 	higherDf.Open = make(core.Series[float64], numCandles)
 	higherDf.High = make(core.Series[float64], numCandles)
@@ -427,7 +432,7 @@ func (t *TrendMaster) processHigherTimeframeData(df *core.Dataframe) {
 	higherDf.Close = make(core.Series[float64], numCandles)
 	higherDf.Volume = make(core.Series[float64], numCandles)
 
-	// Preencher o dataframe de timeframe superior
+	// Fill the higher timeframe dataframe
 	for i := 0; i < numCandles; i++ {
 		startIdx := i * candlesPerHigherTf
 		endIdx := (i + 1) * candlesPerHigherTf
@@ -435,12 +440,12 @@ func (t *TrendMaster) processHigherTimeframeData(df *core.Dataframe) {
 			endIdx = len(df.Close)
 		}
 
-		// Período atual de candles
+		// Current period of candles
 		periodOpen := df.Open[startIdx]
 		periodClose := df.Close[endIdx-1]
 		periodVolume := 0.0
 
-		// Encontrar máximos e mínimos no período
+		// Find highs and lows in the period
 		periodHigh := df.High[startIdx]
 		periodLow := df.Low[startIdx]
 
@@ -454,7 +459,7 @@ func (t *TrendMaster) processHigherTimeframeData(df *core.Dataframe) {
 			periodVolume += df.Volume[j]
 		}
 
-		// Preencher o dataframe de timeframe superior
+		// Fill the higher timeframe dataframe
 		higherDf.Time[i] = df.Time[startIdx]
 		higherDf.Open[i] = periodOpen
 		higherDf.High[i] = periodHigh
@@ -463,63 +468,68 @@ func (t *TrendMaster) processHigherTimeframeData(df *core.Dataframe) {
 		higherDf.Volume[i] = periodVolume
 	}
 
-	// Calcular indicadores para o timeframe superior
-	higherDf.Metadata["ema_fast"] = indicator.EMA(higherDf.Close, t.config.EmaFastPeriod)
-	higherDf.Metadata["ema_slow"] = indicator.EMA(higherDf.Close, t.config.EmaSlowPeriod)
-	higherDf.Metadata["ema_long"] = indicator.EMA(higherDf.Close, t.config.EmaLongPeriod)
-	higherDf.Metadata["macd"], higherDf.Metadata["macd_signal"], higherDf.Metadata["macd_hist"] = indicator.MACD(
-		higherDf.Close,
+	// Calculate indicators for the higher timeframe
+	t.calculateHigherTimeframeIndicators(higherDf)
+}
+
+// calculateHigherTimeframeIndicators calculates indicators for the higher timeframe
+func (t *TrendMaster) calculateHigherTimeframeIndicators(df *core.Dataframe) {
+	df.Metadata["ema_fast"] = indicator.EMA(df.Close, t.config.EmaFastPeriod)
+	df.Metadata["ema_slow"] = indicator.EMA(df.Close, t.config.EmaSlowPeriod)
+	df.Metadata["ema_long"] = indicator.EMA(df.Close, t.config.EmaLongPeriod)
+	df.Metadata["macd"], df.Metadata["macd_signal"], df.Metadata["macd_hist"] = indicator.MACD(
+		df.Close,
 		t.config.MacdFastPeriod,
 		t.config.MacdSlowPeriod,
 		t.config.MacdSignalPeriod,
 	)
-	higherDf.Metadata["adx"] = indicator.ADX(higherDf.High, higherDf.Low, higherDf.Close, t.config.AdxPeriod)
-	higherDf.Metadata["plus_di"] = talib.PlusDI(higherDf.High, higherDf.Low, higherDf.Close, t.config.AdxPeriod)
-	higherDf.Metadata["minus_di"] = talib.MinusDI(higherDf.High, higherDf.Low, higherDf.Close, t.config.AdxPeriod)
+	df.Metadata["adx"] = indicator.ADX(df.High, df.Low, df.Close, t.config.AdxPeriod)
+	df.Metadata["plus_di"] = talib.PlusDI(df.High, df.Low, df.Close, t.config.AdxPeriod)
+	df.Metadata["minus_di"] = talib.MinusDI(df.High, df.Low, df.Close, t.config.AdxPeriod)
 }
 
-// updateCorrelationData atualiza os dados de correlação com o mercado global
+// updateCorrelationData updates the correlation data with the global market
 func (t *TrendMaster) updateCorrelationData(df *core.Dataframe) {
-	// Se não estamos usando correlação, retornar
+	// If we're not using correlation, return
 	if !t.config.UseMarketCorrelation {
 		return
 	}
 
-	// Verificar se temos close price válido
+	// Check if we have a valid close price
 	if len(df.Close) == 0 {
 		return
 	}
 
-	// Adicionar último close price ao array de valores
+	// Add last close price to the values array
 	lastClose := df.Close.Last(0)
 	if lastClose > 0 {
 		t.correlationValues[df.Pair] = append(t.correlationValues[df.Pair], lastClose)
 
-		// Limitar o tamanho do array
+		// Limit the array size
 		if len(t.correlationValues[df.Pair]) > t.config.CorrelationPeriod*2 {
 			t.correlationValues[df.Pair] = t.correlationValues[df.Pair][1:]
 		}
 	}
 
-	// Se este par contém o símbolo de referência, atualizar os dados de referência
+	// If this pair contains the reference symbol, update the reference data
 	if strings.Contains(df.Pair, t.config.CorrelationReferenceSymbol) {
 		if lastClose > 0 {
 			t.correlationRef[df.Pair] = append(t.correlationRef[df.Pair], lastClose)
 
-			// Limitar o tamanho do array
+			// Limit the array size
 			if len(t.correlationRef[df.Pair]) > t.config.CorrelationPeriod*2 {
 				t.correlationRef[df.Pair] = t.correlationRef[df.Pair][1:]
 			}
 		}
 
-		// Atualizar a correlação para todos os pares
+		// Update correlation for all pairs
 		t.calculateAllCorrelations()
 	}
 }
 
-// calculateAllCorrelations calcula a correlação entre todos os pares e o par de referência
+// calculateAllCorrelations calculates the correlation between all pairs and the reference pair
 func (t *TrendMaster) calculateAllCorrelations() {
-	// Encontrar o par de referência
+	// Find the reference pair
 	var refPair string
 	var refValues []float64
 
@@ -531,44 +541,44 @@ func (t *TrendMaster) calculateAllCorrelations() {
 		}
 	}
 
-	// Se não encontramos o par de referência com dados suficientes, retornar
+	// If we didn't find the reference pair with enough data, return
 	if refPair == "" || len(refValues) < t.config.CorrelationPeriod {
 		return
 	}
 
-	// Usar apenas os últimos N valores
+	// Use only the last N values
 	refValues = refValues[len(refValues)-t.config.CorrelationPeriod:]
 
-	// Calcular correlação para cada par
+	// Calculate correlation for each pair
 	for pair, values := range t.correlationValues {
-		// Se não temos dados suficientes, pular
+		// If we don't have enough data, skip
 		if len(values) < t.config.CorrelationPeriod {
 			continue
 		}
 
-		// Usar apenas os últimos N valores
+		// Use only the last N values
 		pairValues := values[len(values)-t.config.CorrelationPeriod:]
 
-		// Calcular correlação
+		// Calculate correlation
 		correlation := t.calculateCorrelation(refValues, pairValues)
 
-		// Armazenar correlação
+		// Store correlation
 		t.marketCorrelation[pair] = correlation
 	}
 }
 
-// calculateCorrelation calcula a correlação entre dois arrays de valores
+// calculateCorrelation calculates the correlation between two arrays of values
 func (t *TrendMaster) calculateCorrelation(x, y []float64) float64 {
-	// Verificar se os arrays têm o mesmo tamanho
+	// Check if the arrays have the same size
 	if len(x) != len(y) {
 		return 0
 	}
 
-	// Calcular médias
+	// Calculate means
 	var sumX, sumY, sumXY, sumX2, sumY2 float64
 	n := float64(len(x))
 
-	for i := 0; i < len(x); i++ {
+	for i := range x {
 		sumX += x[i]
 		sumY += y[i]
 		sumXY += x[i] * y[i]
@@ -576,7 +586,7 @@ func (t *TrendMaster) calculateCorrelation(x, y []float64) float64 {
 		sumY2 += y[i] * y[i]
 	}
 
-	// Calcular correlação de Pearson
+	// Calculate Pearson correlation
 	numerator := sumXY - sumX*sumY/n
 	denominator := math.Sqrt((sumX2 - sumX*sumX/n) * (sumY2 - sumY*sumY/n))
 
@@ -587,98 +597,123 @@ func (t *TrendMaster) calculateCorrelation(x, y []float64) float64 {
 	return numerator / denominator
 }
 
-// OnCandle é chamado para cada novo candle e implementa a lógica de trading
+// OnCandle is called for each new candle and implements the trading logic
 func (t *TrendMaster) OnCandle(ctx context.Context, df *core.Dataframe, broker core.Broker) {
 	pair := df.Pair
 	closePrice := df.Close.Last(0)
 
-	// Verificar se o dataframe está inicializado
-	if !t.isDataFrameInitialized[pair] {
-		t.isDataFrameInitialized[pair] = true
+	// Initialize dataframe if needed
+	t.initializeDataFrameIfNeeded(df)
 
-		// Inicializar arrays para correlação
-		t.correlationValues[pair] = make([]float64, 0, t.config.CorrelationPeriod*2)
+	// Get current date (last candle)
+	currentDate := t.getCurrentDate(df)
 
-		// Se estamos usando correlação e este é o par de referência
-		if t.config.UseMarketCorrelation && strings.Contains(pair, t.config.CorrelationReferenceSymbol) {
-			t.correlationRef[pair] = make([]float64, 0, t.config.CorrelationPeriod*2)
-		}
+	// Reset daily trade count if we're in a new day
+	t.resetDailyTradeCountIfNewDay(currentDate)
+
+	// Check if we're within allowed trading hours
+	if !t.isWithinTradingHours() {
+		return
 	}
 
-	// Obter data atual (último candle)
-	currentDate := ""
-	if len(df.Time) > 0 {
-		currentDate = df.Time[len(df.Time)-1].Format("2006-01-02")
-	}
-
-	// Reiniciar contagem diária de operações se estivermos em um novo dia
-	if currentDate != t.lastTradeDate {
-		t.dailyTradeCount = make(map[string]int)
-		t.lastTradeDate = currentDate
-	}
-
-	// Verificar se está dentro do horário de trading permitido
-	if t.config.TradingHoursEnabled {
-		currentHour := time.Now().UTC().Hour()
-		if currentHour < t.config.TradingStartHour || currentHour >= t.config.TradingEndHour {
-			// Fora do horário de trading, não realizar novas operações
-			return
-		}
-	}
-
-	// Obter posição atual
+	// Get current position
 	assetPosition, quotePosition, err := broker.Position(ctx, pair)
 	if err != nil {
 		bot.DefaultLog.Error(err)
 		return
 	}
 
-	// Detectar tipo de mercado
+	// Detect market type
 	t.detectMarketType(pair)
 
-	// Atualizar trailing stop se em posição
-	if assetPosition > 0 {
-		lastPrice, exists := t.lastPrice[pair]
-		if !exists || closePrice > lastPrice {
-			t.lastPrice[pair] = closePrice
-		}
-	}
+	// Update trailing stop if in position
+	t.updateTrailingStopIfInPosition(pair, closePrice)
 
-	// Verificar sinais de entrada e saída
+	// Check entry and exit signals
 	if assetPosition > 0 {
-		// Já estamos em posição longa, verificar saída parcial
+		// We're already in a long position, check partial exit
 		if t.config.UsePartialTakeProfit {
 			t.checkPartialExits(ctx, df, broker, assetPosition, pair)
 		}
 
-		// Verificar saída completa
+		// Check complete exit
 		if t.shouldExit(df) || t.checkTrailingStop(df, pair) {
 			t.executeExit(ctx, df, broker, assetPosition)
-			// Reiniciar após saída
+			// Reset after exit
 			delete(t.lastPrice, pair)
 		}
 	} else {
-		// Sem posição, verificar entrada (apenas se não excedemos o limite diário)
+		// No position, check entry (only if we haven't exceeded the daily limit)
 		tradeCount := t.dailyTradeCount[pair]
 		if tradeCount < t.config.MaxTradesPerDay && t.shouldEnter(df) {
 			t.executeEntry(ctx, df, broker, quotePosition, closePrice)
-			// Incrementar contador de operações
+			// Increment trade counter
 			t.dailyTradeCount[pair] = tradeCount + 1
 		}
 	}
 
-	// Atualizar cache de data (para a próxima verificação de dia)
+	// Update date cache (for the next day check)
 	t.lastTradeDate = currentDate
 }
 
-// detectMarketType detecta o tipo de mercado com base no par
+// initializeDataFrameIfNeeded initializes dataframe-specific data if needed
+func (t *TrendMaster) initializeDataFrameIfNeeded(df *core.Dataframe) {
+	pair := df.Pair
+	if !t.isDataFrameInitialized[pair] {
+		t.isDataFrameInitialized[pair] = true
+
+		// Initialize arrays for correlation
+		t.correlationValues[pair] = make([]float64, 0, t.config.CorrelationPeriod*2)
+
+		// If we're using correlation and this is the reference pair
+		if t.config.UseMarketCorrelation && strings.Contains(pair, t.config.CorrelationReferenceSymbol) {
+			t.correlationRef[pair] = make([]float64, 0, t.config.CorrelationPeriod*2)
+		}
+	}
+}
+
+// getCurrentDate gets the current date from the dataframe
+func (t *TrendMaster) getCurrentDate(df *core.Dataframe) string {
+	if len(df.Time) > 0 {
+		return df.Time[len(df.Time)-1].Format("2006-01-02")
+	}
+	return ""
+}
+
+// resetDailyTradeCountIfNewDay resets the daily trade count if we're in a new day
+func (t *TrendMaster) resetDailyTradeCountIfNewDay(currentDate string) {
+	if currentDate != t.lastTradeDate {
+		t.dailyTradeCount = make(map[string]int)
+		t.lastTradeDate = currentDate
+	}
+}
+
+// isWithinTradingHours checks if we're within allowed trading hours
+func (t *TrendMaster) isWithinTradingHours() bool {
+	if !t.config.TradingHoursEnabled {
+		return true
+	}
+
+	currentHour := time.Now().UTC().Hour()
+	return currentHour >= t.config.TradingStartHour && currentHour < t.config.TradingEndHour
+}
+
+// updateTrailingStopIfInPosition updates the trailing stop if we're in a position
+func (t *TrendMaster) updateTrailingStopIfInPosition(pair string, closePrice float64) {
+	lastPrice, exists := t.lastPrice[pair]
+	if exists && closePrice > lastPrice {
+		t.lastPrice[pair] = closePrice
+	}
+}
+
+// detectMarketType detects the market type based on the pair
 func (t *TrendMaster) detectMarketType(pair string) {
-	// Se já temos o tipo de mercado armazenado, usar o valor armazenado
+	// If we already have the market type stored, use the stored value
 	if _, exists := t.marketType[pair]; exists {
 		return
 	}
 
-	// Detectar tipo de mercado com base no padrão do par
+	// Detect market type based on the pair pattern
 	if strings.HasSuffix(pair, "USDT") || strings.HasSuffix(pair, "BTC") || strings.HasSuffix(pair, "ETH") ||
 		strings.HasSuffix(pair, "BNB") || strings.Contains(pair, "PERP") {
 		t.marketType[pair] = "crypto"
@@ -692,20 +727,20 @@ func (t *TrendMaster) detectMarketType(pair string) {
 	}
 }
 
-// getMarketSpecificConfig retorna a configuração específica para o tipo de mercado
+// getMarketSpecificConfig returns the configuration specific to the market type
 func (t *TrendMaster) getMarketSpecificConfig(pair string) MarketSpecificConfig {
 	marketType, exists := t.marketType[pair]
 	if !exists {
-		// Tipo de mercado padrão
+		// Default market type
 		marketType = "crypto"
 	}
 
-	// Verificar se temos configuração específica para este tipo de mercado
+	// Check if we have a specific configuration for this market type
 	if config, exists := t.config.MarketSpecificSettings[marketType]; exists {
 		return config
 	}
 
-	// Retornar configuração padrão
+	// Return default configuration
 	return MarketSpecificConfig{
 		VolatilityThreshold: t.config.VolatilityThreshold,
 		TrailingStopPercent: t.config.TrailingStopPercent,
@@ -713,7 +748,7 @@ func (t *TrendMaster) getMarketSpecificConfig(pair string) MarketSpecificConfig 
 	}
 }
 
-// checkTrailingStop verifica se o trailing stop foi atingido
+// checkTrailingStop checks if the trailing stop was hit
 func (t *TrendMaster) checkTrailingStop(df *core.Dataframe, pair string) bool {
 	closePrice := df.Close.Last(0)
 	lastPrice, exists := t.lastPrice[pair]
@@ -722,11 +757,11 @@ func (t *TrendMaster) checkTrailingStop(df *core.Dataframe, pair string) bool {
 		return false
 	}
 
-	// Obter configuração específica do mercado
+	// Get market-specific configuration
 	marketConfig := t.getMarketSpecificConfig(pair)
 	trailStopPercent := marketConfig.TrailingStopPercent
 
-	// Se o preço caiu abaixo do trailing stop, acionar saída
+	// If the price dropped below the trailing stop, trigger exit
 	trailAmount := lastPrice * trailStopPercent
 	if closePrice <= lastPrice-trailAmount {
 		bot.DefaultLog.WithFields(map[string]any{
@@ -741,20 +776,20 @@ func (t *TrendMaster) checkTrailingStop(df *core.Dataframe, pair string) bool {
 	return false
 }
 
-// checkHigherTimeframeTrend verifica a tendência no timeframe superior
+// checkHigherTimeframeTrend checks the trend in the higher timeframe
 func (t *TrendMaster) checkHigherTimeframeTrend(pair string) bool {
-	// Se não estamos usando filtro de timeframe superior, retornar true
+	// If we're not using higher timeframe filter, return true
 	if !t.config.UseHigherTfConfirmation {
 		return true
 	}
 
-	// Verificar se temos cache do timeframe superior
+	// Check if we have higher timeframe cache
 	higherDf, exists := t.higherTfCache[pair]
 	if !exists || len(higherDf.Close) == 0 {
-		return true // Sem dados suficientes, permitir entrada
+		return true // Not enough data, allow entry
 	}
 
-	// Verificar condições no timeframe superior
+	// Check conditions in the higher timeframe
 	emaFast := higherDf.Metadata["ema_fast"].Last(0)
 	emaSlow := higherDf.Metadata["ema_slow"].Last(0)
 	emaLong := higherDf.Metadata["ema_long"].Last(0)
@@ -764,13 +799,13 @@ func (t *TrendMaster) checkHigherTimeframeTrend(pair string) bool {
 	minusDI := higherDf.Metadata["minus_di"].Last(0)
 	adx := higherDf.Metadata["adx"].Last(0)
 
-	// Verificar tendência de alta no timeframe superior
+	// Check for uptrend in higher timeframe
 	emaAlignment := emaFast > emaSlow && emaSlow > emaLong
 	macdBullish := macd > macdSignal
 	diPositive := plusDI > minusDI
 	strongTrend := adx > t.config.AdxThreshold
 
-	// Pelo menos 3 das 4 condições devem ser verdadeiras
+	// At least 3 of 4 conditions must be true
 	conditionsCount := 0
 	if emaAlignment {
 		conditionsCount++
@@ -788,7 +823,7 @@ func (t *TrendMaster) checkHigherTimeframeTrend(pair string) bool {
 	return conditionsCount >= 3
 }
 
-// shouldEnter verifica se as condições de entrada são atendidas
+// shouldEnter checks if entry conditions are met
 func (t *TrendMaster) shouldEnter(df *core.Dataframe) bool {
 	pair := df.Pair
 	closePrice := df.Close.Last(0)
@@ -802,7 +837,7 @@ func (t *TrendMaster) shouldEnter(df *core.Dataframe) bool {
 	adx := df.Metadata["adx"].Last(0)
 	atr := df.Metadata["atr"].Last(0)
 
-	// Verificações básicas (condições originais)
+	// Basic checks (original conditions)
 	priceAboveEMA := closePrice > emaLongHigh
 	macdAboveSignal := macd > macdSignal
 	plusDIAboveMinusDI := plusDI > minusDI
@@ -810,77 +845,77 @@ func (t *TrendMaster) shouldEnter(df *core.Dataframe) bool {
 	emaFastAboveSlow := emaFast > emaSlow
 	diSpreadSufficient := (plusDI - minusDI) > t.config.AdxMinimumDiSpread
 
-	// Obter configuração específica do mercado
+	// Get market-specific configuration
 	marketConfig := t.getMarketSpecificConfig(pair)
 
-	// Filtro de volatilidade: verificar se a volatilidade não é muito alta
+	// Volatility filter: check if volatility is not too high
 	volatilityCheck := true
 	if atr > 0 {
 		volatilityRatio := atr / closePrice
 		volatilityCheck = volatilityRatio < marketConfig.VolatilityThreshold
 	}
 
-	// Filtro RSI: evitar compra em mercado sobrecomprado
+	// RSI filter: avoid buying in overbought market
 	rsiCheck := true
 	if t.config.UseRsiFilter {
 		rsi := df.Metadata["rsi"].Last(0)
-		rsiCheck = rsi < t.config.RsiOverbought // RSI não está sobrecomprado
+		rsiCheck = rsi < t.config.RsiOverbought // RSI not overbought
 	}
 
-	// Filtro de volume: verificar se o volume é suficiente
+	// Volume filter: check if volume is sufficient
 	volumeCheck := true
 	if t.config.UseVolFilter {
 		volume := df.Volume.Last(0)
 		volumeAvg := df.Metadata["vol_avg"].Last(0)
 		if volumeAvg > 0 {
 			volumeRatio := volume / volumeAvg
-			volumeCheck = volumeRatio >= t.config.VolMinRatio // Volume acima da média
+			volumeCheck = volumeRatio >= t.config.VolMinRatio // Volume above average
 		}
 	}
 
-	// Verificar confirmação de timeframe superior
+	// Check higher timeframe confirmation
 	higherTfCheck := t.checkHigherTimeframeTrend(pair)
 
-	// Verificar filtro de sentimento de mercado
+	// Check market sentiment filter
 	sentimentCheck := true
 	if t.config.UseSentimentFilter {
 		sentiment, exists := t.marketSentiment[pair]
 		if exists {
-			// Valores mais baixos são mais restritivos (mais medo no mercado)
+			// Lower values are more restrictive (more fear in the market)
 			if sentiment < t.config.SentimentThreshold {
-				// Em mercados com medo alto, exigir condições mais fortes
+				// In high fear markets, require stronger conditions
 				sentimentCheck = adx > (t.config.AdxThreshold+5) && (plusDI-minusDI) > 15
 			}
 		}
 	}
 
-	// Verificar correlação de mercado
+	// Check market correlation
 	correlationCheck := true
 	if t.config.UseMarketCorrelation {
 		correlation, exists := t.marketCorrelation[pair]
 		if exists {
-			// Se correlação fortemente negativa com o mercado, ser mais cauteloso
+			// If strongly negative correlation with the market, be more cautious
 			if correlation < t.config.NegativeCorrelationThreshold {
-				correlationCheck = false // Evitar operar contra o mercado global
+				correlationCheck = false // Avoid trading against the global market
 			}
 		}
 	}
 
-	// Verificar tendência consistentemente de alta
+	// Check for consistently bullish market
 	bullishMarket := true
 
-	// Reduzir frequência de operação após perdas consecutivas
+	// Reduce trading frequency after consecutive losses
 	riskAdjustment := true
 	if t.consecutiveLosses >= 2 {
-		// Após 2 perdas consecutivas, exigir condições mais rígidas
+		// After 2 consecutive losses, require stricter conditions
 		riskAdjustment = adx > (t.config.AdxThreshold+5) && (plusDI-minusDI) > 10
 	}
 
-	// Todas as condições principais devem ser verdadeiras para entrada
+	// All main conditions must be true for entry
 	mainConditions := priceAboveEMA && macdAboveSignal && plusDIAboveMinusDI &&
 		adxAboveThreshold && emaFastAboveSlow && diSpreadSufficient
 
-	// Filtros adicionais para melhorar qualidade do sinal
+	// Additional filters to improve signal quality
 	additionalFilters := volatilityCheck && rsiCheck && volumeCheck &&
 		bullishMarket && riskAdjustment && higherTfCheck &&
 		sentimentCheck && correlationCheck
@@ -888,7 +923,7 @@ func (t *TrendMaster) shouldEnter(df *core.Dataframe) bool {
 	return mainConditions && additionalFilters
 }
 
-// shouldExit verifica se as condições de saída são atendidas
+// shouldExit checks if exit conditions are met
 func (t *TrendMaster) shouldExit(df *core.Dataframe) bool {
 	closePrice := df.Close.Last(0)
 	emaLongLow := df.Metadata["ema_long_low"].Last(0)
@@ -900,15 +935,15 @@ func (t *TrendMaster) shouldExit(df *core.Dataframe) bool {
 	minusDI := df.Metadata["minus_di"].Last(0)
 	adx := df.Metadata["adx"].Last(0)
 
-	// Condições básicas de saída
+	// Basic exit conditions
 	priceBelowEMA := closePrice < emaLongLow
 	macdBelowSignal := macd < macdSignal
 	minusDIAbovePlusDI := minusDI > plusDI
 	adxAboveThreshold := adx > t.config.AdxThreshold
 	emaFastBelowSlow := emaFast < emaSlow
 
-	// Verificar quebra da média móvel longa calculada sobre os mínimos
-	// Este é um sinal de saída rápida independente de outras condições
+	// Check for break of long EMA calculated on lows
+	// This is a quick exit signal independent of other conditions
 	if priceBelowEMA && t.config.UsePriceActionExit {
 		bot.DefaultLog.WithFields(map[string]any{
 			"pair":       df.Pair,
@@ -918,7 +953,7 @@ func (t *TrendMaster) shouldExit(df *core.Dataframe) bool {
 		return true
 	}
 
-	// Saída rápida se MACD cair muito rapidamente (potencial reversão forte)
+	// Quick exit if MACD falls very rapidly (potential strong reversal)
 	if t.config.UseMacdReversalExit {
 		macdHist := df.Metadata["macd_hist"].Last(0)
 		prevMacdHist := df.Metadata["macd_hist"].Last(1)
@@ -932,7 +967,7 @@ func (t *TrendMaster) shouldExit(df *core.Dataframe) bool {
 		}
 	}
 
-	// Saída rápida se ADX começar a cair enquanto em posição (tendência enfraquecendo)
+	// Quick exit if ADX starts falling while in position (weakening trend)
 	if t.config.UseAdxFallingExit {
 		adxFalling := adx < df.Metadata["adx"].Last(1) && df.Metadata["adx"].Last(1) < df.Metadata["adx"].Last(2)
 		if adxFalling && minusDIAbovePlusDI {
@@ -947,10 +982,10 @@ func (t *TrendMaster) shouldExit(df *core.Dataframe) bool {
 		}
 	}
 
-	// RSI indicando sobrecompra extrema
+	// RSI indicating extreme overbought
 	if t.config.UseRsiFilter {
 		rsi := df.Metadata["rsi"].Last(0)
-		if rsi > t.config.RsiExtremeOverbought { // Sobrecompra extrema
+		if rsi > t.config.RsiExtremeOverbought { // Extreme overbought
 			bot.DefaultLog.WithFields(map[string]any{
 				"pair": df.Pair,
 				"rsi":  rsi,
@@ -959,15 +994,15 @@ func (t *TrendMaster) shouldExit(df *core.Dataframe) bool {
 		}
 	}
 
-	// Todas as condições regulares de saída
+	// All regular exit conditions
 	regularExitConditions := macdBelowSignal && minusDIAbovePlusDI && adxAboveThreshold && emaFastBelowSlow
 
 	return regularExitConditions
 }
 
-// checkPartialExits verifica e executa saídas parciais
+// checkPartialExits checks and executes partial exits
 func (t *TrendMaster) checkPartialExits(ctx context.Context, df *core.Dataframe, broker core.Broker, assetPosition float64, pair string) {
-	// Se não usamos saída parcial ou não temos níveis configurados, retornar
+	// If we're not using partial exits or don't have configured levels, return
 	if !t.config.UsePartialTakeProfit || len(t.config.PartialExitLevels) == 0 {
 		return
 	}
@@ -975,38 +1010,38 @@ func (t *TrendMaster) checkPartialExits(ctx context.Context, df *core.Dataframe,
 	closePrice := df.Close.Last(0)
 	entryPrice, exists := t.entryPrice[pair]
 
-	// Se não temos preço de entrada, não podemos verificar saídas parciais
+	// If we don't have an entry price, we can't check partial exits
 	if !exists {
 		return
 	}
 
-	// Verificar se já temos posições parciais para este par
+	// Check if we already have partial positions for this pair
 	positions, posExists := t.partialPositions[pair]
 	if !posExists {
-		// Criar array para rastrear posições parciais
+		// Create array to track partial positions
 		t.partialPositions[pair] = make([]PartialPosition, 0)
 
-		// Para cada nível configurado, criar uma posição parcial
+		// For each configured level, create a partial position
 		totalPosition := assetPosition
 		for i, level := range t.config.PartialExitLevels {
-			// Calcular quantidade para este nível
+			// Calculate quantity for this level
 			levelQuantity := assetPosition * level.Percentage
 
-			// Criar posição parcial
+			// Create partial position
 			partialPos := PartialPosition{
 				Quantity:   levelQuantity,
 				EntryPrice: entryPrice,
 				Level:      i,
 			}
 
-			// Adicionar à lista de posições parciais
+			// Add to the list of partial positions
 			t.partialPositions[pair] = append(t.partialPositions[pair], partialPos)
 
-			// Verificar se já atingimos o alvo para este nível
+			// Check if we've already reached the target for this level
 			if !level.TrailingOnly {
 				targetPrice := entryPrice * (1.0 + level.Target)
 
-				// Se o preço atual já atingiu o alvo, executar saída parcial
+				// If the current price has already reached the target, execute partial exit
 				if closePrice >= targetPrice {
 					t.executePartialExit(ctx, df, broker, pair, i, partialPos.Quantity, "Target reached")
 				}
@@ -1018,34 +1053,34 @@ func (t *TrendMaster) checkPartialExits(ctx context.Context, df *core.Dataframe,
 		positions = t.partialPositions[pair]
 	}
 
-	// Para cada posição parcial existente
+	// For each existing partial position
 	for i, pos := range positions {
-		// Pular posições já executadas
+		// Skip positions already executed
 		if pos.Quantity <= 0 {
 			continue
 		}
 
-		// Obter nível configurado
+		// Get configured level
 		level := t.config.PartialExitLevels[pos.Level]
 
-		// Se não é trailing only, verificar alvo de preço
+		// If not trailing only, check price target
 		if !level.TrailingOnly {
 			targetPrice := pos.EntryPrice * (1.0 + level.Target)
 
-			// Se o preço atual atingiu o alvo, executar saída parcial
+			// If the current price has reached the target, execute partial exit
 			if closePrice >= targetPrice {
 				t.executePartialExit(ctx, df, broker, pair, i, pos.Quantity, "Target reached")
 			}
 		} else {
-			// Para níveis apenas com trailing stop, verificar trailing stop
-			// Usamos o último preço mais alto registrado
+			// For trailing-only levels, check trailing stop
+			// Use the last highest price recorded
 			lastHighestPrice, exists := t.lastPrice[pair]
 			if exists {
-				// Calcular preço de trailing stop
+				// Calculate trailing stop price
 				trailAmount := lastHighestPrice * t.config.TrailingStopPercent
 				trailingStopPrice := lastHighestPrice - trailAmount
 
-				// Se o preço atual caiu abaixo do trailing stop, executar saída parcial
+				// If the current price has fallen below the trailing stop, execute partial exit
 				if closePrice <= trailingStopPrice {
 					t.executePartialExit(ctx, df, broker, pair, i, pos.Quantity, "Trailing stop hit")
 				}
@@ -1054,14 +1089,14 @@ func (t *TrendMaster) checkPartialExits(ctx context.Context, df *core.Dataframe,
 	}
 }
 
-// executePartialExit executa uma saída parcial
+// executePartialExit executes a partial exit
 func (t *TrendMaster) executePartialExit(ctx context.Context, df *core.Dataframe, broker core.Broker, pair string, posIndex int, quantity float64, reason string) {
-	// Não executar se quantidade é zero ou negativa
+	// Don't execute if quantity is zero or negative
 	if quantity <= 0 {
 		return
 	}
 
-	// Executar ordem de venda a mercado para a quantidade parcial
+	// Execute market sell order for the partial quantity
 	order, err := broker.CreateOrderMarket(ctx, core.SideTypeSell, pair, quantity)
 	if err != nil {
 		bot.DefaultLog.WithFields(map[string]any{
@@ -1073,11 +1108,11 @@ func (t *TrendMaster) executePartialExit(ctx context.Context, df *core.Dataframe
 		return
 	}
 
-	// Atualizar posição parcial
+	// Update partial position
 	t.partialPositions[pair][posIndex].Quantity = 0
 	t.partialPositions[pair][posIndex].OrderID = order.ID
 
-	// Registrar saída parcial
+	// Log partial exit
 	bot.DefaultLog.WithFields(map[string]any{
 		"pair":     pair,
 		"quantity": quantity,
@@ -1088,11 +1123,11 @@ func (t *TrendMaster) executePartialExit(ctx context.Context, df *core.Dataframe
 	}).Info("Partial exit executed")
 }
 
-// executeEntry executa a operação de entrada
+// executeEntry executes the entry operation
 func (t *TrendMaster) executeEntry(ctx context.Context, df *core.Dataframe, broker core.Broker, quotePosition, closePrice float64) {
 	pair := df.Pair
 
-	// Cancelar qualquer ordem ativa anterior
+	// Cancel any previous active orders
 	if ordersMap, exists := t.activeOrders[pair]; exists {
 		for _, orderID := range ordersMap {
 			order, err := broker.Order(ctx, pair, orderID)
@@ -1103,70 +1138,67 @@ func (t *TrendMaster) executeEntry(ctx context.Context, df *core.Dataframe, brok
 		delete(t.activeOrders, pair)
 	}
 
-	// Obter configuração específica do mercado
+	// Get market-specific configuration
 	marketConfig := t.getMarketSpecificConfig(pair)
 
-	// Ajustar tamanho da posição com base no ATR para controle de risco
+	// Adjust position size based on ATR for risk control
 	atr := df.Metadata["atr"].Last(0)
 	positionSize := t.config.PositionSize
 
-	// Ajustar tamanho da posição com base no desempenho recente (se habilitado)
+	// Adjust position size based on recent performance (if enabled)
 	if t.config.UseAdaptiveSize {
-		// Aumentar o tamanho após vitórias consecutivas
+		// Increase size after consecutive wins
 		if t.winStreak > 0 {
 			increaseFactor := math.Min(float64(t.winStreak)*t.config.WinIncreaseFactor,
 				t.config.MaxPositionSizeFactor-1.0)
 			positionSize *= (1.0 + increaseFactor)
 
-			// Limitar ao tamanho máximo
+			// Limit to maximum size
 			if positionSize > t.config.PositionSize*t.config.MaxPositionSizeFactor {
 				positionSize = t.config.PositionSize * t.config.MaxPositionSizeFactor
 			}
 		}
 
-		// Reduzir o tamanho após perdas consecutivas
+		// Reduce size after consecutive losses
 		if t.consecutiveLosses > 0 {
-			// Reduzir tamanho para cada perda consecutiva
-			reductionFactor := 1.0 - float64(t.consecutiveLosses)*t.config.LossReductionFactor
-			if reductionFactor < t.config.MinPositionSizeFactor {
-				reductionFactor = t.config.MinPositionSizeFactor
-			}
+			// Reduce size for each consecutive loss
+			reductionFactor := math.Max(1.0-float64(t.consecutiveLosses)*t.config.LossReductionFactor, t.config.MinPositionSizeFactor)
 			positionSize *= reductionFactor
 		}
 	}
 
-	// Calcular stop loss baseado em ATR se disponível
+	// Calculate stop loss based on ATR if available
 	stopLossPrice := 0.0
 	if atr > 0 {
-		// Usar ATR para calcular stop loss dinâmico
+		// Use ATR to calculate dynamic stop loss
 		stopLossPrice = closePrice - (atr * marketConfig.AtrMultiplier)
 
-		// Calcular percentual de stop loss baseado em ATR
+		// Calculate stop loss percentage based on ATR
 		stopLossPercent := (closePrice - stopLossPrice) / closePrice
 
-		// Se o stop loss baseado em ATR for maior que o máximo permitido, ajustar tamanho da posição
+		// If ATR-based stop loss is greater than maximum allowed, adjust position size
 		if stopLossPercent > t.config.MaxRiskPerTrade {
-			// Ajustar tamanho da posição para limitar risco
+			// Adjust position size to limit risk
 			riskAdjustment := t.config.MaxRiskPerTrade / stopLossPercent
 			positionSize *= riskAdjustment
 		}
 	} else {
-		// Usar stop loss fixo se ATR não estiver disponível
+		// Use fixed stop loss if ATR is not available
 		stopLossPrice = closePrice * (1.0 - t.config.MaxRiskPerTrade)
 	}
 
-	// Limitar risco por operação
+	// Limit risk per trade
 	maxRiskAmount := quotePosition * t.config.MaxRiskPerTrade
 	actualRiskAmount := quotePosition * positionSize * ((closePrice - stopLossPrice) / closePrice)
 	if actualRiskAmount > maxRiskAmount {
-		// Ajustar tamanho da posição para limitar risco
+		// Adjust position size to limit risk
 		positionSize *= maxRiskAmount / actualRiskAmount
 	}
 
-	// Calcular tamanho da posição com base no capital disponível
+	// Calculate position size based on available capital
 	entryAmount := quotePosition * positionSize
 
-	// Executar ordem de compra a mercado
+	// Execute market buy order
 	_, err := broker.CreateOrderMarketQuote(ctx, core.SideTypeBuy, pair, entryAmount)
 	if err != nil {
 		bot.DefaultLog.WithFields(map[string]any{
@@ -1178,36 +1210,36 @@ func (t *TrendMaster) executeEntry(ctx context.Context, df *core.Dataframe, brok
 		return
 	}
 
-	// Registrar preço de entrada
+	// Record entry price
 	t.entryPrice[pair] = closePrice
 
-	// Inicializar trailing stop com preço de entrada
+	// Initialize trailing stop with entry price
 	t.lastPrice[pair] = closePrice
 
-	// Armazenar tamanho da posição para uso em saídas parciais
+	// Store position size for use in partial exits
 	t.positionSize[pair] = positionSize
 
-	// Obter posição atualizada após compra
+	// Get updated position after purchase
 	assetPosition, _, err := broker.Position(ctx, pair)
 	if err != nil {
 		bot.DefaultLog.Error(err)
 		return
 	}
 
-	// Criar mapa para ordens deste par se não existir
+	// Create map for orders for this pair if it doesn't exist
 	if _, exists := t.activeOrders[pair]; !exists {
 		t.activeOrders[pair] = make(map[int]int64)
 	}
 
-	// Se a saída parcial estiver habilitada, inicializar estruturas
+	// If partial exit is enabled, initialize structures
 	if t.config.UsePartialTakeProfit {
-		// Limpar qualquer dado antigo
+		// Clear any old data
 		t.partialPositions[pair] = make([]PartialPosition, 0)
 		t.partialOrders[pair] = make([]int64, 0)
 
-		// As posições parciais serão configuradas na próxima execução de checkPartialExits
+		// Partial positions will be configured in the next execution of checkPartialExits
 	} else {
-		// Definir take profit e stop loss com ordem OCO
+		// Set take profit and stop loss with OCO order
 		takeProfitPrice := closePrice * (1.0 + t.calculateTakeProfit(df, pair))
 
 		orders, err := broker.CreateOrderOCO(
@@ -1229,7 +1261,7 @@ func (t *TrendMaster) executeEntry(ctx context.Context, df *core.Dataframe, brok
 				"stopPrice":  stopLossPrice,
 			}).Error(err)
 		} else if len(orders) > 0 {
-			// Armazenar IDs das ordens para referência futura
+			// Store order IDs for future reference
 			for i, order := range orders {
 				t.activeOrders[pair][i] = order.ID
 			}
@@ -1246,14 +1278,14 @@ func (t *TrendMaster) executeEntry(ctx context.Context, df *core.Dataframe, brok
 	}).Info("Entry executed")
 }
 
-// calculateTakeProfit calcula o objetivo de lucro com base nas configurações
+// calculateTakeProfit calculates the profit target based on settings
 func (t *TrendMaster) calculateTakeProfit(df *core.Dataframe, pair string) float64 {
-	// Se alvos dinâmicos não estiverem habilitados, usar alvo base
+	// If dynamic targets are not enabled, use base target
 	if !t.config.UseDynamicTargets {
 		return t.config.BaseTarget
 	}
 
-	// Calcular alvo baseado em ATR
+	// Calculate target based on ATR
 	atr := df.Metadata["atr"].Last(0)
 	closePrice := df.Close.Last(0)
 
@@ -1261,11 +1293,11 @@ func (t *TrendMaster) calculateTakeProfit(df *core.Dataframe, pair string) float
 		return t.config.BaseTarget
 	}
 
-	// Calcular alvo dinâmico com base na volatilidade (ATR)
+	// Calculate dynamic target based on volatility (ATR)
 	atrPercent := atr / closePrice
 	dynamicTarget := atrPercent * t.config.AtrTargetFactor
 
-	// Limitar entre mínimo e máximo configurados
+	// Limit between configured minimum and maximum
 	if dynamicTarget < t.config.MinTarget {
 		dynamicTarget = t.config.MinTarget
 	} else if dynamicTarget > t.config.MaxTarget {
@@ -1275,12 +1307,12 @@ func (t *TrendMaster) calculateTakeProfit(df *core.Dataframe, pair string) float
 	return dynamicTarget
 }
 
-// executeExit executa a operação de saída
+// executeExit executes the exit operation
 func (t *TrendMaster) executeExit(ctx context.Context, df *core.Dataframe, broker core.Broker, assetPosition float64) {
 	pair := df.Pair
 	currentPrice := df.Close.Last(0)
 
-	// Cancelar todas as ordens ativas
+	// Cancel all active orders
 	if ordersMap, exists := t.activeOrders[pair]; exists {
 		for _, orderID := range ordersMap {
 			order, err := broker.Order(ctx, pair, orderID)
@@ -1297,7 +1329,7 @@ func (t *TrendMaster) executeExit(ctx context.Context, df *core.Dataframe, broke
 		delete(t.activeOrders, pair)
 	}
 
-	// Cancelar ordens de saída parcial
+	// Cancel partial exit orders
 	if orders, exists := t.partialOrders[pair]; exists && len(orders) > 0 {
 		for _, orderID := range orders {
 			order, err := broker.Order(ctx, pair, orderID)
@@ -1308,7 +1340,7 @@ func (t *TrendMaster) executeExit(ctx context.Context, df *core.Dataframe, broke
 		delete(t.partialOrders, pair)
 	}
 
-	// Vender posição inteira
+	// Sell entire position
 	_, err := broker.CreateOrderMarket(ctx, core.SideTypeSell, pair, assetPosition)
 	if err != nil {
 		bot.DefaultLog.WithFields(map[string]any{
@@ -1320,23 +1352,23 @@ func (t *TrendMaster) executeExit(ctx context.Context, df *core.Dataframe, broke
 		return
 	}
 
-	// Verificar resultado da operação
+	// Check trade result
 	entryPrice, exists := t.entryPrice[pair]
 	if exists {
 		tradeProfit := currentPrice > entryPrice
 		t.lastTradeResult[pair] = tradeProfit
 
-		// Atualizar contadores de vitórias/derrotas
+		// Update win/loss counters
 		if tradeProfit {
 			t.winCount++
 			t.winStreak++
 			t.lossStreak = 0
-			t.consecutiveLosses = 0 // Reiniciar após operação lucrativa
+			t.consecutiveLosses = 0 // Reset after profitable trade
 		} else {
 			t.lossCount++
 			t.lossStreak++
 			t.winStreak = 0
-			t.consecutiveLosses++ // Incrementar contador de perdas
+			t.consecutiveLosses++ // Increment consecutive losses counter
 		}
 
 		profitPercent := (currentPrice - entryPrice) / entryPrice * 100
@@ -1351,11 +1383,11 @@ func (t *TrendMaster) executeExit(ctx context.Context, df *core.Dataframe, broke
 			"winRate":           float64(t.winCount) / float64(t.winCount+t.lossCount) * 100,
 		}).Info("Exit executed")
 
-		// Limpar preço de entrada
+		// Clear entry price
 		delete(t.entryPrice, pair)
 	}
 
-	// Limpar outros dados de rastreamento para este par
+	// Clear other tracking data for this pair
 	delete(t.positionSize, pair)
 	delete(t.partialPositions, pair)
 }
