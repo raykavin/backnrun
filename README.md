@@ -540,24 +540,27 @@ func main() {
 
 ## 🤝 Contributing
 
-Contributions to BackNRun are welcome! Here are some ways you can contribute:
+Contributions to BackNRun are welcome! Here are some ways you can help improve the project:
 
-1. Report bugs and suggest features by opening issues
-2. Submit pull requests with bug fixes or new features
-3. Improve documentation
-4. Share your custom strategies with the community
+- **Report bugs and suggest features** by opening issues on GitHub
+- **Submit pull requests** with bug fixes or new features
+- **Improve documentation** to help other users and developers
+- **Share your custom strategies** with the community
 
-## 📄License
+## 📄 License
 
-MIT License © [Raykavin Meireles](https://github.com/raykavin)
+BackNRun is distributed under the **GNU General Public License v3.0**.  
+For complete license terms and conditions, see the [LICENSE](LICENSE.md) file in the repository.
 
-BackNRun is licensed under the MIT License. See the [LICENSE](LICENSE.md) file for details.
+Copyright © [Raykavin Meireles](https://github.com/raykavin)
 
 ---
+
 ## 📬 Contact
 
-Feel free to reach out for support or collaboration:  
+For support, collaboration, or questions about BackNRun:
+
 **Email**: [raykavin.meireles@gmail.com](mailto:raykavin.meireles@gmail.com)  
-**GitHub**: [@raykavin](https://github.com/raykavin)\
-**LinkedIn**: [@raykavin.dev](https://www.linkedin.com/in/raykavin-dev)\
+**GitHub**: [@raykavin](https://github.com/raykavin)  
+**LinkedIn**: [@raykavin.dev](https://www.linkedin.com/in/raykavin-dev)  
 **Instagram**: [@raykavin.dev](https://www.instagram.com/raykavin.dev)
