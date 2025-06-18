@@ -1,5 +1,9 @@
 # BackNRun
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/raykavin/backnrun.svg)](https://pkg.go.dev/github.com/raykavin/backnrun)
+[![Go Report Card](https://goreportcard.com/badge/github.com/raykavin/backnrun)](https://goreportcard.com/report/github.com/raykavin/backnrun)
+[![License](https://img.shields.io/badge/license-GPL-blue.svg)](LICENSE)
+
 BackNRun is a powerful, flexible trading bot framework written in Go. It provides a comprehensive set of tools for developing, backtesting, and optimizing trading strategies for cryptocurrency markets.
 
 ![Preview of BackNRun 1](images/1.png)
